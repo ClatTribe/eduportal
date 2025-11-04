@@ -66,82 +66,91 @@ export default function AuthCallback() {
       }
     };
 
-    const processUserSession = async (user: any) => {
-      addDebug(`👤 User: ${user.email}`);
+    interface AuthUser {
+  id: string;
+  email?: string | null;
+}
 
-      const pendingRole = localStorage.getItem('pendingUserRole') as 'student' | 'mentor' | null;
-      addDebug(`🎭 Pending Role: ${pendingRole || 'NOT FOUND'}`);
-      
-      if (!pendingRole) {
-        addDebug('❌ No role found');
-        await supabase.auth.signOut();
-        router.push('/register?error=no_role');
-        return;
-      }
+const processUserSession = async (user: AuthUser) => {
+  addDebug(`👤 User: ${user.email}`);
 
-      const correctTable = pendingRole === 'mentor' ? 'mentor_profiles' : 'profiles';
-      const wrongTable = pendingRole === 'mentor' ? 'profiles' : 'mentor_profiles';
+  const pendingRole = localStorage.getItem('pendingUserRole') as
+    | 'student'
+    | 'mentor'
+    | null;
+  addDebug(`🎭 Pending Role: ${pendingRole || 'NOT FOUND'}`);
 
-      addDebug(`📊 Correct table: ${correctTable}`);
+  if (!pendingRole) {
+    addDebug('❌ No role found');
+    await supabase.auth.signOut();
+    router.push('/register?error=no_role');
+    return;
+  }
 
-      // Check wrong table first
-      const { data: wrongProfile } = await supabase
-        .from(wrongTable)
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
+  const correctTable = pendingRole === 'mentor' ? 'mentor_profiles' : 'profiles';
+  const wrongTable = pendingRole === 'mentor' ? 'profiles' : 'mentor_profiles';
 
-      if (wrongProfile) {
-        addDebug(`❌ User exists in ${wrongTable} (CONFLICT!)`);
-        setShowDebug(true);
-        localStorage.removeItem('pendingUserRole');
-        await supabase.auth.signOut();
-        router.push(`/register?error=wrong_role&expected=${pendingRole}`);
-        return;
-      }
+  addDebug(`📊 Correct table: ${correctTable}`);
 
-      // Check correct table
-      const { data: correctProfile } = await supabase
-        .from(correctTable)
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
+  // Check wrong table first
+  const { data: wrongProfile } = await supabase
+    .from(wrongTable)
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
 
-      if (correctProfile) {
-        addDebug(`✅ Profile exists in ${correctTable}`);
-      } else {
-        addDebug(`⚠️ Profile NOT found in ${correctTable}`);
-        addDebug('💡 This should have been created by database trigger');
-        setShowDebug(true);
-        
-        // Wait a moment and check again (trigger might be delayed)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const { data: retryProfile } = await supabase
-          .from(correctTable)
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-          
-        if (!retryProfile) {
-          addDebug(`❌ Profile still not found after retry`);
-          localStorage.removeItem('pendingUserRole');
-          await supabase.auth.signOut();
-          router.push('/register?error=profile_creation_failed');
-          return;
-        }
-        
-        addDebug(`✅ Profile found on retry!`);
-      }
+  if (wrongProfile) {
+    addDebug(`❌ User exists in ${wrongTable} (CONFLICT!)`);
+    setShowDebug(true);
+    localStorage.removeItem('pendingUserRole');
+    await supabase.auth.signOut();
+    router.push(`/register?error=wrong_role&expected=${pendingRole}`);
+    return;
+  }
 
+  // Check correct table
+  const { data: correctProfile } = await supabase
+    .from(correctTable)
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (correctProfile) {
+    addDebug(`✅ Profile exists in ${correctTable}`);
+  } else {
+    addDebug(`⚠️ Profile NOT found in ${correctTable}`);
+    addDebug('💡 This should have been created by database trigger');
+    setShowDebug(true);
+
+    // Wait a moment and check again (trigger might be delayed)
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const { data: retryProfile } = await supabase
+      .from(correctTable)
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!retryProfile) {
+      addDebug(`❌ Profile still not found after retry`);
       localStorage.removeItem('pendingUserRole');
-      const redirectUrl = pendingRole === 'mentor' ? '/mentor-dashboard' : '/';
-      addDebug(`🚀 Redirecting to: ${redirectUrl}`);
-      
-      setTimeout(() => {
-        router.push(redirectUrl);
-      }, 1500);
-    };
+      await supabase.auth.signOut();
+      router.push('/register?error=profile_creation_failed');
+      return;
+    }
+
+    addDebug(`✅ Profile found on retry!`);
+  }
+
+  localStorage.removeItem('pendingUserRole');
+  const redirectUrl = pendingRole === 'mentor' ? '/mentor-dashboard' : '/';
+  addDebug(`🚀 Redirecting to: ${redirectUrl}`);
+
+  setTimeout(() => {
+    router.push(redirectUrl);
+  }, 1500);
+};
+    
 
     handleCallback();
   }, [router]);
