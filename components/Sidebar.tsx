@@ -45,7 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
     ],
     applications: [
       { icon: BookOpen, label: "Application Builder", path: "/application-builder" },
-      { icon: GraduationCap, label: "Manage Shortlist", path: "/manage-shortlist" },
+      { icon: GraduationCap, label: "Document Upload", path: "/document" },
       { icon: Award, label: "Manage Applications", path: "/manage-apps" },
       { icon: Trophy, label: "Guidance", path: "/guidance" },
     ],

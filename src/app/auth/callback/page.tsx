@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../../../lib/supabase';
-import type { User } from '@supabase/supabase-js';
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -67,7 +66,7 @@ export default function AuthCallback() {
       }
     };
 
-    const processUserSession = async (user: User) => {
+    const processUserSession = async (user: any) => {
       addDebug(`👤 User: ${user.email}`);
 
       const pendingRole = localStorage.getItem('pendingUserRole') as 'student' | 'mentor' | null;
