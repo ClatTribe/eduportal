@@ -15,13 +15,16 @@ import {
   User
 } from 'lucide-react';
 
+interface TestScore {
+  exam: string;
+  score: string;
+}
+
 interface ProfileData {
   name?: string;
   degree?: string;
   last_course_cgpa?: string;
-  gre?: number;
-  toefl?: number;
-  ielts?: string;
+  test_scores?: TestScore[];
   term?: string;
   university?: string;
   program?: string;
@@ -48,34 +51,33 @@ const DashboardPage = () => {
       return {
         completion: 0,
         missingFields: [
-          'Name', 'Degree Type', 'Last Course CGPA', 'GRE Score',
-          'TOEFL/IELTS', 'Target Term', 'Target University',
-          'Program/Major', 'Extracurricular'
+          'Name', 'Degree Type', 'Last Course CGPA', 'Test Scores',
+          'Target Term', 'Target University', 'Program/Major', 'Extracurricular'
         ]
       };
     }
 
+    const hasTestScores = profileData.test_scores && profileData.test_scores.length > 0;
+    
     const fields = [
       profileData.name,
       profileData.degree,
       profileData.last_course_cgpa,
-      profileData.gre,
-      profileData.toefl || profileData.ielts,
+      hasTestScores,
       profileData.term,
       profileData.university,
       profileData.program,
       profileData.extracurricular
     ];
 
-    const filledCount = fields.filter(f => f && f.toString().trim() !== '').length;
+    const filledCount = fields.filter(f => f && (typeof f === 'boolean' ? f : f.toString().trim() !== '')).length;
     const completion = Math.round((filledCount / fields.length) * 100);
 
     const missing: string[] = [];
     if (!profileData.name) missing.push('Name');
     if (!profileData.degree) missing.push('Degree Type');
     if (!profileData.last_course_cgpa) missing.push('CGPA');
-    if (!profileData.gre) missing.push('GRE');
-    if (!profileData.toefl && !profileData.ielts) missing.push('TOEFL/IELTS');
+    if (!hasTestScores) missing.push('Test Scores');
     if (!profileData.term) missing.push('Target Term');
     if (!profileData.university) missing.push('University');
     if (!profileData.program) missing.push('Program');
@@ -156,7 +158,7 @@ const DashboardPage = () => {
       
       const { data, error } = await supabase
         .from('admit_profiles')
-        .select('name, degree, last_course_cgpa, gre, toefl, ielts, term, university, program, extracurricular')
+        .select('name, degree, last_course_cgpa, test_scores, term, university, program, extracurricular')
         .eq('user_id', user.id)
         .single();
 
@@ -169,7 +171,7 @@ const DashboardPage = () => {
         cacheTimestamp = Date.now();
         setProfileData(data);
         
-        if (data.gre || data.program || data.degree) {
+        if (data.test_scores?.length > 0 || data.program || data.degree) {
           fetchSimilarProfilesCount(data);
         }
       } else {
@@ -194,8 +196,12 @@ const DashboardPage = () => {
         .select('id', { count: 'exact', head: true })
         .neq('user_id', user.id);
 
-      if (profile.gre) {
-        query = query.gte('gre', profile.gre - 10).lte('gre', profile.gre + 10);
+      // Extract GRE score from test_scores array
+      const greScore = profile.test_scores?.find(t => t.exam === 'GRE')?.score;
+      const greNum = greScore ? parseFloat(greScore) : null;
+      
+      if (greNum) {
+        query = query.gte('gre', greNum - 10).lte('gre', greNum + 10);
       }
       if (profile.degree) {
         query = query.eq('degree', profile.degree);

@@ -1,18 +1,21 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { User, BookOpen, Award, Trophy, Edit2, Save, X, CheckCircle, Trash2 } from 'lucide-react';
+import { User, BookOpen, Award, Trophy, Edit2, Save, X, CheckCircle, Trash2, Plus, Minus } from 'lucide-react';
 import DefaultLayout from '../defaultLayout';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 
+interface TestScore {
+  exam: string;
+  score: string;
+}
+
 interface FormData {
   name: string;
   degree: string;
   lastCourseCGPA: string;
-  gre: string;
-  toefl: string;
-  ielts: string;
+  testScores: TestScore[];
   term: string;
   university: string;
   program: string;
@@ -33,6 +36,21 @@ export const invalidateProfileCache = () => {
   cacheTimestamp = 0;
 };
 
+const COMMON_EXAMS = [
+  'GRE',
+  'GMAT',
+  'TOEFL',
+  'IELTS',
+  'Duolingo English Test',
+  'PTE Academic',
+  'TestDaF',
+  'Goethe Certificate',
+  'DELF/DALF',
+  'SAT',
+  'ACT',
+  'Other'
+];
+
 const ProfilePage = () => {
   const { user } = useAuth();
   const router = useRouter();
@@ -50,9 +68,7 @@ const ProfilePage = () => {
       name: '',
       degree: '',
       lastCourseCGPA: '',
-      gre: '',
-      toefl: '',
-      ielts: '',
+      testScores: [],
       term: '',
       university: '',
       program: '',
@@ -85,7 +101,7 @@ const ProfilePage = () => {
 
       const { data, error: fetchError } = await supabase
         .from('admit_profiles')
-        .select('name, degree, last_course_cgpa, gre, toefl, ielts, term, university, program, extracurricular, verified')
+        .select('name, degree, last_course_cgpa, test_scores, term, university, program, extracurricular, verified')
         .eq('user_id', user.id)
         .single();
 
@@ -96,9 +112,7 @@ const ProfilePage = () => {
           name: defaultName,
           degree: '',
           lastCourseCGPA: '',
-          gre: '',
-          toefl: '',
-          ielts: '',
+          testScores: [],
           term: '',
           university: '',
           program: '',
@@ -115,9 +129,7 @@ const ProfilePage = () => {
           name: data.name || '',
           degree: data.degree || '',
           lastCourseCGPA: data.last_course_cgpa || '',
-          gre: data.gre?.toString() || '',
-          toefl: data.toefl?.toString() || '',
-          ielts: data.ielts || '',
+          testScores: data.test_scores || [],
           term: data.term || '',
           university: data.university || '',
           program: data.program || '',
@@ -135,9 +147,7 @@ const ProfilePage = () => {
           name: defaultName,
           degree: '',
           lastCourseCGPA: '',
-          gre: '',
-          toefl: '',
-          ielts: '',
+          testScores: [],
           term: '',
           university: '',
           program: '',
@@ -157,9 +167,7 @@ const ProfilePage = () => {
         name: defaultName,
         degree: '',
         lastCourseCGPA: '',
-        gre: '',
-        toefl: '',
-        ielts: '',
+        testScores: [],
         term: '',
         university: '',
         program: '',
@@ -181,6 +189,29 @@ const ProfilePage = () => {
     setError('');
   }, []);
 
+  const handleTestScoreChange = (index: number, field: 'exam' | 'score', value: string) => {
+    setFormData(prev => {
+      const newTestScores = [...prev.testScores];
+      newTestScores[index] = { ...newTestScores[index], [field]: value };
+      return { ...prev, testScores: newTestScores };
+    });
+    setError('');
+  };
+
+  const addTestScore = () => {
+    setFormData(prev => ({
+      ...prev,
+      testScores: [...prev.testScores, { exam: '', score: '' }]
+    }));
+  };
+
+  const removeTestScore = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      testScores: prev.testScores.filter((_, i) => i !== index)
+    }));
+  };
+
   const validateForm = useCallback(() => {
     if (!formData.name.trim()) {
       setError('Please enter your name');
@@ -194,18 +225,16 @@ const ProfilePage = () => {
       setError('Please enter your last course CGPA/Percentage');
       return false;
     }
-    if (formData.gre && (parseInt(formData.gre) < 0 || parseInt(formData.gre) > 340)) {
-      setError('GRE score must be between 0 and 340');
-      return false;
+    
+    // Validate test scores
+    for (let i = 0; i < formData.testScores.length; i++) {
+      const test = formData.testScores[i];
+      if (!test.exam || !test.score) {
+        setError(`Please complete test score #${i + 1} or remove it`);
+        return false;
+      }
     }
-    if (formData.toefl && (parseInt(formData.toefl) < 0 || parseInt(formData.toefl) > 120)) {
-      setError('TOEFL score must be between 0 and 120');
-      return false;
-    }
-    if (formData.ielts && (parseFloat(formData.ielts) < 0 || parseFloat(formData.ielts) > 9.0)) {
-      setError('IELTS score must be between 0 and 9.0');
-      return false;
-    }
+    
     return true;
   }, [formData]);
 
@@ -218,14 +247,17 @@ const ProfilePage = () => {
 
       if (!user) throw new Error('User not authenticated');
 
+      // Filter out empty test scores
+      const validTestScores = formData.testScores.filter(
+        test => test.exam && test.score
+      );
+
       const profileData = {
         user_id: user.id,
         name: formData.name,
         degree: formData.degree,
         last_course_cgpa: formData.lastCourseCGPA,
-        gre: formData.gre ? parseInt(formData.gre) : null,
-        toefl: formData.toefl ? parseInt(formData.toefl) : null,
-        ielts: formData.ielts || null,
+        test_scores: validTestScores,
         term: formData.term,
         university: formData.university,
         program: formData.program,
@@ -258,7 +290,7 @@ const ProfilePage = () => {
       // Update cache
       cachedFormData = formData;
       cacheTimestamp = Date.now();
-      invalidateProfileCache(); // Clear dashboard cache too
+      invalidateProfileCache();
 
       setIsEditing(false);
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -288,9 +320,7 @@ const ProfilePage = () => {
         name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || '',
         degree: '',
         lastCourseCGPA: '',
-        gre: '',
-        toefl: '',
-        ielts: '',
+        testScores: [],
         term: '',
         university: '',
         program: '',
@@ -490,66 +520,83 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Test Scores */}
+            {/* Test Scores - NEW DYNAMIC SECTION */}
             <div className="bg-white rounded-2xl shadow-xl p-8">
-              <div className="flex items-center gap-2 mb-6">
-                <BookOpen className="text-red-600" size={24} />
-                <h2 className="text-2xl font-bold text-gray-800">Test Scores</h2>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="text-red-600" size={24} />
+                  <h2 className="text-2xl font-bold text-gray-800">Test Scores</h2>
+                </div>
+                {isEditing && (
+                  <button
+                    onClick={addTestScore}
+                    className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all"
+                  >
+                    <Plus size={18} />
+                    Add Test
+                  </button>
+                )}
               </div>
 
-              <div className="grid grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    GRE Score
-                    <span className="text-xs text-gray-500 ml-2">(Max: 340)</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="340"
-                    value={formData.gre}
-                    onChange={(e) => handleInputChange('gre', e.target.value)}
-                    disabled={!isEditing}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100"
-                    placeholder="0-340"
-                  />
+              {formData.testScores.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  {isEditing ? (
+                    <p>No test scores added yet. Click "Add Test" to add your scores.</p>
+                  ) : (
+                    <p>No test scores available.</p>
+                  )}
                 </div>
+              ) : (
+                <div className="space-y-4">
+                  {formData.testScores.map((test, index) => (
+                    <div key={index} className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Exam Type
+                        </label>
+                        {isEditing ? (
+                          <select
+                            value={test.exam}
+                            onChange={(e) => handleTestScoreChange(index, 'exam', e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                          >
+                            <option value="">Select Exam</option>
+                            {COMMON_EXAMS.map(exam => (
+                              <option key={exam} value={exam}>{exam}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <p className="px-4 py-3 bg-gray-100 rounded-lg">{test.exam}</p>
+                        )}
+                      </div>
+                      
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Score
+                        </label>
+                        <input
+                          type="text"
+                          value={test.score}
+                          onChange={(e) => handleTestScoreChange(index, 'score', e.target.value)}
+                          disabled={!isEditing}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100"
+                          placeholder="e.g., 325, 7.5, TDN 5"
+                        />
+                      </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    TOEFL Score
-                    <span className="text-xs text-gray-500 ml-2">(Max: 120)</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="120"
-                    value={formData.toefl}
-                    onChange={(e) => handleInputChange('toefl', e.target.value)}
-                    disabled={!isEditing}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100"
-                    placeholder="0-120"
-                  />
+                      {isEditing && (
+                        <button
+                          onClick={() => removeTestScore(index)}
+                          className="mt-8 p-3 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                          title="Remove test"
+                        >
+                          <Minus size={20} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    IELTS Score
-                    <span className="text-xs text-gray-500 ml-2">(Max: 9.0)</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    max="9"
-                    value={formData.ielts}
-                    onChange={(e) => handleInputChange('ielts', e.target.value)}
-                    disabled={!isEditing}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100"
-                    placeholder="0-9.0"
-                  />
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Academic Goals */}

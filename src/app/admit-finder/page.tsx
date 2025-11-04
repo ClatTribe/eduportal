@@ -4,12 +4,15 @@ import { Search, ChevronDown, BookOpen, Calendar, Users, User, Building2, Filter
 import { supabase } from '../../../lib/supabase';
 import DefaultLayout from '../defaultLayout';
 
+interface TestScore {
+  exam: string;
+  score: string;
+}
+
 interface AdmitProfile {
   id: number;
   name: string;
-  gre?: number;
-  toefl?: number;
-  ielts?: string;
+  test_scores?: TestScore[];
   term: string;
   university: string;
   program: string;
@@ -23,9 +26,7 @@ interface AdmitProfile {
 }
 
 interface UserProfile {
-  gre?: number;
-  toefl?: number;
-  ielts?: string;
+  test_scores?: TestScore[];
   program: string;
   degree?: string;
   last_course_cgpa?: string;
@@ -71,7 +72,7 @@ const AdmitFinder: React.FC = () => {
 
       const { data, error } = await supabase
         .from('admit_profiles')
-        .select('gre, toefl, ielts, program, degree, last_course_cgpa')
+        .select('test_scores, program, degree, last_course_cgpa')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -93,6 +94,20 @@ const AdmitFinder: React.FC = () => {
     }
   };
 
+  // Helper function to get test score by exam name
+  const getTestScore = (testScores: TestScore[] | undefined, examName: string): string | null => {
+    if (!testScores) return null;
+    const test = testScores.find(t => t.exam.toUpperCase() === examName.toUpperCase());
+    return test ? test.score : null;
+  };
+
+  // Helper function to parse numeric score
+  const parseScore = (score: string | null): number | null => {
+    if (!score) return null;
+    const parsed = parseFloat(score);
+    return isNaN(parsed) ? null : parsed;
+  };
+
   const calculateSimilarityScore = (profile: AdmitProfile): number => {
     if (!userProfile) return 0;
     
@@ -101,8 +116,11 @@ const AdmitFinder: React.FC = () => {
 
     // GRE Score Similarity (Weight: 20 points)
     maxScore += 20;
-    if (userProfile.gre && profile.gre) {
-      const greDiff = Math.abs(userProfile.gre - profile.gre);
+    const userGRE = parseScore(getTestScore(userProfile.test_scores, 'GRE'));
+    const profileGRE = parseScore(getTestScore(profile.test_scores, 'GRE'));
+    
+    if (userGRE && profileGRE) {
+      const greDiff = Math.abs(userGRE - profileGRE);
       if (greDiff === 0) score += 20;
       else if (greDiff <= 3) score += 18;
       else if (greDiff <= 5) score += 15;
@@ -110,39 +128,41 @@ const AdmitFinder: React.FC = () => {
       else if (greDiff <= 15) score += 8;
       else if (greDiff <= 20) score += 5;
       else score += 2;
-    } else if (!userProfile.gre && !profile.gre) {
+    } else if (!userGRE && !profileGRE) {
       score += 10;
     }
 
     // TOEFL Score Similarity (Weight: 20 points)
     maxScore += 20;
-    if (userProfile.toefl && profile.toefl) {
-      const toeflDiff = Math.abs(userProfile.toefl - profile.toefl);
+    const userTOEFL = parseScore(getTestScore(userProfile.test_scores, 'TOEFL'));
+    const profileTOEFL = parseScore(getTestScore(profile.test_scores, 'TOEFL'));
+    
+    if (userTOEFL && profileTOEFL) {
+      const toeflDiff = Math.abs(userTOEFL - profileTOEFL);
       if (toeflDiff === 0) score += 20;
       else if (toeflDiff <= 2) score += 18;
       else if (toeflDiff <= 5) score += 15;
       else if (toeflDiff <= 10) score += 10;
       else if (toeflDiff <= 15) score += 5;
       else score += 2;
-    } else if (!userProfile.toefl && !profile.toefl) {
+    } else if (!userTOEFL && !profileTOEFL) {
       score += 10;
     }
 
     // IELTS Score Similarity (Weight: 20 points)
     maxScore += 20;
-    if (userProfile.ielts && profile.ielts) {
-      const userIelts = parseFloat(userProfile.ielts);
-      const profileIelts = parseFloat(profile.ielts);
-      if (!isNaN(userIelts) && !isNaN(profileIelts)) {
-        const ieltsDiff = Math.abs(userIelts - profileIelts);
-        if (ieltsDiff === 0) score += 20;
-        else if (ieltsDiff <= 0.5) score += 18;
-        else if (ieltsDiff <= 1.0) score += 13;
-        else if (ieltsDiff <= 1.5) score += 8;
-        else if (ieltsDiff <= 2.0) score += 4;
-        else score += 2;
-      }
-    } else if (!userProfile.ielts && !profile.ielts) {
+    const userIELTS = parseScore(getTestScore(userProfile.test_scores, 'IELTS'));
+    const profileIELTS = parseScore(getTestScore(profile.test_scores, 'IELTS'));
+    
+    if (userIELTS && profileIELTS) {
+      const ieltsDiff = Math.abs(userIELTS - profileIELTS);
+      if (ieltsDiff === 0) score += 20;
+      else if (ieltsDiff <= 0.5) score += 18;
+      else if (ieltsDiff <= 1.0) score += 13;
+      else if (ieltsDiff <= 1.5) score += 8;
+      else if (ieltsDiff <= 2.0) score += 4;
+      else score += 2;
+    } else if (!userIELTS && !profileIELTS) {
       score += 10;
     }
 
@@ -290,10 +310,14 @@ const AdmitFinder: React.FC = () => {
     return null;
   };
 
+  // Helper to format test scores for display in info banner
+  const formatTestScoresForDisplay = (testScores?: TestScore[]): string => {
+    if (!testScores || testScores.length === 0) return 'None';
+    return testScores.map(t => `${t.exam}: ${t.score}`).join(' | ');
+  };
+
   const hasProfileData = userProfile && (
-    userProfile.gre || 
-    userProfile.toefl || 
-    userProfile.ielts || 
+    (userProfile.test_scores && userProfile.test_scores.length > 0) ||
     userProfile.program || 
     userProfile.degree || 
     userProfile.last_course_cgpa
@@ -314,7 +338,7 @@ const AdmitFinder: React.FC = () => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-blue-900">Matching based on your profile:</p>
               <p className="text-xs text-blue-700 break-words">
-                GRE: {userProfile.gre || 'N/A'} | TOEFL: {userProfile.toefl || 'N/A'} | IELTS: {userProfile.ielts || 'N/A'} | 
+                Tests: {formatTestScoresForDisplay(userProfile.test_scores)} | 
                 Program: {userProfile.program || 'N/A'} | Degree: {userProfile.degree || 'N/A'} | CGPA: {userProfile.last_course_cgpa || 'N/A'}
               </p>
             </div>
@@ -477,35 +501,25 @@ const AdmitFinder: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex gap-4 mb-4">
-                {profile.gre && (
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                      <BookOpen size={14} />
-                      <span>GRE</span>
+              {/* Display Test Scores Dynamically */}
+              {profile.test_scores && profile.test_scores.length > 0 && (
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {profile.test_scores.slice(0, 3).map((test, idx) => (
+                    <div key={idx} className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                        <BookOpen size={12} />
+                        <span className="truncate">{test.exam}</span>
+                      </div>
+                      <p className="font-bold text-sm text-gray-800 truncate">{test.score}</p>
                     </div>
-                    <p className="font-bold text-lg text-gray-800">{profile.gre}</p>
-                  </div>
-                )}
-                {profile.toefl && (
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                      <BookOpen size={14} />
-                      <span>TOEFL</span>
+                  ))}
+                  {profile.test_scores.length > 3 && (
+                    <div className="flex-1 flex items-center justify-center">
+                      <span className="text-xs text-gray-500">+{profile.test_scores.length - 3} more</span>
                     </div>
-                    <p className="font-bold text-lg text-gray-800">{profile.toefl}</p>
-                  </div>
-                )}
-                {profile.ielts && (
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                      <BookOpen size={14} />
-                      <span>IELTS</span>
-                    </div>
-                    <p className="font-bold text-lg text-gray-800">{profile.ielts}</p>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-2 mb-4">
                 <div className="flex items-center gap-2">
