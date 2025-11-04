@@ -94,13 +94,6 @@ const AdmitFinder: React.FC = () => {
     }
   };
 
-  // Helper function to get test score by exam name
-  const getTestScore = (testScores: TestScore[] | undefined, examName: string): string | null => {
-    if (!testScores) return null;
-    const test = testScores.find(t => t.exam.toUpperCase() === examName.toUpperCase());
-    return test ? test.score : null;
-  };
-
   // Helper function to parse numeric score
   const parseScore = (score: string | null): number | null => {
     if (!score) return null;
@@ -114,56 +107,80 @@ const AdmitFinder: React.FC = () => {
     let score = 0;
     let maxScore = 0;
 
-    // GRE Score Similarity (Weight: 20 points)
-    maxScore += 20;
-    const userGRE = parseScore(getTestScore(userProfile.test_scores, 'GRE'));
-    const profileGRE = parseScore(getTestScore(profile.test_scores, 'GRE'));
+    // Test Scores Similarity (Weight: 60 points total - distributed across matching exams)
+    const userExams = userProfile.test_scores || [];
+    const profileExams = profile.test_scores || [];
     
-    if (userGRE && profileGRE) {
-      const greDiff = Math.abs(userGRE - profileGRE);
-      if (greDiff === 0) score += 20;
-      else if (greDiff <= 3) score += 18;
-      else if (greDiff <= 5) score += 15;
-      else if (greDiff <= 10) score += 12;
-      else if (greDiff <= 15) score += 8;
-      else if (greDiff <= 20) score += 5;
-      else score += 2;
-    } else if (!userGRE && !profileGRE) {
-      score += 10;
-    }
+    if (userExams.length > 0 || profileExams.length > 0) {
+      // Create a map of user's exam scores for quick lookup
+      const userExamMap = new Map(userExams.map(t => [t.exam.toUpperCase(), t.score]));
+      const profileExamMap = new Map(profileExams.map(t => [t.exam.toUpperCase(), t.score]));
+      
+      // Get all unique exam types between both profiles
+      const allExamTypes = new Set([...userExamMap.keys(), ...profileExamMap.keys()]);
+      
+      // Define score ranges and weights for different exam types
+      const examConfig: Record<string, { maxDiff: number[], scores: number[], weight: number }> = {
+        'GRE': { maxDiff: [0, 3, 5, 10, 15, 20], scores: [20, 18, 15, 12, 8, 5, 2], weight: 20 },
+        'GMAT': { maxDiff: [0, 10, 20, 30, 50, 70], scores: [20, 18, 15, 12, 8, 5, 2], weight: 20 },
+        'TOEFL': { maxDiff: [0, 2, 5, 10, 15], scores: [20, 18, 15, 10, 5, 2], weight: 20 },
+        'IELTS': { maxDiff: [0, 0.5, 1.0, 1.5, 2.0], scores: [20, 18, 13, 8, 4, 2], weight: 20 },
+        'PTE ACADEMIC': { maxDiff: [0, 3, 6, 10, 15], scores: [20, 18, 15, 10, 5, 2], weight: 20 },
+        'DUOLINGO ENGLISH TEST': { maxDiff: [0, 5, 10, 15, 20], scores: [20, 18, 15, 10, 5, 2], weight: 20 },
+        'SAT': { maxDiff: [0, 20, 50, 100, 150], scores: [20, 18, 15, 10, 5, 2], weight: 20 },
+        'ACT': { maxDiff: [0, 1, 2, 3, 4], scores: [20, 18, 15, 10, 5, 2], weight: 20 },
+        'TESTDAF': { maxDiff: [0, 1, 2, 3], scores: [20, 15, 10, 5, 2], weight: 15 },
+        'GOETHE CERTIFICATE': { maxDiff: [0, 1, 2], scores: [15, 10, 5, 2], weight: 15 },
+        'DELF/DALF': { maxDiff: [0, 10, 20, 30], scores: [15, 10, 5, 2], weight: 15 },
+        'OTHER': { maxDiff: [0, 5, 10, 20], scores: [10, 8, 5, 2], weight: 10 }
+      };
 
-    // TOEFL Score Similarity (Weight: 20 points)
-    maxScore += 20;
-    const userTOEFL = parseScore(getTestScore(userProfile.test_scores, 'TOEFL'));
-    const profileTOEFL = parseScore(getTestScore(profile.test_scores, 'TOEFL'));
-    
-    if (userTOEFL && profileTOEFL) {
-      const toeflDiff = Math.abs(userTOEFL - profileTOEFL);
-      if (toeflDiff === 0) score += 20;
-      else if (toeflDiff <= 2) score += 18;
-      else if (toeflDiff <= 5) score += 15;
-      else if (toeflDiff <= 10) score += 10;
-      else if (toeflDiff <= 15) score += 5;
-      else score += 2;
-    } else if (!userTOEFL && !profileTOEFL) {
-      score += 10;
-    }
+      let totalTestWeight = 0;
+      let totalTestScore = 0;
 
-    // IELTS Score Similarity (Weight: 20 points)
-    maxScore += 20;
-    const userIELTS = parseScore(getTestScore(userProfile.test_scores, 'IELTS'));
-    const profileIELTS = parseScore(getTestScore(profile.test_scores, 'IELTS'));
-    
-    if (userIELTS && profileIELTS) {
-      const ieltsDiff = Math.abs(userIELTS - profileIELTS);
-      if (ieltsDiff === 0) score += 20;
-      else if (ieltsDiff <= 0.5) score += 18;
-      else if (ieltsDiff <= 1.0) score += 13;
-      else if (ieltsDiff <= 1.5) score += 8;
-      else if (ieltsDiff <= 2.0) score += 4;
-      else score += 2;
-    } else if (!userIELTS && !profileIELTS) {
-      score += 10;
+      for (const examType of allExamTypes) {
+        const userScore = userExamMap.get(examType);
+        const profileScore = profileExamMap.get(examType);
+        
+        // Get config for this exam type, default to OTHER if not found
+        const config = examConfig[examType] || examConfig['OTHER'];
+        const weight = config.weight;
+        totalTestWeight += weight;
+
+        if (userScore && profileScore) {
+          // Both have this exam - calculate similarity
+          const userNum = parseFloat(userScore);
+          const profileNum = parseFloat(profileScore);
+          
+          if (!isNaN(userNum) && !isNaN(profileNum)) {
+            const diff = Math.abs(userNum - profileNum);
+            
+            // Find appropriate score based on difference
+            let examScore = config.scores[config.scores.length - 1]; // default to lowest
+            for (let i = 0; i < config.maxDiff.length; i++) {
+              if (diff <= config.maxDiff[i]) {
+                examScore = config.scores[i];
+                break;
+              }
+            }
+            totalTestScore += examScore;
+          }
+        } else if (!userScore && !profileScore) {
+          // Neither has this exam - give partial credit
+          totalTestScore += weight / 2;
+        }
+        // If only one has the exam, no points added (implicit else)
+      }
+
+      // Normalize test scores to 60 points total
+      if (totalTestWeight > 0) {
+        maxScore += 60;
+        score += (totalTestScore / totalTestWeight) * 60;
+      }
+    } else {
+      // No test scores from either profile
+      maxScore += 60;
+      score += 30; // Give half credit
     }
 
     // Program Similarity (Weight: 25 points)
