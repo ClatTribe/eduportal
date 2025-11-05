@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, Heart, BookOpen, DollarSign, MapPin, Users, GraduationCap, Filter, X, ChevronLeft, ChevronRight, AlertCircle, Trophy, Award } from 'lucide-react';
+import { Search, ChevronDown, Heart, BookOpen, DollarSign, MapPin, Users, GraduationCap, Filter, X, ChevronLeft, ChevronRight, AlertCircle, Trophy, Award, Sparkles } from 'lucide-react';
 import DefaultLayout from '../defaultLayout';
 
 const API_KEY = 'SRI6Nb7vQxcpNFVnE5D02zzze7vIdfZUqmRPe93y';
@@ -25,12 +25,58 @@ interface College {
   'latest.admissions.act_scores.midpoint.english': number | null;
   'latest.academics.program_available.bachelors': number | null;
   'latest.academics.program_available.masters': number | null;
+  'latest.academics.program_available.doctorate': number | null;
   'latest.academics.program_percentage.business_marketing': number | null;
   'latest.academics.program_percentage.computer': number | null;
   'latest.academics.program_percentage.health': number | null;
   'latest.academics.program_percentage.education': number | null;
   'latest.academics.program_percentage.engineering': number | null;
+  'latest.academics.program_percentage.biological': number | null;
+  'latest.academics.program_percentage.mathematics': number | null;
+  'latest.academics.program_percentage.physical_science': number | null;
+  'latest.academics.program_percentage.psychology': number | null;
+  'latest.academics.program_percentage.social_science': number | null;
+  matchScore?: number;
 }
+
+interface UserProfile {
+  program: string;
+  country: string;
+  degree: string;
+  last_course_cgpa: string;
+  test_scores?: Array<{ exam: string; score: string }>;
+}
+
+const PROGRAM_TO_API_FIELD: Record<string, string> = {
+  'Computer Science': 'computer',
+  'Information Technology': 'computer',
+  'Data Science': 'computer',
+  'Artificial Intelligence': 'computer',
+  'Software Engineering': 'computer',
+  'Electrical Engineering': 'engineering',
+  'Electronics Engineering': 'engineering',
+  'Mechanical Engineering': 'engineering',
+  'Civil Engineering': 'engineering',
+  'Chemical Engineering': 'engineering',
+  'Aerospace Engineering': 'engineering',
+  'Industrial Engineering': 'engineering',
+  'Business Administration (MBA)': 'business_marketing',
+  'Finance': 'business_marketing',
+  'Marketing': 'business_marketing',
+  'Human Resources': 'business_marketing',
+  'Biotechnology': 'biological',
+  'Biomedical Engineering': 'biological',
+  'Bioinformatics': 'biological',
+  'Medicine': 'health',
+  'Pharmacy': 'health',
+  'Public Health': 'health',
+  'Psychology': 'psychology',
+  'Architecture': 'engineering',
+  'Environmental Science': 'physical_science',
+  'Physics': 'physical_science',
+  'Mathematics': 'mathematics',
+  'Chemistry': 'physical_science',
+};
 
 const CourseFinder: React.FC = () => {
   const [colleges, setColleges] = useState<College[]>([]);
@@ -44,6 +90,9 @@ const CourseFinder: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalResults, setTotalResults] = useState(0);
   const [savedColleges, setSavedColleges] = useState<Set<number>>(new Set());
+  const [viewMode, setViewMode] = useState<'all' | 'recommended'>('all');
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   const perPage = 15;
 
   const US_STATES = {
@@ -67,9 +116,15 @@ const CourseFinder: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchColleges();
+    fetchUserProfile();
     loadSavedColleges();
-  }, [currentPage]);
+  }, []);
+
+  useEffect(() => {
+    if (!loadingProfile) {
+      fetchColleges();
+    }
+  }, [currentPage, viewMode, loadingProfile]);
 
   const loadSavedColleges = () => {
     try {
@@ -86,11 +141,149 @@ const CourseFinder: React.FC = () => {
   const saveToStorage = (ids: number[], colleges: College[]) => {
     try {
       localStorage.setItem('shortlisted-colleges', JSON.stringify({ ids, colleges }));
-      // Dispatch a custom event to notify other components
       window.dispatchEvent(new Event('shortlist-updated'));
     } catch (error) {
       console.error('Error saving to storage:', error);
     }
+  };
+
+  const fetchUserProfile = async () => {
+    try {
+      setLoadingProfile(true);
+      
+      // Mock user profile - Replace with actual Supabase/API call
+      const mockProfile: UserProfile = {
+        program: 'Computer Science',
+        country: 'USA',
+        degree: 'PG',
+        last_course_cgpa: '8.5',
+        test_scores: [
+          { exam: 'GRE', score: '315' },
+          { exam: 'TOEFL', score: '105' }
+        ]
+      };
+      
+      setUserProfile(mockProfile);
+      console.log('User profile loaded:', mockProfile);
+    } catch (err) {
+      console.error('Error in fetchUserProfile:', err);
+      setUserProfile(null);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const calculateMatchScore = (college: College): number => {
+    if (!userProfile) return 0;
+
+    let score = 0;
+    let maxScore = 0;
+
+    // Program Relevance (40 points)
+    maxScore += 40;
+    const programField = PROGRAM_TO_API_FIELD[userProfile.program];
+    if (programField) {
+      const programPercentage = college[`latest.academics.program_percentage.${programField}` as keyof College] as number | null;
+      if (programPercentage !== null && programPercentage !== undefined) {
+        if (programPercentage >= 0.15) score += 40;
+        else if (programPercentage >= 0.10) score += 35;
+        else if (programPercentage >= 0.05) score += 28;
+        else if (programPercentage >= 0.02) score += 20;
+        else if (programPercentage >= 0.01) score += 12;
+        else if (programPercentage > 0) score += 8;
+      } else {
+        score += 5;
+      }
+    } else {
+      score += 15;
+    }
+
+    // Degree Availability (20 points)
+    maxScore += 20;
+    if (userProfile.degree) {
+      const degreeType = userProfile.degree === 'UG' ? 'bachelors' : 
+                        userProfile.degree === 'PG' ? 'masters' : 
+                        userProfile.degree === 'PhD' ? 'doctorate' : null;
+      
+      if (degreeType) {
+        const hasProgram = college[`latest.academics.program_available.${degreeType}` as keyof College];
+        if (hasProgram === 1) {
+          score += 20;
+        } else {
+          score += 5;
+        }
+      }
+    }
+
+    // Academic Match based on CGPA and Admission Rate (25 points)
+    maxScore += 25;
+    const cgpa = parseFloat(userProfile.last_course_cgpa);
+    const admissionRate = college['latest.admissions.admission_rate.overall'];
+    
+    if (!isNaN(cgpa) && admissionRate !== null && admissionRate !== undefined) {
+      const cgpaPercent = cgpa * 10;
+      
+      if (cgpaPercent >= 85) {
+        if (admissionRate <= 0.25) score += 25;
+        else if (admissionRate <= 0.45) score += 22;
+        else if (admissionRate <= 0.65) score += 18;
+        else score += 15;
+      } else if (cgpaPercent >= 75) {
+        if (admissionRate >= 0.25 && admissionRate <= 0.65) score += 25;
+        else if (admissionRate <= 0.25) score += 18;
+        else score += 20;
+      } else if (cgpaPercent >= 65) {
+        if (admissionRate >= 0.45) score += 25;
+        else if (admissionRate >= 0.25) score += 20;
+        else score += 15;
+      } else {
+        if (admissionRate >= 0.60) score += 25;
+        else if (admissionRate >= 0.40) score += 20;
+        else score += 15;
+      }
+    } else {
+      score += 12;
+    }
+
+    // Test Score Alignment (10 points)
+    maxScore += 10;
+    if (userProfile.test_scores && userProfile.test_scores.length > 0) {
+      const greScore = userProfile.test_scores.find(t => t.exam.toUpperCase() === 'GRE');
+      const satScore = userProfile.test_scores.find(t => t.exam.toUpperCase() === 'SAT');
+      const collegeSAT = college['latest.admissions.sat_scores.average.overall'];
+      
+      if (satScore && collegeSAT) {
+        const satNum = parseFloat(satScore.score);
+        const diff = Math.abs(satNum - collegeSAT);
+        if (diff <= 50) score += 10;
+        else if (diff <= 100) score += 8;
+        else if (diff <= 150) score += 6;
+        else score += 4;
+      } else if (greScore) {
+        const greNum = parseFloat(greScore.score);
+        if (!isNaN(greNum)) {
+          if (greNum >= 325) score += 10;
+          else if (greNum >= 315) score += 9;
+          else if (greNum >= 305) score += 7;
+          else if (greNum >= 295) score += 5;
+          else score += 3;
+        }
+      } else {
+        score += 5;
+      }
+    } else {
+      score += 5;
+    }
+
+    // Location/Country Match (5 points)
+    maxScore += 5;
+    if (userProfile.country === 'USA') {
+      score += 5;
+    } else {
+      score += 3;
+    }
+
+    return Math.round((score / maxScore) * 100);
   };
 
   const fetchColleges = async () => {
@@ -100,32 +293,110 @@ const CourseFinder: React.FC = () => {
 
       const params = new URLSearchParams({
         api_key: API_KEY,
-        per_page: perPage.toString(),
-        page: currentPage.toString(),
-        fields: 'id,school.name,school.city,school.state,school.school_url,school.locale,latest.cost.tuition.in_state,latest.cost.tuition.out_of_state,latest.admissions.admission_rate.overall,latest.admissions.sat_scores.average.overall,latest.admissions.sat_scores.midpoint.math,latest.admissions.sat_scores.midpoint.critical_reading,latest.admissions.act_scores.midpoint.cumulative,latest.admissions.act_scores.midpoint.math,latest.admissions.act_scores.midpoint.english,latest.student.size,latest.academics.program_available.bachelors,latest.academics.program_available.masters,latest.academics.program_percentage.business_marketing,latest.academics.program_percentage.computer,latest.academics.program_percentage.health,latest.academics.program_percentage.education,latest.academics.program_percentage.engineering'
+        fields: 'id,school.name,school.city,school.state,school.school_url,school.locale,latest.cost.tuition.in_state,latest.cost.tuition.out_of_state,latest.admissions.admission_rate.overall,latest.admissions.sat_scores.average.overall,latest.admissions.sat_scores.midpoint.math,latest.admissions.sat_scores.midpoint.critical_reading,latest.admissions.act_scores.midpoint.cumulative,latest.admissions.act_scores.midpoint.math,latest.admissions.act_scores.midpoint.english,latest.student.size,latest.academics.program_available.bachelors,latest.academics.program_available.masters,latest.academics.program_available.doctorate,latest.academics.program_percentage.business_marketing,latest.academics.program_percentage.computer,latest.academics.program_percentage.health,latest.academics.program_percentage.education,latest.academics.program_percentage.engineering,latest.academics.program_percentage.biological,latest.academics.program_percentage.mathematics,latest.academics.program_percentage.physical_science,latest.academics.program_percentage.psychology,latest.academics.program_percentage.social_science'
       });
 
-      if (searchQuery) params.append('school.name', searchQuery);
-      if (selectedState) params.append('school.state', selectedState);
-      if (selectedLocale) params.append('school.locale', selectedLocale);
-      if (minTuition && maxTuition) {
-        params.set('latest.cost.tuition.in_state__range', `${minTuition}..${maxTuition}`);
-      } else if (minTuition) {
-        params.append('latest.cost.tuition.in_state__range', `${minTuition}..`);
-      } else if (maxTuition) {
-        params.append('latest.cost.tuition.in_state__range', `..${maxTuition}`);
-      }
+      if (viewMode === 'all') {
+        params.set('per_page', perPage.toString());
+        params.set('page', currentPage.toString());
+        
+        if (searchQuery) params.append('school.name', searchQuery);
+        if (selectedState) params.append('school.state', selectedState);
+        if (selectedLocale) params.append('school.locale', selectedLocale);
+        if (minTuition && maxTuition) {
+          params.set('latest.cost.tuition.in_state__range', `${minTuition}..${maxTuition}`);
+        } else if (minTuition) {
+          params.append('latest.cost.tuition.in_state__range', `${minTuition}..`);
+        } else if (maxTuition) {
+          params.append('latest.cost.tuition.in_state__range', `..${maxTuition}`);
+        }
 
-      const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
-      }
+        const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        }
 
-      const data = await response.json();
-      
-      setColleges(data.results || []);
-      setTotalResults(data.metadata?.total || 0);
+        const data = await response.json();
+        setColleges(data.results || []);
+        setTotalResults(data.metadata?.total || 0);
+      } else if (viewMode === 'recommended' && userProfile) {
+        // Only show recommendations if country is USA
+        if (userProfile.country !== 'USA') {
+          setColleges([]);
+          setTotalResults(0);
+          setError('Recommendations are currently only available for students planning to study in the USA. Please update your profile country to USA to see recommendations.');
+          return;
+        }
+
+        params.set('per_page', '1000');
+        params.set('page', '0');
+        
+        const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        let results = data.results || [];
+
+        const scoredColleges = results.map((college: College) => ({
+          ...college,
+          matchScore: calculateMatchScore(college)
+        }));
+
+        const programField = PROGRAM_TO_API_FIELD[userProfile.program];
+        const degreeType = userProfile.degree === 'UG' ? 'bachelors' : 
+                          userProfile.degree === 'PG' ? 'masters' : 
+                          userProfile.degree === 'PhD' ? 'doctorate' : null;
+        
+        let filteredColleges = scoredColleges.filter((college: College) => {
+          if (degreeType) {
+            const hasProgram = college[`latest.academics.program_available.${degreeType}` as keyof College];
+            if (hasProgram !== 1) return false;
+          }
+          
+          return (college.matchScore || 0) >= 30;
+        });
+
+        // If we have program field, try to prioritize colleges with that program
+        if (programField && filteredColleges.length < 3) {
+          filteredColleges = scoredColleges.filter((college: College) => {
+            if (degreeType) {
+              const hasProgram = college[`latest.academics.program_available.${degreeType}` as keyof College];
+              if (hasProgram !== 1) return false;
+            }
+            return (college.matchScore || 0) >= 20;
+          });
+        }
+
+        // If still not enough, lower the threshold further
+        if (filteredColleges.length < 3) {
+          filteredColleges = scoredColleges.filter((college: College) => {
+            if (degreeType) {
+              const hasProgram = college[`latest.academics.program_available.${degreeType}` as keyof College];
+              if (hasProgram === 1) return true;
+            }
+            return (college.matchScore || 0) >= 15;
+          });
+        }
+
+        // Final fallback - just get colleges with the right degree
+        if (filteredColleges.length < 3 && degreeType) {
+          filteredColleges = scoredColleges.filter((college: College) => {
+            const hasProgram = college[`latest.academics.program_available.${degreeType}` as keyof College];
+            return hasProgram === 1;
+          });
+        }
+
+        const recommendedColleges = filteredColleges
+          .sort((a: College, b: College) => (b.matchScore || 0) - (a.matchScore || 0))
+          .slice(0, 10);
+
+        setColleges(recommendedColleges);
+        setTotalResults(recommendedColleges.length);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch colleges');
       console.error('Error fetching colleges:', err);
@@ -150,7 +421,6 @@ const CourseFinder: React.FC = () => {
 
   const toggleSaved = (college: College) => {
     try {
-      // Get current shortlist
       let currentShortlist: College[] = [];
       let currentIds: number[] = [];
       
@@ -166,12 +436,10 @@ const CourseFinder: React.FC = () => {
       let newIds = [...currentIds];
 
       if (newSaved.has(college.id)) {
-        // Remove from shortlist
         newSaved.delete(college.id);
         newShortlist = newShortlist.filter(c => c.id !== college.id);
         newIds = newIds.filter(id => id !== college.id);
       } else {
-        // Add to shortlist
         newSaved.add(college.id);
         newShortlist.push(college);
         newIds.push(college.id);
@@ -182,6 +450,35 @@ const CourseFinder: React.FC = () => {
     } catch (error) {
       console.error('Error toggling saved college:', error);
     }
+  };
+
+  const getMatchBadge = (college: College) => {
+    if (viewMode !== 'recommended' || !college.matchScore) return null;
+    
+    const score = college.matchScore;
+    
+    if (score >= 80) {
+      return <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold flex items-center gap-1">
+        <Trophy size={14} />
+        Excellent Match ({score}%)
+      </span>;
+    } else if (score >= 65) {
+      return <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold flex items-center gap-1">
+        <Award size={14} />
+        Great Match ({score}%)
+      </span>;
+    } else if (score >= 50) {
+      return <span className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-semibold">
+        Good Match ({score}%)
+      </span>;
+    } else if (score >= 30) {
+      return <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-semibold">
+        Match ({score}%)
+      </span>;
+    }
+    return <span className="text-xs bg-gray-100 text-gray-500 px-3 py-1 rounded-full font-semibold">
+      Potential Match ({score}%)
+    </span>;
   };
 
   const formatCurrency = (amount: number | null) => {
@@ -203,18 +500,9 @@ const CourseFinder: React.FC = () => {
     return new Intl.NumberFormat('en-US').format(num);
   };
 
-  const getLocaleLabel = (locale: number | null) => {
-    if (locale === null) return 'Unknown';
-    const localeStr = locale.toString();
-    return LOCALE_TYPES[localeStr as keyof typeof LOCALE_TYPES] || 'Unknown';
-  };
-
   const getStateName = (stateCode: string) => {
     return US_STATES[stateCode as keyof typeof US_STATES] || stateCode;
   };
-
-  const totalPages = Math.ceil(totalResults / perPage);
-  const activeFiltersCount = [searchQuery, selectedState, selectedLocale, minTuition, maxTuition].filter(Boolean).length;
 
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
@@ -242,17 +530,83 @@ const CourseFinder: React.FC = () => {
     return pages;
   };
 
+  const hasProfileData = userProfile && userProfile.program && userProfile.country && userProfile.degree;
+  const canShowRecommendations = hasProfileData && userProfile?.country === 'USA';
+  const totalPages = Math.ceil(totalResults / perPage);
+  const activeFiltersCount = [searchQuery, selectedState, selectedLocale, minTuition, maxTuition].filter(Boolean).length;
+
   return (
     <DefaultLayout>
-      <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen p-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-red-600 mb-2">Find Your Perfect College</h1>
-            <p className="text-gray-600">Explore colleges and universities across the United States</p>
-          </div>
+    <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-red-600 mb-2">Find Your Perfect College</h1>
+          <p className="text-gray-600">Explore colleges and universities across the United States</p>
+        </div>
 
-          {/* Filters Section */}
+        <div className="mb-6 flex gap-3">
+          <button
+            onClick={() => {
+              setViewMode('all');
+              setCurrentPage(0);
+            }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+              viewMode === 'all'
+                ? 'bg-red-600 text-white shadow-lg'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+            }`}
+          >
+            <GraduationCap size={20} />
+            All Colleges
+          </button>
+          <button
+            onClick={() => {
+              if (canShowRecommendations && !loadingProfile) {
+                setViewMode('recommended');
+                setCurrentPage(0);
+              }
+            }}
+            disabled={!canShowRecommendations || loadingProfile}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+              viewMode === 'recommended'
+                ? 'bg-red-600 text-white shadow-lg'
+                : canShowRecommendations && !loadingProfile
+                  ? 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+            }`}
+            title={
+              !hasProfileData && !loadingProfile 
+                ? 'Complete your profile (program, country, degree) to see recommendations' 
+                : hasProfileData && userProfile?.country !== 'USA'
+                  ? 'Recommendations only available for USA colleges. Update country to USA.'
+                  : ''
+            }
+          >
+            <Sparkles size={20} />
+            Recommended For You
+            {!loadingProfile && !hasProfileData && <span className="text-xs ml-1">(Complete profile)</span>}
+            {!loadingProfile && hasProfileData && userProfile?.country !== 'USA' && <span className="text-xs ml-1">(USA only)</span>}
+          </button>
+        </div>
+
+        {viewMode === 'recommended' && userProfile && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="text-blue-600 mt-0.5 flex-shrink-0" size={20} />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-blue-900">Matching colleges based on your profile:</p>
+                <p className="text-xs text-blue-700">
+                  Program: <strong>{userProfile.program}</strong> | 
+                  Country: <strong>{userProfile.country}</strong> | 
+                  Degree: <strong>{userProfile.degree}</strong> | 
+                  CGPA: <strong>{userProfile.last_course_cgpa}</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {viewMode === 'all' && (
           <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -336,260 +690,266 @@ const CourseFinder: React.FC = () => {
               Search Colleges
             </button>
           </div>
+        )}
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3">
-              <AlertCircle className="text-red-600" size={24} />
-              <div>
-                <h3 className="font-semibold text-red-800">Error Loading Data</h3>
-                <p className="text-red-600 text-sm">{error}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mb-6 bg-white rounded-lg shadow-sm p-4">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="text-red-600" size={24} />
-              <span className="font-semibold text-lg">
-                {totalResults.toLocaleString()} colleges found
-              </span>
-              {totalResults > 0 && (
-                <span className="text-gray-500 text-sm">
-                  (Page {currentPage + 1} of {totalPages})
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Heart className="text-red-600" size={18} />
-              <span className="text-sm text-gray-600">{savedColleges.size} saved</span>
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3">
+            <AlertCircle className="text-red-600 flex-shrink-0" size={24} />
+            <div>
+              <h3 className="font-semibold text-red-800">Notice</h3>
+              <p className="text-red-600 text-sm">{error}</p>
             </div>
           </div>
+        )}
 
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="text-gray-500 flex flex-col items-center gap-3">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-                <p>Loading colleges...</p>
-              </div>
+        <div className="flex items-center justify-between mb-6 bg-white rounded-lg shadow-sm p-4">
+          <div className="flex items-center gap-2">
+            <GraduationCap className="text-red-600" size={24} />
+            <span className="font-semibold text-lg">
+              {totalResults.toLocaleString()} {viewMode === 'recommended' ? 'recommended ' : ''}colleges found
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Heart className="text-red-600" size={18} />
+            <span className="text-sm text-gray-600">{savedColleges.size} saved</span>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="text-gray-500 flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+              <p>Loading colleges...</p>
             </div>
-          ) : colleges.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-lg shadow-sm">
-              <GraduationCap size={48} className="mx-auto text-gray-300 mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">No colleges found</h3>
-              <p className="text-gray-500">Try adjusting your filters or search query</p>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {colleges.map((college) => (
-                  <div key={college.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-gray-800 mb-1">
-                          {college['school.name'] || 'Unknown College'}
-                        </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <MapPin size={14} />
-                          <span>{college['school.city']}, {getStateName(college['school.state'])}</span>
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {getLocaleLabel(college['school.locale'])}
-                        </div>
+          </div>
+        ) : colleges.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-lg shadow-sm">
+            <GraduationCap size={48} className="mx-auto text-gray-300 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              {viewMode === 'recommended' ? 'No recommended colleges found' : 'No colleges found'}
+            </h3>
+            <p className="text-gray-500">
+              {viewMode === 'recommended' 
+                ? 'Try adjusting your profile information or check back later'
+                : 'Try adjusting your filters or search query'}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {colleges.map((college) => (
+                <div key={college.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg text-gray-800 mb-1">
+                        {college['school.name'] || 'Unknown College'}
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                        <MapPin size={14} />
+                        <span>{college['school.city']}, {getStateName(college['school.state'])}</span>
                       </div>
-                      <button
-                        onClick={() => toggleSaved(college)}
-                        className={`transition-colors ${
-                          savedColleges.has(college.id) ? 'text-red-600' : 'text-gray-400 hover:text-red-600'
-                        }`}
-                        title={savedColleges.has(college.id) ? 'Remove from shortlist' : 'Add to shortlist'}
-                      >
-                        <Heart size={20} fill={savedColleges.has(college.id) ? 'currentColor' : 'none'} />
-                      </button>
+                      {getMatchBadge(college)}
                     </div>
-
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-                        <div>
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                            <DollarSign size={14} />
-                            <span>In-State Tuition</span>
-                          </div>
-                          <p className="font-semibold text-gray-800 text-sm">
-                            {formatCurrency(college['latest.cost.tuition.in_state'])}
-                          </p>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                            <DollarSign size={14} />
-                            <span>Out-of-State</span>
-                          </div>
-                          <p className="font-semibold text-gray-800 text-sm">
-                            {formatCurrency(college['latest.cost.tuition.out_of_state'])}
-                          </p>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                            <Trophy size={14} />
-                            <span>Admission Rate</span>
-                          </div>
-                          <p className="font-semibold text-gray-800 text-sm">
-                            {formatPercent(college['latest.admissions.admission_rate.overall'])}
-                          </p>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                            <Users size={14} />
-                            <span>Students</span>
-                          </div>
-                          <p className="font-semibold text-gray-800 text-sm">
-                            {formatNumber(college['latest.student.size'])}
-                          </p>
-                        </div>
-                      </div>
-
-                      {(college['latest.admissions.sat_scores.average.overall'] || 
-                        college['latest.admissions.act_scores.midpoint.cumulative']) && (
-                        <div className="pt-4 border-t border-gray-100">
-                          <h4 className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-1">
-                            <Award size={14} className="text-red-600" />
-                            Test Scores
-                          </h4>
-                          <div className="grid grid-cols-2 gap-3">
-                            {college['latest.admissions.sat_scores.average.overall'] && (
-                              <div className="bg-blue-50 rounded-lg p-2">
-                                <div className="text-xs text-blue-600 mb-1">SAT Average</div>
-                                <p className="font-bold text-lg text-blue-700">
-                                  {Math.round(college['latest.admissions.sat_scores.average.overall'])}
-                                </p>
-                              </div>
-                            )}
-                            {college['latest.admissions.act_scores.midpoint.cumulative'] && (
-                              <div className="bg-green-50 rounded-lg p-2">
-                                <div className="text-xs text-green-600 mb-1">ACT Midpoint</div>
-                                <p className="font-bold text-lg text-green-700">
-                                  {Math.round(college['latest.admissions.act_scores.midpoint.cumulative'])}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {(college['latest.academics.program_available.bachelors'] === 1 || 
-                        college['latest.academics.program_available.masters'] === 1) && (
-                        <div className="pt-4 border-t border-gray-100">
-                          <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                            <GraduationCap size={14} className="text-red-600" />
-                            Programs Offered
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {college['latest.academics.program_available.bachelors'] === 1 && (
-                              <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-medium">
-                                Bachelors
-                              </span>
-                            )}
-                            {college['latest.academics.program_available.masters'] === 1 && (
-                              <span className="bg-purple-100 text-purple-700 text-xs px-3 py-1 rounded-full font-medium">
-                                Masters
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-4 pt-4">
-                        {college['school.school_url'] && (
-                          <a
-                            href={college['school.school_url'].startsWith('http') 
-                              ? college['school.school_url'] 
-                              : `https://${college['school.school_url']}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 bg-red-600 text-white rounded-lg py-2 px-4 hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-                          >
-                            <BookOpen size={16} />
-                            View Details
-                          </a>
-                        )}
-                      </div>
-                    </div>
+                    <button
+                      onClick={() => toggleSaved(college)}
+                      className={`transition-colors ${
+                        savedColleges.has(college.id) ? 'text-red-600' : 'text-gray-400 hover:text-red-600'
+                      }`}
+                      title={savedColleges.has(college.id) ? 'Remove from shortlist' : 'Add to shortlist'}
+                    >
+                      <Heart size={20} fill={savedColleges.has(college.id) ? 'currentColor' : 'none'} />
+                    </button>
                   </div>
-                ))}
-              </div>
 
-              {totalPages > 1 && (
-                <div className="mt-8 bg-white rounded-lg shadow-sm p-6">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="text-sm text-gray-600">
-                      Showing <span className="font-semibold">{currentPage * perPage + 1}</span> to{' '}
-                      <span className="font-semibold">{Math.min((currentPage + 1) * perPage, totalResults)}</span> of{' '}
-                      <span className="font-semibold">{totalResults.toLocaleString()}</span> colleges
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setCurrentPage(currentPage - 1);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        disabled={currentPage === 0}
-                        className={`px-3 py-2 rounded-lg border flex items-center gap-1 ${
-                          currentPage === 0
-                            ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        <ChevronLeft size={16} />
-                        <span className="hidden sm:inline">Previous</span>
-                      </button>
-                      
-                      <div className="flex items-center gap-1">
-                        {getPageNumbers().map((page, index) => (
-                          <React.Fragment key={index}>
-                            {page === '...' ? (
-                              <span className="px-3 py-2 text-gray-400">...</span>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  setCurrentPage(page as number);
-                                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
-                                className={`min-w-[40px] px-3 py-2 rounded-lg border transition-colors ${
-                                  currentPage === page
-                                    ? 'bg-red-600 text-white border-red-600'
-                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                                }`}
-                              >
-                                {(page as number) + 1}
-                              </button>
-                            )}
-                          </React.Fragment>
-                        ))}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                      <div>
+                        <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                          <DollarSign size={14} />
+                          <span>In-State Tuition</span>
+                        </div>
+                        <p className="font-semibold text-gray-800 text-sm">
+                          {formatCurrency(college['latest.cost.tuition.in_state'])}
+                        </p>
                       </div>
-                      
-                      <button
-                        onClick={() => {
-                          setCurrentPage(currentPage + 1);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        disabled={currentPage === totalPages - 1}
-                        className={`px-3 py-2 rounded-lg border flex items-center gap-1 ${
-                          currentPage === totalPages - 1
-                            ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span className="hidden sm:inline">Next</span>
-                        <ChevronRight size={16} />
-                      </button>
+                      <div>
+                        <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                          <DollarSign size={14} />
+                          <span>Out-of-State</span>
+                        </div>
+                        <p className="font-semibold text-gray-800 text-sm">
+                          {formatCurrency(college['latest.cost.tuition.out_of_state'])}
+                        </p>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                          <Trophy size={14} />
+                          <span>Admission Rate</span>
+                        </div>
+                        <p className="font-semibold text-gray-800 text-sm">
+                          {formatPercent(college['latest.admissions.admission_rate.overall'])}
+                        </p>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                          <Users size={14} />
+                          <span>Students</span>
+                        </div>
+                        <p className="font-semibold text-gray-800 text-sm">
+                          {formatNumber(college['latest.student.size'])}
+                        </p>
+                      </div>
+                    </div>
+
+                    {(college['latest.admissions.sat_scores.average.overall'] || 
+                      college['latest.admissions.act_scores.midpoint.cumulative']) && (
+                      <div className="pt-4 border-t border-gray-100">
+                        <h4 className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-1">
+                          <Award size={14} className="text-red-600" />
+                          Test Scores
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          {college['latest.admissions.sat_scores.average.overall'] && (
+                            <div className="bg-blue-50 rounded-lg p-2">
+                              <div className="text-xs text-blue-600 mb-1">SAT Average</div>
+                              <p className="font-bold text-lg text-blue-700">
+                                {Math.round(college['latest.admissions.sat_scores.average.overall'])}
+                              </p>
+                            </div>
+                          )}
+                          {college['latest.admissions.act_scores.midpoint.cumulative'] && (
+                            <div className="bg-green-50 rounded-lg p-2">
+                              <div className="text-xs text-green-600 mb-1">ACT Midpoint</div>
+                              <p className="font-bold text-lg text-green-700">
+                                {Math.round(college['latest.admissions.act_scores.midpoint.cumulative'])}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {(college['latest.academics.program_available.bachelors'] === 1 || 
+                      college['latest.academics.program_available.masters'] === 1 ||
+                      college['latest.academics.program_available.doctorate'] === 1) && (
+                      <div className="pt-4 border-t border-gray-100">
+                        <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                          <GraduationCap size={14} className="text-red-600" />
+                          Programs Offered
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {college['latest.academics.program_available.bachelors'] === 1 && (
+                            <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-medium">
+                              Bachelors
+                            </span>
+                          )}
+                          {college['latest.academics.program_available.masters'] === 1 && (
+                            <span className="bg-purple-100 text-purple-700 text-xs px-3 py-1 rounded-full font-medium">
+                              Masters
+                            </span>
+                          )}
+                          {college['latest.academics.program_available.doctorate'] === 1 && (
+                            <span className="bg-red-100 text-red-700 text-xs px-3 py-1 rounded-full font-medium">
+                              Doctorate
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-4 pt-4">
+                      {college['school.school_url'] && (
+                        <a
+                          href={college['school.school_url'].startsWith('http') 
+                            ? college['school.school_url'] 
+                            : `https://${college['school.school_url']}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 bg-red-600 text-white rounded-lg py-2 px-4 hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                        >
+                          <BookOpen size={16} />
+                          View Details
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
-              )}
-            </>
-          )}
-        </div>
+              ))}
+            </div>
+
+            {viewMode === 'all' && totalPages > 1 && (
+              <div className="mt-8 bg-white rounded-lg shadow-sm p-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-sm text-gray-600">
+                    Showing <span className="font-semibold">{currentPage * perPage + 1}</span> to{' '}
+                    <span className="font-semibold">{Math.min((currentPage + 1) * perPage, totalResults)}</span> of{' '}
+                    <span className="font-semibold">{totalResults.toLocaleString()}</span> colleges
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setCurrentPage(currentPage - 1);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      disabled={currentPage === 0}
+                      className={`px-3 py-2 rounded-lg border flex items-center gap-1 ${
+                        currentPage === 0
+                          ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <ChevronLeft size={16} />
+                      <span className="hidden sm:inline">Previous</span>
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                      {getPageNumbers().map((page, index) => (
+                        <React.Fragment key={index}>
+                          {page === '...' ? (
+                            <span className="px-3 py-2 text-gray-400">...</span>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setCurrentPage(page as number);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className={`min-w-[40px] px-3 py-2 rounded-lg border transition-colors ${
+                                currentPage === page
+                                  ? 'bg-red-600 text-white border-red-600'
+                                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {(page as number) + 1}
+                            </button>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        setCurrentPage(currentPage + 1);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      disabled={currentPage === totalPages - 1}
+                      className={`px-3 py-2 rounded-lg border flex items-center gap-1 ${
+                        currentPage === totalPages - 1
+                          ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="hidden sm:inline">Next</span>
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
+     </div>
     </DefaultLayout>
   );
 };
