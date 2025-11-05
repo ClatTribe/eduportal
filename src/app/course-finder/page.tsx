@@ -339,7 +339,7 @@ const CourseFinder: React.FC = () => {
         }
 
         const data = await response.json();
-        let results = data.results || [];
+        const results = data.results || [];
 
         const scoredColleges = results.map((college: College) => ({
           ...college,
