@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { User, BookOpen, Award, Trophy, Edit2, Save, X, CheckCircle, Trash2, Plus, Minus } from 'lucide-react';
+import { User, BookOpen, Award, Trophy, Edit2, Save, X, CheckCircle, Trash2, Plus, Minus, Globe } from 'lucide-react';
 import DefaultLayout from '../defaultLayout';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -17,8 +17,9 @@ interface FormData {
   lastCourseCGPA: string;
   testScores: TestScore[];
   term: string;
-  university: string;
+  country: string;
   program: string;
+  course: string;
   extracurricular: string;
   verified: boolean;
 }
@@ -51,6 +52,77 @@ const COMMON_EXAMS = [
   'Other'
 ];
 
+const COUNTRIES = [
+  'USA',
+  'UK',
+  'Canada',
+  'Australia',
+  'Germany',
+  'France',
+  'Netherlands',
+  'Sweden',
+  'Switzerland',
+  'Ireland',
+  'New Zealand',
+  'Singapore',
+  'Other'
+];
+
+const PROGRAMS = [
+  'Computer Science',
+  'Information Technology',
+  'Data Science',
+  'Artificial Intelligence',
+  'Software Engineering',
+  'Electrical Engineering',
+  'Electronics Engineering',
+  'Mechanical Engineering',
+  'Civil Engineering',
+  'Chemical Engineering',
+  'Aerospace Engineering',
+  'Industrial Engineering',
+  'Business Administration (MBA)',
+  'Finance',
+  'Marketing',
+  'Human Resources',
+  'Biotechnology',
+  'Biomedical Engineering',
+  'Bioinformatics',
+  'Medicine',
+  'Pharmacy',
+  'Public Health',
+  'Psychology',
+  'Architecture',
+  'Environmental Science',
+  'Physics',
+  'Mathematics',
+  'Chemistry',
+  'Other'
+];
+
+const COURSES = {
+  'Computer Science': ['Machine Learning', 'Artificial Intelligence', 'Cybersecurity', 'Software Engineering', 'Data Science', 'Cloud Computing', 'Computer Networks', 'Database Systems', 'Web Development', 'Mobile App Development'],
+  'Information Technology': ['IT Management', 'Network Administration', 'Systems Analysis', 'Database Administration', 'IT Security', 'Business Intelligence'],
+  'Data Science': ['Big Data Analytics', 'Statistical Analysis', 'Data Mining', 'Business Analytics', 'Predictive Modeling'],
+  'Artificial Intelligence': ['Deep Learning', 'Natural Language Processing', 'Computer Vision', 'Robotics', 'Neural Networks'],
+  'Software Engineering': ['Full Stack Development', 'DevOps', 'Software Architecture', 'Quality Assurance', 'Agile Development'],
+  'Electrical Engineering': ['Power Systems', 'Control Systems', 'Signal Processing', 'VLSI Design', 'Embedded Systems', 'Telecommunications'],
+  'Electronics Engineering': ['Digital Electronics', 'Analog Electronics', 'Microelectronics', 'Communication Systems', 'IoT'],
+  'Mechanical Engineering': ['Thermodynamics', 'Fluid Mechanics', 'Manufacturing', 'Automotive Engineering', 'Robotics', 'CAD/CAM'],
+  'Civil Engineering': ['Structural Engineering', 'Transportation Engineering', 'Geotechnical Engineering', 'Water Resources', 'Construction Management'],
+  'Chemical Engineering': ['Process Engineering', 'Petroleum Engineering', 'Polymer Engineering', 'Biochemical Engineering'],
+  'Aerospace Engineering': ['Aerodynamics', 'Aircraft Design', 'Propulsion', 'Space Systems'],
+  'Industrial Engineering': ['Operations Research', 'Supply Chain Management', 'Quality Engineering', 'Manufacturing Systems'],
+  'Business Administration (MBA)': ['General Management', 'Finance', 'Marketing', 'Operations', 'Strategy', 'Entrepreneurship', 'International Business'],
+  'Finance': ['Corporate Finance', 'Investment Banking', 'Financial Analysis', 'Risk Management', 'Portfolio Management'],
+  'Marketing': ['Digital Marketing', 'Brand Management', 'Market Research', 'Consumer Behavior'],
+  'Biotechnology': ['Genetic Engineering', 'Molecular Biology', 'Biopharmaceuticals', 'Agricultural Biotechnology'],
+  'Biomedical Engineering': ['Medical Devices', 'Biomechanics', 'Medical Imaging', 'Tissue Engineering'],
+  'Public Health': ['Epidemiology', 'Health Policy', 'Global Health', 'Environmental Health'],
+  'Psychology': ['Clinical Psychology', 'Counseling Psychology', 'Organizational Psychology', 'Cognitive Psychology'],
+  'Other': ['General']
+};
+
 const ProfilePage = () => {
   const { user } = useAuth();
   const router = useRouter();
@@ -70,12 +142,17 @@ const ProfilePage = () => {
       lastCourseCGPA: '',
       testScores: [],
       term: '',
-      university: '',
+      country: '',
       program: '',
+      course: '',
       extracurricular: '',
       verified: false
     }
   );
+
+  const availableCourses = useMemo(() => {
+    return COURSES[formData.program as keyof typeof COURSES] || ['General'];
+  }, [formData.program]);
 
   useEffect(() => {
     if (user) {
@@ -101,7 +178,7 @@ const ProfilePage = () => {
 
       const { data, error: fetchError } = await supabase
         .from('admit_profiles')
-        .select('name, degree, last_course_cgpa, test_scores, term, university, program, extracurricular, verified')
+        .select('name, degree, last_course_cgpa, test_scores, term, country, program, course, extracurricular, verified')
         .eq('user_id', user.id)
         .single();
 
@@ -114,8 +191,9 @@ const ProfilePage = () => {
           lastCourseCGPA: '',
           testScores: [],
           term: '',
-          university: '',
+          country: '',
           program: '',
+          course: '',
           extracurricular: '',
           verified: false
         };
@@ -131,8 +209,9 @@ const ProfilePage = () => {
           lastCourseCGPA: data.last_course_cgpa || '',
           testScores: data.test_scores || [],
           term: data.term || '',
-          university: data.university || '',
+          country: data.country || '',
           program: data.program || '',
+          course: data.course || '',
           extracurricular: data.extracurricular || '',
           verified: data.verified || false
         };
@@ -149,8 +228,9 @@ const ProfilePage = () => {
           lastCourseCGPA: '',
           testScores: [],
           term: '',
-          university: '',
+          country: '',
           program: '',
+          course: '',
           extracurricular: '',
           verified: false
         };
@@ -169,8 +249,9 @@ const ProfilePage = () => {
         lastCourseCGPA: '',
         testScores: [],
         term: '',
-        university: '',
+        country: '',
         program: '',
+        course: '',
         extracurricular: '',
         verified: false
       };
@@ -185,7 +266,14 @@ const ProfilePage = () => {
   };
 
   const handleInputChange = useCallback((field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      // Reset course if program changes
+      if (field === 'program') {
+        updated.course = '';
+      }
+      return updated;
+    });
     setError('');
   }, []);
 
@@ -218,7 +306,7 @@ const ProfilePage = () => {
       return false;
     }
     if (!formData.degree) {
-      setError('Please select your degree type');
+      setError('Please select your last degree');
       return false;
     }
     if (!formData.lastCourseCGPA) {
@@ -258,10 +346,12 @@ const ProfilePage = () => {
         degree: formData.degree,
         last_course_cgpa: formData.lastCourseCGPA,
         test_scores: validTestScores,
-        term: formData.term,
-        university: formData.university,
-        program: formData.program,
-        extracurricular: formData.extracurricular,
+        term: formData.term || null,
+        country: formData.country || null,
+        program: formData.program || null,
+        course: formData.course || null,
+        university: null, // Agency will fill this later
+        extracurricular: formData.extracurricular || null,
         applications_count: 1,
         avatar_type: 'S',
         verified: formData.verified,
@@ -322,8 +412,9 @@ const ProfilePage = () => {
         lastCourseCGPA: '',
         testScores: [],
         term: '',
-        university: '',
+        country: '',
         program: '',
+        course: '',
         extracurricular: '',
         verified: false
       };
@@ -486,7 +577,7 @@ const ProfilePage = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Degree Type *
+                    Last Degree *
                   </label>
                   <select
                     value={formData.degree}
@@ -494,9 +585,10 @@ const ProfilePage = () => {
                     disabled={!isEditing}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100"
                   >
-                    <option value="">Select Degree</option>
-                    <option value="UG">Undergraduate (UG)</option>
-                    <option value="PG">Postgraduate (PG)</option>
+                    <option value="">Select Last Degree</option>
+                    <option value="12th">12th Grade / High School</option>
+                    <option value="UG">Undergraduate (Bachelor&apos;s)</option>
+                    <option value="PG">Postgraduate (Master&apos;s)</option>
                     <option value="PhD">Doctor of Philosophy (PhD)</option>
                   </select>
                 </div>
@@ -505,7 +597,7 @@ const ProfilePage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Last Course CGPA/Percentage *
                     <span className="text-xs text-gray-500 ml-2">
-                      (12th for UG, UG for PG, PG for PhD)
+                      (Based on your last degree)
                     </span>
                   </label>
                   <input
@@ -520,7 +612,7 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Test Scores - NEW DYNAMIC SECTION */}
+            {/* Test Scores */}
             <div className="bg-white rounded-2xl shadow-xl p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
@@ -628,31 +720,58 @@ const ProfilePage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Target University
+                      <Globe size={16} className="inline mr-1" />
+                      Target Country
                     </label>
-                    <input
-                      type="text"
-                      value={formData.university}
-                      onChange={(e) => handleInputChange('university', e.target.value)}
+                    <select
+                      value={formData.country}
+                      onChange={(e) => handleInputChange('country', e.target.value)}
                       disabled={!isEditing}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100"
-                      placeholder="e.g., Stanford University"
-                    />
+                    >
+                      <option value="">Select Country</option>
+                      {COUNTRIES.map(country => (
+                        <option key={country} value={country}>{country}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Program/Major
+                    Program
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={formData.program}
                     onChange={(e) => handleInputChange('program', e.target.value)}
                     disabled={!isEditing}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100"
-                    placeholder="e.g., Computer Science"
-                  />
+                  >
+                    <option value="">Select Program</option>
+                    {PROGRAMS.map(program => (
+                      <option key={program} value={program}>{program}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Course/Specialization
+                  </label>
+                  <select
+                    value={formData.course}
+                    onChange={(e) => handleInputChange('course', e.target.value)}
+                    disabled={!isEditing || !formData.program}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100"
+                  >
+                    <option value="">Select Course</option>
+                    {availableCourses.map(course => (
+                      <option key={course} value={course}>{course}</option>
+                    ))}
+                  </select>
+                  {isEditing && !formData.program && (
+                    <p className="text-xs text-gray-500 mt-1">Please select a program first</p>
+                  )}
                 </div>
               </div>
             </div>
