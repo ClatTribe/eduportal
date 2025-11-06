@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import Sidebar from "../../components/Sidebar";
+import ContactButton from "../../components/ContactButton"; // Add this import
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 
@@ -11,9 +12,7 @@ export default function DefaultLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, loading: authLoading,username,signOut } = useAuth(); // ✅ include loading from AuthContext
-  
- 
+  const { user, loading: authLoading, username, signOut } = useAuth();
 
   if (authLoading) {
     return (
@@ -33,6 +32,7 @@ export default function DefaultLayout({
     <div className="flex h-screen overflow-hidden">
       <Sidebar userName={username ?? "User"} onSignOut={signOut} />
       <div className="flex-1 overflow-auto">{children}</div>
+      <ContactButton /> {/* Add this component */}
     </div>
   );
 }
