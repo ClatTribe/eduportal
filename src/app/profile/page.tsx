@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { User, BookOpen, Award, Trophy, Edit2, Save, X, CheckCircle, Trash2, Plus, Minus, Globe, GraduationCap, Target, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
 import DefaultLayout from '../defaultLayout';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 
 interface TestScore {
@@ -101,8 +100,43 @@ const DEGREE_OPTIONS = [
   { value: 'Diploma', label: 'Diploma/Certificate' }
 ];
 
+// Type definitions for component props
+interface InputFieldProps {
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (field: string, value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  field: string;
+}
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectFieldProps {
+  label: string;
+  value: string;
+  onChange: (field: string, value: string) => void;
+  options: SelectOption[];
+  required?: boolean;
+  disabled?: boolean;
+  field: string;
+}
+
+interface SectionProps {
+  id: string;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+  visible?: boolean;
+}
+
 // Move these components outside to prevent recreation - FIXED INPUT FOCUS ISSUE
-const InputField = React.memo(({ label, type = "text", value, onChange, placeholder, required = false, disabled, field }: any) => {
+const InputField = React.memo(({ label, type = "text", value, onChange, placeholder, required = false, disabled, field }: InputFieldProps) => {
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -122,7 +156,7 @@ const InputField = React.memo(({ label, type = "text", value, onChange, placehol
 
 InputField.displayName = 'InputField';
 
-const SelectField = React.memo(({ label, value, onChange, options, required = false, disabled, field }: any) => {
+const SelectField = React.memo(({ label, value, onChange, options, required = false, disabled, field }: SelectFieldProps) => {
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -135,7 +169,7 @@ const SelectField = React.memo(({ label, value, onChange, options, required = fa
         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100"
       >
         <option value="">Select...</option>
-        {options.map((opt: any) => (
+        {options.map((opt) => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
         ))}
       </select>
@@ -147,7 +181,6 @@ SelectField.displayName = 'SelectField';
 
 const ProfilePage = () => {
   const { user } = useAuth();
-  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(!cachedFormData);
   const [saving, setSaving] = useState(false);
@@ -195,19 +228,6 @@ const ProfilePage = () => {
       verified: false
     }
   );
-
-  useEffect(() => {
-    if (user) {
-      const now = Date.now();
-      const isCacheValid = cachedFormData && (now - cacheTimestamp < CACHE_DURATION);
-      
-      if (!isCacheValid) {
-        fetchUserProfile();
-      } else {
-        setLoading(false);
-      }
-    }
-  }, [user]);
 
   const fetchUserProfile = async () => {
     try {
@@ -329,6 +349,21 @@ const ProfilePage = () => {
     extracurricular: '',
     verified: false
   });
+
+  useEffect(() => {
+    if (user) {
+      const now = Date.now();
+      const isCacheValid = cachedFormData && (now - cacheTimestamp < CACHE_DURATION);
+      
+      if (!isCacheValid) {
+        fetchUserProfile();
+      } else {
+        setLoading(false);
+      }
+    }
+    // fetchUserProfile is intentionally not in deps to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Fixed: Properly memoized input change handler with field parameter
   const handleInputChange = useCallback((field: string, value: string) => {
@@ -570,7 +605,7 @@ const ProfilePage = () => {
     return formData.name ? formData.name.charAt(0).toUpperCase() : 'U';
   }, [formData.name]);
 
-  const Section = useCallback(({ id, title, icon: Icon, children, visible = true }: any) => {
+  const Section = useCallback(({ id, title, icon: Icon, children, visible = true }: SectionProps) => {
     if (!visible) return null;
     
     const isExpanded = expandedSection === id;
