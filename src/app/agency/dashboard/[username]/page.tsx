@@ -88,6 +88,8 @@ const StudentDocumentsPage = () => {
     } else {
       console.log('⏸️ Waiting... Conditions:', { isAuthenticated, userId, checkingAuth });
     }
+    // fetchStudentDocuments is intentionally not in deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, userId, checkingAuth]);
 
   const fetchStudentDocuments = async () => {
@@ -267,21 +269,25 @@ const StudentDocumentsPage = () => {
       // Refresh student data to confirm save
       await fetchStudentDocuments();
       
-    } catch (err: any) {
+    } catch (err) {
       console.error('❌ Error saving comment:', err);
-      console.error('Error stack:', err?.stack);
+      console.error('Error stack:', err instanceof Error ? err.stack : 'No stack trace');
       
       // More specific error messages
       let errorMessage = '❌ Failed to save comment. ';
       
-      if (err?.message?.includes('permission') || err?.code === '42501') {
-        errorMessage += 'Permission denied. Please check database RLS policies.';
-      } else if (err?.message?.includes('violates')) {
-        errorMessage += 'Database constraint violation.';
-      } else if (err?.message?.includes('not found')) {
-        errorMessage += 'Student record not found.';
+      if (err instanceof Error) {
+        if (err.message.includes('permission') || (err as { code?: string }).code === '42501') {
+          errorMessage += 'Permission denied. Please check database RLS policies.';
+        } else if (err.message.includes('violates')) {
+          errorMessage += 'Database constraint violation.';
+        } else if (err.message.includes('not found')) {
+          errorMessage += 'Student record not found.';
+        } else {
+          errorMessage += err.message || 'Unknown error occurred.';
+        }
       } else {
-        errorMessage += err?.message || 'Unknown error occurred.';
+        errorMessage += 'Unknown error occurred.';
       }
       
       alert(errorMessage);
@@ -323,9 +329,10 @@ const StudentDocumentsPage = () => {
       // Refresh student data
       await fetchStudentDocuments();
       
-    } catch (err: any) {
+    } catch (err) {
       console.error('❌ Error deleting comment:', err);
-      alert('❌ Failed to delete comment: ' + (err?.message || 'Unknown error'));
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      alert('❌ Failed to delete comment: ' + errorMessage);
     } finally {
       setIsSavingComment(false);
     }
