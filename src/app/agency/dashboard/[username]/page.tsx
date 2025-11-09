@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, FileText, Download, Eye, Calendar, User, CheckCircle, XCircle, Lock, MessageSquare, Edit3, Save, X, Clock } from 'lucide-react';
+import { ArrowLeft, FileText, Download, Eye, Calendar, User, CheckCircle, XCircle, Lock, MessageSquare, Edit3, Save, X, Clock, Check } from 'lucide-react';
 import { supabase } from '../../../../../lib/supabase';
 
 interface StudentDocument {
@@ -12,34 +12,79 @@ interface StudentDocument {
   lor_url: string | null;
   lor_size: number | null;
   lor_uploaded_at: string | null;
+  lor_feedback: string | null;
+  lor_feedback_updated_at: string | null;
+  lor_feedback_by: string | null;
+  lor_status: boolean;
   sop_name: string | null;
   sop_url: string | null;
   sop_size: number | null;
   sop_uploaded_at: string | null;
+  sop_feedback: string | null;
+  sop_feedback_updated_at: string | null;
+  sop_feedback_by: string | null;
+  sop_status: boolean;
   resume_name: string | null;
   resume_url: string | null;
   resume_size: number | null;
   resume_uploaded_at: string | null;
-  agency_comment: string | null;
-  agency_comment_updated_at: string | null;
-  agency_comment_by: string | null;
+  resume_feedback: string | null;
+  resume_feedback_updated_at: string | null;
+  resume_feedback_by: string | null;
+  resume_status: boolean;
   created_at: string;
   updated_at: string;
 }
 
-interface AgencyComment {
+interface DocumentFeedback {
   text: string;
   updatedAt: string | null;
   commentBy: string | null;
+  status: boolean;
 }
 
+interface FeedbackState {
+  lor: DocumentFeedback;
+  sop: DocumentFeedback;
+  resume: DocumentFeedback;
+}
+
+interface EditingState {
+  lor: boolean;
+  sop: boolean;
+  resume: boolean;
+}
+
+interface DraftState {
+  lor: string;
+  sop: string;
+  resume: string;
+}
+
+type DocumentType = 'lor' | 'sop' | 'resume';
+
 interface DocumentCardProps {
+  type: DocumentType;
   title: string;
   icon: React.ComponentType<{ className?: string; size?: number }>;
   filename: string | null;
   filesize: number | null;
   uploadDate: string | null;
   fileUrl: string | null;
+  feedback: DocumentFeedback;
+  isEditing: boolean;
+  draft: string;
+  isSaving: boolean;
+  onEdit: () => void;
+  onSave: () => void;
+  onDelete: () => void;
+  onCancel: () => void;
+  onDraftChange: (value: string) => void;
+  onStatusToggle: () => void;
+  formatDate: (date: string | null) => string;
+  formatFileSize: (size: number | null) => string;
+  handleDownload: (url: string | null, filename: string | null) => void;
+  handleViewInNewTab: (url: string | null) => void;
 }
 
 const StudentDocumentsPage = () => {
@@ -48,47 +93,46 @@ const StudentDocumentsPage = () => {
   
   const userId = params.username as string;
   
-  console.log('🔍 All params:', params);
-  console.log('🔍 Extracted userId:', userId);
-
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [student, setStudent] = useState<StudentDocument | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [agencyComment, setAgencyComment] = useState<AgencyComment>({
-    text: '',
-    updatedAt: null,
-    commentBy: null
+  const [feedback, setFeedback] = useState<FeedbackState>({
+    lor: { text: '', updatedAt: null, commentBy: null, status: false },
+    sop: { text: '', updatedAt: null, commentBy: null, status: false },
+    resume: { text: '', updatedAt: null, commentBy: null, status: false }
   });
-  const [isEditingComment, setIsEditingComment] = useState(false);
-  const [commentDraft, setCommentDraft] = useState('');
-  const [isSavingComment, setIsSavingComment] = useState(false);
+  const [isEditing, setIsEditing] = useState<EditingState>({
+    lor: false,
+    sop: false,
+    resume: false
+  });
+  const [draft, setDraft] = useState<DraftState>({
+    lor: '',
+    sop: '',
+    resume: ''
+  });
+  const [isSaving, setIsSaving] = useState<EditingState>({
+    lor: false,
+    sop: false,
+    resume: false
+  });
 
   useEffect(() => {
-    console.log('🔍 Step 1: Checking authentication...');
     const isAuth = sessionStorage.getItem('agency_authenticated') === 'true';
-    console.log('🔍 Step 2: Is authenticated?', isAuth);
     setIsAuthenticated(isAuth);
     setCheckingAuth(false);
     
     if (!isAuth) {
-      console.log('❌ Not authenticated, redirecting...');
       router.push('/agency/dashboard');
-    } else {
-      console.log('✅ Authenticated! User ID from URL:', userId);
     }
-  }, [router, userId]);
+  }, [router]);
 
   useEffect(() => {
-    console.log('🔍 Step 3: Fetch effect triggered', { isAuthenticated, userId, checkingAuth });
     if (isAuthenticated && userId && !checkingAuth) {
-      console.log('✅ All conditions met, fetching documents...');
       fetchStudentDocuments();
-    } else {
-      console.log('⏸️ Waiting... Conditions:', { isAuthenticated, userId, checkingAuth });
     }
-    // fetchStudentDocuments is intentionally not in deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, userId, checkingAuth]);
 
@@ -97,14 +141,10 @@ const StudentDocumentsPage = () => {
       setLoading(true);
       setError(null);
 
-      console.log('📡 Fetching documents for user_id:', userId);
-
       const { data, error: fetchError } = await supabase
         .from('student_documents')
         .select('*')
         .eq('user_id', userId);
-
-      console.log('📡 Supabase response:', { data, error: fetchError });
 
       if (fetchError) {
         console.error('❌ Fetch error:', fetchError);
@@ -113,27 +153,37 @@ const StudentDocumentsPage = () => {
       }
 
       if (!data || data.length === 0) {
-        console.log('⚠️ No student found with user_id:', userId);
         setError('Student not found');
         return;
       }
 
-      console.log('✅ Student data found:', data[0]);
       setStudent(data[0]);
 
-      // Set agency comment if exists
-      if (data[0].agency_comment) {
-        setAgencyComment({
-          text: data[0].agency_comment,
-          updatedAt: data[0].agency_comment_updated_at,
-          commentBy: data[0].agency_comment_by
-        });
-      }
+      // Set feedback for each document
+      setFeedback({
+        lor: {
+          text: data[0].lor_feedback || '',
+          updatedAt: data[0].lor_feedback_updated_at,
+          commentBy: data[0].lor_feedback_by,
+          status: data[0].lor_status || false
+        },
+        sop: {
+          text: data[0].sop_feedback || '',
+          updatedAt: data[0].sop_feedback_updated_at,
+          commentBy: data[0].sop_feedback_by,
+          status: data[0].sop_status || false
+        },
+        resume: {
+          text: data[0].resume_feedback || '',
+          updatedAt: data[0].resume_feedback_updated_at,
+          commentBy: data[0].resume_feedback_by,
+          status: data[0].resume_status || false
+        }
+      });
     } catch (err) {
       console.error('❌ Error fetching student documents:', err);
       setError('An unexpected error occurred');
     } finally {
-      console.log('🏁 Fetch complete, setting loading to false');
       setLoading(false);
     }
   };
@@ -182,54 +232,30 @@ const StudentDocumentsPage = () => {
     window.open(url, '_blank');
   };
 
-  const handleEditComment = () => {
-    setCommentDraft(agencyComment.text || '');
-    setIsEditingComment(true);
+  const handleEditFeedback = (type: DocumentType) => {
+    setDraft(prev => ({ ...prev, [type]: feedback[type].text || '' }));
+    setIsEditing(prev => ({ ...prev, [type]: true }));
   };
 
-  const handleSaveComment = async () => {
+  const handleSaveFeedback = async (type: DocumentType) => {
     if (!student) {
-      console.error('❌ No student data available');
       alert('❌ Error: Student data not loaded');
       return;
     }
 
-    if (!commentDraft.trim()) {
+    if (!draft[type].trim()) {
       alert('⚠️ Please enter a comment before saving');
       return;
     }
     
-    console.log('🔄 Starting comment save process...');
-    console.log('📝 Comment draft:', commentDraft);
-    console.log('👤 Student user_id:', student.user_id);
-    
-    setIsSavingComment(true);
+    setIsSaving(prev => ({ ...prev, [type]: true }));
     
     try {
-      // Test connection first
-      const { data: testData, error: testError } = await supabase
-        .from('student_documents')
-        .select('id, user_id')
-        .eq('user_id', student.user_id);
-      
-      console.log('🔍 Found student record:', testData);
-      if (testError) {
-        console.error('❌ Test query error:', testError);
-        throw testError;
-      }
-
-      if (!testData || testData.length === 0) {
-        throw new Error('Student record not found in database');
-      }
-
-      // Now try to update
       const updatePayload = {
-        agency_comment: commentDraft.trim(),
-        agency_comment_updated_at: new Date().toISOString(),
-        agency_comment_by: 'Agency Admin'
+        [`${type}_feedback`]: draft[type].trim(),
+        [`${type}_feedback_updated_at`]: new Date().toISOString(),
+        [`${type}_feedback_by`]: 'Agency Admin'
       };
-      
-      console.log('📤 Update payload:', updatePayload);
 
       const { data: updateData, error: updateError } = await supabase
         .from('student_documents')
@@ -237,79 +263,51 @@ const StudentDocumentsPage = () => {
         .eq('user_id', student.user_id)
         .select();
 
-      console.log('📥 Update response:', updateData);
-      
       if (updateError) {
         console.error('❌ Update error:', updateError);
-        console.error('Error details:', {
-          message: updateError.message,
-          details: updateError.details,
-          hint: updateError.hint,
-          code: updateError.code
-        });
         throw updateError;
       }
 
       if (!updateData || updateData.length === 0) {
-        console.warn('⚠️ Update succeeded but no rows returned');
         throw new Error('No rows were updated. Please check permissions.');
       }
 
-      console.log('✅ Comment saved successfully:', updateData[0]);
+      setFeedback(prev => ({
+        ...prev,
+        [type]: {
+          text: draft[type].trim(),
+          updatedAt: new Date().toISOString(),
+          commentBy: 'Agency Admin',
+          status: prev[type].status
+        }
+      }));
+      setIsEditing(prev => ({ ...prev, [type]: false }));
       
-      setAgencyComment({
-        text: commentDraft.trim(),
-        updatedAt: new Date().toISOString(),
-        commentBy: 'Agency Admin'
-      });
-      setIsEditingComment(false);
-      
-      alert('✅ Comment saved successfully!');
-      
-      // Refresh student data to confirm save
+      alert('✅ Feedback saved successfully!');
       await fetchStudentDocuments();
       
     } catch (err) {
-      console.error('❌ Error saving comment:', err);
-      console.error('Error stack:', err instanceof Error ? err.stack : 'No stack trace');
-      
-      // More specific error messages
-      let errorMessage = '❌ Failed to save comment. ';
-      
-      if (err instanceof Error) {
-        if (err.message.includes('permission') || (err as { code?: string }).code === '42501') {
-          errorMessage += 'Permission denied. Please check database RLS policies.';
-        } else if (err.message.includes('violates')) {
-          errorMessage += 'Database constraint violation.';
-        } else if (err.message.includes('not found')) {
-          errorMessage += 'Student record not found.';
-        } else {
-          errorMessage += err.message || 'Unknown error occurred.';
-        }
-      } else {
-        errorMessage += 'Unknown error occurred.';
-      }
-      
-      alert(errorMessage);
+      console.error('❌ Error saving feedback:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      alert('❌ Failed to save feedback: ' + errorMessage);
     } finally {
-      setIsSavingComment(false);
+      setIsSaving(prev => ({ ...prev, [type]: false }));
     }
   };
 
-  const handleDeleteComment = async () => {
+  const handleDeleteFeedback = async (type: DocumentType) => {
     if (!student) return;
-    if (!confirm('Are you sure you want to delete this comment?')) return;
+    if (!confirm(`Are you sure you want to delete ${type.toUpperCase()} feedback?`)) return;
     
-    console.log('🗑️ Deleting comment for user_id:', student.user_id);
-    setIsSavingComment(true);
+    setIsSaving(prev => ({ ...prev, [type]: true }));
     
     try {
       const { data, error } = await supabase
         .from('student_documents')
         .update({
-          agency_comment: null,
-          agency_comment_updated_at: null,
-          agency_comment_by: null
+          [`${type}_feedback`]: null,
+          [`${type}_feedback_updated_at`]: null,
+          [`${type}_feedback_by`]: null
         })
         .eq('user_id', student.user_id)
         .select();
@@ -319,28 +317,57 @@ const StudentDocumentsPage = () => {
         throw error;
       }
 
-      console.log('✅ Comment deleted successfully:', data);
+      setFeedback(prev => ({
+        ...prev,
+        [type]: { text: '', updatedAt: null, commentBy: null, status: prev[type].status }
+      }));
+      setIsEditing(prev => ({ ...prev, [type]: false }));
       
-      setAgencyComment({ text: '', updatedAt: null, commentBy: null });
-      setIsEditingComment(false);
-      
-      alert('✅ Comment deleted successfully!');
-      
-      // Refresh student data
+      alert('✅ Feedback deleted successfully!');
       await fetchStudentDocuments();
       
     } catch (err) {
-      console.error('❌ Error deleting comment:', err);
+      console.error('❌ Error deleting feedback:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      alert('❌ Failed to delete comment: ' + errorMessage);
+      alert('❌ Failed to delete feedback: ' + errorMessage);
     } finally {
-      setIsSavingComment(false);
+      setIsSaving(prev => ({ ...prev, [type]: false }));
     }
   };
 
-  const handleCancelEdit = () => {
-    setIsEditingComment(false);
-    setCommentDraft('');
+  const handleCancelEdit = (type: DocumentType) => {
+    setIsEditing(prev => ({ ...prev, [type]: false }));
+    setDraft(prev => ({ ...prev, [type]: '' }));
+  };
+
+  const handleStatusToggle = async (type: DocumentType) => {
+    if (!student) return;
+    
+    const newStatus = !feedback[type].status;
+    
+    try {
+      const { error } = await supabase
+        .from('student_documents')
+        .update({ [`${type}_status`]: newStatus })
+        .eq('user_id', student.user_id);
+
+      if (error) {
+        console.error('❌ Status update error:', error);
+        throw error;
+      }
+
+      setFeedback(prev => ({
+        ...prev,
+        [type]: { ...prev[type], status: newStatus }
+      }));
+
+      alert(`✅ Document ${newStatus ? 'verified' : 'unverified'} successfully!`);
+      await fetchStudentDocuments();
+      
+    } catch (err) {
+      console.error('❌ Error updating status:', err);
+      alert('❌ Failed to update verification status');
+    }
   };
 
   if (checkingAuth) {
@@ -408,12 +435,27 @@ const StudentDocumentsPage = () => {
   const isComplete = !!(student.lor_url && student.sop_url && student.resume_url);
 
   const DocumentCard: React.FC<DocumentCardProps> = ({ 
+    type,
     title, 
     icon: Icon, 
     filename, 
     filesize, 
     uploadDate, 
-    fileUrl 
+    fileUrl,
+    feedback,
+    isEditing,
+    draft,
+    isSaving,
+    onEdit,
+    onSave,
+    onDelete,
+    onCancel,
+    onDraftChange,
+    onStatusToggle,
+    formatDate,
+    formatFileSize,
+    handleDownload,
+    handleViewInNewTab
   }) => {
     const isUploaded = !!fileUrl;
 
@@ -435,9 +477,17 @@ const StudentDocumentsPage = () => {
               </p>
             </div>
           </div>
-          {isUploaded && (
-            <CheckCircle className="text-green-500" size={28} />
-          )}
+          <div className="flex items-center gap-2">
+            {isUploaded && (
+              <CheckCircle className="text-green-500" size={28} />
+            )}
+            {feedback.status && (
+              <div className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                <Check size={16} />
+                Verified
+              </div>
+            )}
+          </div>
         </div>
 
         {isUploaded ? (
@@ -485,6 +535,116 @@ const StudentDocumentsPage = () => {
                 <Download size={18} />
                 Download
               </button>
+              <button
+                onClick={onStatusToggle}
+                className={`px-4 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all ${
+                  feedback.status
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                <Check size={18} />
+                {feedback.status ? 'Verified' : 'Verify'}
+              </button>
+            </div>
+
+            {/* Feedback Section */}
+            <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <MessageSquare className="text-white" size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-800 mb-1">Agency Feedback</h4>
+                    {feedback.text && feedback.updatedAt && (
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <Clock size={14} />
+                        <span>{formatDate(feedback.updatedAt)}</span>
+                        {feedback.commentBy && (
+                          <>
+                            <span>•</span>
+                            <span>By: {feedback.commentBy}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {!isEditing && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={onEdit}
+                      className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all font-semibold flex items-center gap-1 text-sm"
+                    >
+                      <Edit3 size={14} />
+                      {feedback.text ? 'Edit' : 'Add'}
+                    </button>
+                    {feedback.text && (
+                      <button
+                        onClick={onDelete}
+                        disabled={isSaving}
+                        className="px-3 py-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all font-semibold flex items-center gap-1 text-sm disabled:opacity-50"
+                      >
+                        <X size={14} />
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {!isEditing && feedback.text ? (
+                <div className="bg-white border border-purple-200 rounded-lg p-3">
+                  <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">
+                    {feedback.text}
+                  </p>
+                </div>
+              ) : !isEditing && !feedback.text ? (
+                <div className="bg-white border border-purple-200 rounded-lg p-6 text-center">
+                  <MessageSquare className="mx-auto text-gray-400 mb-2" size={32} />
+                  <p className="text-gray-600 text-sm">No feedback yet</p>
+                </div>
+              ) : null}
+
+              {isEditing && (
+                <div className="space-y-3">
+                  <textarea
+                    value={draft}
+                    onChange={(e) => onDraftChange(e.target.value)}
+                    placeholder="Enter your feedback here..."
+                    rows={6}
+                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none transition-colors resize-none text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={onSave}
+                      disabled={isSaving || !draft.trim()}
+                      className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all font-semibold flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSaving ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save size={16} />
+                          Save
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={onCancel}
+                      disabled={isSaving}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all font-semibold text-sm disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -557,6 +717,12 @@ const StudentDocumentsPage = () => {
               <p className={`text-sm ${student.lor_url ? 'text-green-600' : 'text-gray-500'}`}>
                 {student.lor_url ? 'Uploaded' : 'Pending'}
               </p>
+              {feedback.lor.status && (
+                <div className="mt-2 flex items-center gap-1 text-xs text-green-600">
+                  <Check size={12} />
+                  <span>Verified</span>
+                </div>
+              )}
             </div>
 
             <div className={`p-4 rounded-lg border-2 ${
@@ -573,6 +739,12 @@ const StudentDocumentsPage = () => {
               <p className={`text-sm ${student.sop_url ? 'text-green-600' : 'text-gray-500'}`}>
                 {student.sop_url ? 'Uploaded' : 'Pending'}
               </p>
+              {feedback.sop.status && (
+                <div className="mt-2 flex items-center gap-1 text-xs text-green-600">
+                  <Check size={12} />
+                  <span>Verified</span>
+                </div>
+              )}
             </div>
 
             <div className={`p-4 rounded-lg border-2 ${
@@ -589,150 +761,88 @@ const StudentDocumentsPage = () => {
               <p className={`text-sm ${student.resume_url ? 'text-green-600' : 'text-gray-500'}`}>
                 {student.resume_url ? 'Uploaded' : 'Pending'}
               </p>
+              {feedback.resume.status && (
+                <div className="mt-2 flex items-center gap-1 text-xs text-green-600">
+                  <Check size={12} />
+                  <span>Verified</span>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-
-        {/* Agency Comment Section */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-6 border-2 border-purple-200">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-start gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <MessageSquare className="text-white" size={24} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-1">Agency Feedback</h2>
-                {agencyComment.text && agencyComment.updatedAt && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock size={16} />
-                    <span>Last updated: {formatDate(agencyComment.updatedAt)}</span>
-                    {agencyComment.commentBy && (
-                      <>
-                        <span>•</span>
-                        <span>By: {agencyComment.commentBy}</span>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {!isEditingComment && (
-              <div className="flex gap-2">
-                <button
-                  onClick={handleEditComment}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-semibold flex items-center gap-2"
-                >
-                  <Edit3 size={18} />
-                  {agencyComment.text ? 'Edit' : 'Add Comment'}
-                </button>
-                {agencyComment.text && (
-                  <button
-                    onClick={handleDeleteComment}
-                    disabled={isSavingComment}
-                    className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all font-semibold flex items-center gap-2 disabled:opacity-50"
-                  >
-                    <X size={18} />
-                    Delete
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {!isEditingComment && agencyComment.text ? (
-            <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-6">
-              <div className="prose prose-sm max-w-none">
-                <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">
-                  {agencyComment.text}
-                </p>
-              </div>
-            </div>
-          ) : !isEditingComment && !agencyComment.text ? (
-            <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-8 text-center">
-              <MessageSquare className="mx-auto text-gray-400 mb-3" size={48} />
-              <p className="text-gray-600 mb-2 font-semibold">No feedback yet</p>
-              <p className="text-sm text-gray-500">
-                Click &quot;Add Comment&quot; to provide feedback to the student
-              </p>
-            </div>
-          ) : null}
-
-          {isEditingComment && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Feedback for Student
-                </label>
-                <textarea
-                  value={commentDraft}
-                  onChange={(e) => setCommentDraft(e.target.value)}
-                  placeholder="Enter your feedback here... You can mention specific issues with LOR, SOP, or Resume."
-                  rows={10}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none transition-colors resize-none"
-                />
-                <p className="text-sm text-gray-500 mt-2">
-                  This feedback will be visible to the student. Be specific and constructive.
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={handleSaveComment}
-                  disabled={isSavingComment || !commentDraft.trim()}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSavingComment ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save size={18} />
-                      Save Comment
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={handleCancelEdit}
-                  disabled={isSavingComment}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Documents */}
         <div className="space-y-6">
           <DocumentCard
+            type="lor"
             title="Letter of Recommendation"
             icon={FileText}
             filename={student.lor_name}
             filesize={student.lor_size}
             uploadDate={student.lor_uploaded_at}
             fileUrl={student.lor_url}
+            feedback={feedback.lor}
+            isEditing={isEditing.lor}
+            draft={draft.lor}
+            isSaving={isSaving.lor}
+            onEdit={() => handleEditFeedback('lor')}
+            onSave={() => handleSaveFeedback('lor')}
+            onDelete={() => handleDeleteFeedback('lor')}
+            onCancel={() => handleCancelEdit('lor')}
+            onDraftChange={(value) => setDraft(prev => ({ ...prev, lor: value }))}
+            onStatusToggle={() => handleStatusToggle('lor')}
+            formatDate={formatDate}
+            formatFileSize={formatFileSize}
+            handleDownload={handleDownload}
+            handleViewInNewTab={handleViewInNewTab}
           />
 
           <DocumentCard
+            type="sop"
             title="Statement of Purpose"
             icon={FileText}
             filename={student.sop_name}
             filesize={student.sop_size}
             uploadDate={student.sop_uploaded_at}
             fileUrl={student.sop_url}
+            feedback={feedback.sop}
+            isEditing={isEditing.sop}
+            draft={draft.sop}
+            isSaving={isSaving.sop}
+            onEdit={() => handleEditFeedback('sop')}
+            onSave={() => handleSaveFeedback('sop')}
+            onDelete={() => handleDeleteFeedback('sop')}
+            onCancel={() => handleCancelEdit('sop')}
+            onDraftChange={(value) => setDraft(prev => ({ ...prev, sop: value }))}
+            onStatusToggle={() => handleStatusToggle('sop')}
+            formatDate={formatDate}
+            formatFileSize={formatFileSize}
+            handleDownload={handleDownload}
+            handleViewInNewTab={handleViewInNewTab}
           />
 
           <DocumentCard
+            type="resume"
             title="Resume / CV"
             icon={FileText}
             filename={student.resume_name}
             filesize={student.resume_size}
             uploadDate={student.resume_uploaded_at}
             fileUrl={student.resume_url}
+            feedback={feedback.resume}
+            isEditing={isEditing.resume}
+            draft={draft.resume}
+            isSaving={isSaving.resume}
+            onEdit={() => handleEditFeedback('resume')}
+            onSave={() => handleSaveFeedback('resume')}
+            onDelete={() => handleDeleteFeedback('resume')}
+            onCancel={() => handleCancelEdit('resume')}
+            onDraftChange={(value) => setDraft(prev => ({ ...prev, resume: value }))}
+            onStatusToggle={() => handleStatusToggle('resume')}
+            formatDate={formatDate}
+            formatFileSize={formatFileSize}
+            handleDownload={handleDownload}
+            handleViewInNewTab={handleViewInNewTab}
           />
         </div>
 

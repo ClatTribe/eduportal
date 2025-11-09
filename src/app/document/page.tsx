@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Upload, FileText, CheckCircle, X, AlertCircle, Download, RefreshCw, ArrowLeft, Info, MessageSquare, Clock } from 'lucide-react';
+import { Upload, FileText, CheckCircle, X, AlertCircle, Download, RefreshCw, ArrowLeft, Info, MessageSquare, Clock, Check } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import DefaultLayout from '../defaultLayout';
@@ -32,10 +32,17 @@ interface ErrorState {
   resume: string | null;
 }
 
-interface AgencyComment {
-  text: string;
-  updatedAt: string;
-  commentBy: string;
+interface DocumentFeedback {
+  text: string | null;
+  updatedAt: string | null;
+  commentBy: string | null;
+  status: boolean;
+}
+
+interface FeedbackState {
+  lor: DocumentFeedback;
+  sop: DocumentFeedback;
+  resume: DocumentFeedback;
 }
 
 const DocumentUploadPage = () => {
@@ -57,7 +64,11 @@ const DocumentUploadPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState('');
-  const [agencyComment, setAgencyComment] = useState<AgencyComment | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackState>({
+    lor: { text: null, updatedAt: null, commentBy: null, status: false },
+    sop: { text: null, updatedAt: null, commentBy: null, status: false },
+    resume: { text: null, updatedAt: null, commentBy: null, status: false }
+  });
 
   useEffect(() => {
     if (user) {
@@ -129,14 +140,27 @@ const DocumentUploadPage = () => {
           }));
         }
 
-        // Set agency comment if exists
-        if (studentData.agency_comment) {
-          setAgencyComment({
-            text: studentData.agency_comment,
-            updatedAt: studentData.agency_comment_updated_at,
-            commentBy: studentData.agency_comment_by || 'Agency'
-          });
-        }
+        // Set feedback for each document
+        setFeedback({
+          lor: {
+            text: studentData.lor_feedback,
+            updatedAt: studentData.lor_feedback_updated_at,
+            commentBy: studentData.lor_feedback_by,
+            status: studentData.lor_status || false
+          },
+          sop: {
+            text: studentData.sop_feedback,
+            updatedAt: studentData.sop_feedback_updated_at,
+            commentBy: studentData.sop_feedback_by,
+            status: studentData.sop_status || false
+          },
+          resume: {
+            text: studentData.resume_feedback,
+            updatedAt: studentData.resume_feedback_updated_at,
+            commentBy: studentData.resume_feedback_by,
+            status: studentData.resume_status || false
+          }
+        });
       } else {
         console.log('No existing documents found for user');
       }
@@ -148,7 +172,7 @@ const DocumentUploadPage = () => {
   };
 
   const validateFile = (file: File): string | null => {
-    const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+    const maxSize = 2 * 1024 * 1024;
     const allowedTypes = [
       'application/pdf',
       'application/msword',
@@ -396,6 +420,7 @@ const DocumentUploadPage = () => {
     const doc = documents[type];
     const isUploading = uploading[type];
     const error = errors[type];
+    const docFeedback = feedback[type];
 
     return (
       <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-100 hover:border-red-200 transition-all">
@@ -404,9 +429,17 @@ const DocumentUploadPage = () => {
             <h3 className="text-xl font-bold text-gray-800 mb-1">{title}</h3>
             <p className="text-sm text-gray-600">{description}</p>
           </div>
-          {doc && (
-            <CheckCircle className="text-green-500 flex-shrink-0" size={28} />
-          )}
+          <div className="flex items-center gap-2">
+            {doc && (
+              <CheckCircle className="text-green-500 flex-shrink-0" size={28} />
+            )}
+            {docFeedback.status && (
+              <div className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                <Check size={16} />
+                Verified
+              </div>
+            )}
+          </div>
         </div>
 
         {!doc && !isUploading && (
@@ -511,6 +544,37 @@ const DocumentUploadPage = () => {
             </div>
           </div>
         )}
+
+        {/* Feedback Section for Student (Read-only) */}
+        {docFeedback.text && (
+          <div className="mt-4 bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="text-white" size={20} />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-gray-800 mb-1">Agency Feedback</h4>
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <Clock size={14} />
+                  <span>{docFeedback.updatedAt ? formatDate(docFeedback.updatedAt) : 'N/A'}</span>
+                  <span>•</span>
+                  <span>By: {docFeedback.commentBy || 'Agency'}</span>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white border border-orange-200 rounded-lg p-3">
+              <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">
+                {docFeedback.text}
+              </p>
+            </div>
+            <div className="mt-3 flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <AlertCircle className="text-yellow-600 flex-shrink-0 mt-0.5" size={16} />
+              <p className="text-xs text-yellow-800">
+                <span className="font-semibold">Action Required:</span> Please review the feedback and update your document if needed.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -558,41 +622,6 @@ const DocumentUploadPage = () => {
               </div>
             </div>
           </div>
-
-          {/* Agency Comment Section - Only visible when comment exists */}
-          {agencyComment && agencyComment.text && (
-            <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-6 border-2 border-orange-200">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <MessageSquare className="text-white" size={24} />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-1">Agency Feedback</h2>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock size={16} />
-                    <span>Last updated: {formatDate(agencyComment.updatedAt)}</span>
-                    <span>•</span>
-                    <span>By: {agencyComment.commentBy}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6">
-                <div className="prose prose-sm max-w-none">
-                  <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">
-                    {agencyComment.text}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <AlertCircle className="text-yellow-600 flex-shrink-0 mt-0.5" size={20} />
-                <p className="text-sm text-yellow-800">
-                  <span className="font-semibold">Action Required:</span> Please review the feedback above and update your documents accordingly.
-                </p>
-              </div>
-            </div>
-          )}
 
           <div className="space-y-6 mb-6">
             <DocumentCard
