@@ -90,7 +90,7 @@ const COMMON_EXAMS = [
   'Other'
 ];
 
-const COUNTRIES = ['USA', 'UK', 'Canada', 'Australia', 'Germany', 'Europe (Other)'];
+const COUNTRIES = ['United States of America', 'United Kingdom', 'Italy', 'Australia', 'Germany', 'Europe (Other)'];
 
 const DEGREE_OPTIONS = [
   { value: 'Bachelors', label: 'Bachelors (Undergraduate)' },
