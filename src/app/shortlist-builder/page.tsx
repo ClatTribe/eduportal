@@ -352,7 +352,7 @@ const ShortlistBuilder: React.FC = () => {
                   No {activeTab} in your shortlist yet
                 </h3>
                 <p className="text-gray-500 mb-6">
-                  Start exploring and save items you're interested in
+                  Start exploring and save items you are interested in
                 </p>
                 <div className="flex gap-4 justify-center">
                   <a
