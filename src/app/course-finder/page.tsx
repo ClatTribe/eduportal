@@ -220,7 +220,7 @@ const CourseFinder: React.FC = () => {
       }
       else {
         let keywordMatches = 0;
-        let totalKeywords = userKeywords.length || 1;
+        const totalKeywords = userKeywords.length || 1;
         
         for (const keyword of userKeywords) {
           if (combinedCourseText.includes(keyword)) {
@@ -327,7 +327,7 @@ const CourseFinder: React.FC = () => {
 
       const targetStudyLevel = userProfile.degree === 'Bachelors' ? 'Undergraduate' : 'Postgraduate';
 
-      let filtered = allCourses.filter(course => {
+      const filtered = allCourses.filter(course => {
         if (!course.University) return false;
         if (course['Study Level'] !== targetStudyLevel) return false;
         if (!userProfile.target_countries.includes(course.Country || '')) return false;

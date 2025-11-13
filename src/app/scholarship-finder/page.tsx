@@ -265,7 +265,7 @@ const ScholarshipFinder: React.FC = () => {
 
       if (supabaseError) throw supabaseError;
 
-      let filtered = (data || []).filter(scholarship => {
+      const filtered = (data || []).filter(scholarship => {
         if (!scholarship.scholarship_name) return false;
         if (!userProfile.target_countries.includes(scholarship.country_region || '')) return false;
         return true;
