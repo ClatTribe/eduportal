@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, FileText, Download, Eye, Calendar, User, CheckCircle, XCircle, Lock, MessageSquare, Edit3, Save, X, Clock, Check } from 'lucide-react';
 import { supabase } from '../../../../../lib/supabase';
@@ -133,7 +133,6 @@ const StudentDocumentsPage = () => {
     if (isAuthenticated && userId && !checkingAuth) {
       fetchStudentDocuments();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, userId, checkingAuth]);
 
   const fetchStudentDocuments = async () => {
@@ -159,7 +158,6 @@ const StudentDocumentsPage = () => {
 
       setStudent(data[0]);
 
-      // Set feedback for each document
       setFeedback({
         lor: {
           text: data[0].lor_feedback || '',
@@ -458,6 +456,16 @@ const StudentDocumentsPage = () => {
     handleViewInNewTab
   }) => {
     const isUploaded = !!fileUrl;
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    useEffect(() => {
+      if (isEditing && textareaRef.current) {
+        const textarea = textareaRef.current;
+        const length = textarea.value.length;
+        textarea.focus();
+        textarea.setSelectionRange(length, length);
+      }
+    }, [isEditing]);
 
     return (
       <div className={`bg-white rounded-xl shadow-lg p-6 border-2 ${
@@ -548,7 +556,6 @@ const StudentDocumentsPage = () => {
               </button>
             </div>
 
-            {/* Feedback Section */}
             <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-start gap-3">
@@ -611,6 +618,7 @@ const StudentDocumentsPage = () => {
               {isEditing && (
                 <div className="space-y-3">
                   <textarea
+                    ref={textareaRef}
                     value={draft}
                     onChange={(e) => onDraftChange(e.target.value)}
                     placeholder="Enter your feedback here..."
@@ -660,7 +668,6 @@ const StudentDocumentsPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-red-50 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
         <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-6">
           <button
             onClick={() => router.push('/agency/dashboard')}
@@ -699,7 +706,6 @@ const StudentDocumentsPage = () => {
           </div>
         </div>
 
-        {/* Application Status */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-800 mb-4">Application Status</h2>
           <div className="grid grid-cols-3 gap-4">
@@ -771,7 +777,6 @@ const StudentDocumentsPage = () => {
           </div>
         </div>
 
-        {/* Documents */}
         <div className="space-y-6">
           <DocumentCard
             type="lor"
@@ -846,7 +851,6 @@ const StudentDocumentsPage = () => {
           />
         </div>
 
-        {/* Student Info */}
         <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
           <h2 className="text-xl font-bold text-gray-800 mb-4">Student Information</h2>
           <div className="grid md:grid-cols-2 gap-4">

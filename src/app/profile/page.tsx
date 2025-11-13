@@ -650,6 +650,88 @@ const ProfilePage = () => {
     return formData.name ? formData.name.charAt(0).toUpperCase() : 'U';
   }, [formData.name]);
 
+  // Calculate EduScore
+  const eduScore = useMemo(() => {
+    let score = 0;
+    
+    // Target Program (15 points)
+    if (formData.target_countries.length > 0) score += 3;
+    if (formData.target_degree) score += 4;
+    if (formData.target_field) score += 4;
+    if (formData.term) score += 2;
+    if (formData.budget) score += 2;
+    
+    // Personal Information (10 points)
+    if (formData.name) score += 2;
+    if (formData.email) score += 2;
+    if (formData.phone) score += 2;
+    if (formData.city) score += 2;
+    if (formData.state) score += 2;
+    
+    // 10th Grade (10 points)
+    if (formData.tenth_board) score += 3;
+    if (formData.tenth_year) score += 3;
+    if (formData.tenth_score) score += 4;
+    
+    // 12th Grade (10 points)
+    if (formData.twelfth_board) score += 3;
+    if (formData.twelfth_year) score += 2;
+    if (formData.twelfth_score) score += 3;
+    if (formData.twelfth_stream) score += 2;
+    
+    // Undergraduate (15 points if applicable)
+    if (shouldShowUG) {
+      if (formData.ug_degree) score += 3;
+      if (formData.ug_university) score += 3;
+      if (formData.ug_year) score += 3;
+      if (formData.ug_score) score += 3;
+      if (formData.ug_field) score += 3;
+    }
+    
+    // Postgraduate (15 points if applicable)
+    if (shouldShowPG) {
+      if (formData.pg_degree) score += 3;
+      if (formData.pg_university) score += 3;
+      if (formData.pg_year) score += 3;
+      if (formData.pg_score) score += 3;
+      if (formData.pg_field) score += 3;
+    }
+    
+    // Test Scores (10 points)
+    if (formData.testScores.length > 0) {
+      const validTests = formData.testScores.filter(t => t.exam && t.score);
+      score += Math.min(validTests.length * 3, 10);
+    }
+    
+    // Work Experience (5 points if applicable)
+    if (shouldShowWorkExp) {
+      if (formData.has_experience === 'Yes') {
+        score += 2;
+        if (formData.experience_years) score += 2;
+        if (formData.experience_field) score += 1;
+      }
+    }
+    
+    // Extracurricular (5 points)
+    if (formData.extracurricular && formData.extracurricular.trim().length > 20) {
+      score += 5;
+    }
+    
+    // Normalize score to 45-90 range
+    const maxPossibleScore = 90;
+    const normalizedScore = Math.max(45, Math.min(90, Math.round((score / maxPossibleScore) * 90)));
+    
+    return normalizedScore;
+  }, [formData, shouldShowUG, shouldShowPG, shouldShowWorkExp]);
+
+  const getScoreColor = useCallback((score: number) => {
+    if (score >= 75) return { color: '#10b981', label: 'Excellent' }; // green
+    if (score >= 60) return { color: '#f59e0b', label: 'Good' }; // orange
+    return { color: '#ef4444', label: 'Needs Improvement' }; // red
+  }, []);
+
+  const scoreInfo = useMemo(() => getScoreColor(eduScore), [eduScore, getScoreColor]);
+
   if (loading) {
     return (
       <DefaultLayout>
@@ -670,10 +752,54 @@ const ProfilePage = () => {
           {/* Header */}
           <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
+                {/* Avatar */}
                 <div className="w-20 h-20 bg-gradient-to-br from-red-600 to-pink-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">
                   {userInitial}
                 </div>
+                
+                {/* EduScore Circle */}
+                <div className="flex flex-col items-center">
+                  <div className="relative w-24 h-24">
+                    <svg className="w-24 h-24 transform -rotate-90">
+                      {/* Background circle */}
+                      <circle
+                        cx="48"
+                        cy="48"
+                        r="40"
+                        stroke="#e5e7eb"
+                        strokeWidth="8"
+                        fill="none"
+                      />
+                      {/* Progress circle */}
+                      <circle
+                        cx="48"
+                        cy="48"
+                        r="40"
+                        stroke={scoreInfo.color}
+                        strokeWidth="8"
+                        fill="none"
+                        strokeDasharray={`${(eduScore / 90) * 251.2} 251.2`}
+                        strokeLinecap="round"
+                        className="transition-all duration-500"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-2xl font-bold" style={{ color: scoreInfo.color }}>
+                        {eduScore}
+                      </span>
+                      <span className="text-xs text-gray-500">/ 90</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-center">
+                    <div className="text-xs font-semibold text-gray-600">EduScore</div>
+                    <div className="text-xs" style={{ color: scoreInfo.color }}>
+                      {scoreInfo.label}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Title */}
                 <div>
                   <h1 className="text-3xl font-bold text-gray-800">
                     {hasProfile ? 'My Profile' : 'Create Your Profile'}
@@ -1262,12 +1388,12 @@ const ProfilePage = () => {
               </div>
             </Section>
 
-            {/* Action Buttons */}
+            {/* Action Buttons - Centered at Bottom */}
             {isEditing && (
-              <div className="flex items-center justify-end gap-4 mt-6">
+              <div className="flex items-center justify-center gap-4 mt-8 pb-4">
                 <button
                   onClick={handleCancel}
-                  className="flex items-center gap-2 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all"
+                  className="flex items-center gap-2 px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all"
                 >
                   <X size={18} />
                   Cancel
@@ -1275,7 +1401,7 @@ const ProfilePage = () => {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className={`flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg hover:from-red-700 hover:to-pink-700 transition-all ${
+                  className={`flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg hover:from-red-700 hover:to-pink-700 transition-all ${
                     saving ? 'opacity-70 cursor-not-allowed' : ''
                   }`}
                 >
