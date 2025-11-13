@@ -23,7 +23,7 @@ interface FormData {
   target_degree: string;
   target_field: string;
   budget: string;
-  intake_year: string;
+  term: string;
   
   // 10th Grade
   tenth_board: string;
@@ -50,7 +50,7 @@ interface FormData {
   pg_score: string;
   pg_field: string;
   
-  // Test Scores (keeping original dynamic pattern)
+  // Test Scores
   testScores: TestScore[];
   
   // Work Experience
@@ -100,6 +100,13 @@ const DEGREE_OPTIONS = [
   { value: 'Diploma', label: 'Diploma/Certificate' }
 ];
 
+const TERM_OPTIONS = [
+  { value: 'Fall 2025', label: 'Fall 2025' },
+  { value: 'Spring 2026', label: 'Spring 2026' },
+  { value: 'Fall 2026', label: 'Fall 2026' },
+  { value: '2027', label: '2027 or later' }
+];
+
 // Type definitions for component props
 interface InputFieldProps {
   label: string;
@@ -133,6 +140,9 @@ interface SectionProps {
   icon: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
   visible?: boolean;
+  isExpanded: boolean;
+  isComplete: boolean;
+  onToggle: (id: string) => void;
 }
 
 // Move these components outside to prevent recreation - FIXED INPUT FOCUS ISSUE
@@ -179,6 +189,42 @@ const SelectField = React.memo(({ label, value, onChange, options, required = fa
 
 SelectField.displayName = 'SelectField';
 
+// FIXED: Section component moved outside and properly memoized
+const Section = React.memo(({ id, title, icon: Icon, children, visible = true, isExpanded, isComplete, onToggle }: SectionProps) => {
+  if (!visible) return null;
+
+  return (
+    <div className="mb-4 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden transition-all">
+      <button
+        type="button"
+        onClick={() => onToggle(id)}
+        className="w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-red-50 to-white hover:from-red-100 hover:to-red-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <Icon className="w-5 h-5 text-red-600" />
+          <span className="font-semibold text-gray-800">{title}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {isComplete && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-red-600" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-red-600" />
+          )}
+        </div>
+      </button>
+      
+      {isExpanded && (
+        <div className="px-6 py-5 bg-white">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+});
+
+Section.displayName = 'Section';
+
 const ProfilePage = () => {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
@@ -202,7 +248,7 @@ const ProfilePage = () => {
       target_degree: '',
       target_field: '',
       budget: '',
-      intake_year: '',
+      term: '',
       tenth_board: '',
       tenth_year: '',
       tenth_score: '',
@@ -229,7 +275,43 @@ const ProfilePage = () => {
     }
   );
 
-  const fetchUserProfile = async () => {
+  const getDefaultFormData = useCallback((): FormData => ({
+    name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || '',
+    email: user?.email || '',
+    phone: '',
+    city: '',
+    state: '',
+    target_countries: [],
+    target_degree: '',
+    target_field: '',
+    budget: '',
+    term: '',
+    tenth_board: '',
+    tenth_year: '',
+    tenth_score: '',
+    twelfth_board: '',
+    twelfth_year: '',
+    twelfth_score: '',
+    twelfth_stream: '',
+    ug_degree: '',
+    ug_university: '',
+    ug_year: '',
+    ug_score: '',
+    ug_field: '',
+    pg_degree: '',
+    pg_university: '',
+    pg_year: '',
+    pg_score: '',
+    pg_field: '',
+    testScores: [],
+    has_experience: '',
+    experience_years: '',
+    experience_field: '',
+    extracurricular: '',
+    verified: false
+  }), [user]);
+
+  const fetchUserProfile = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -263,7 +345,7 @@ const ProfilePage = () => {
           target_degree: data.degree || '',
           target_field: data.program || '',
           budget: data.budget || '',
-          intake_year: data.intake_year || '',
+          term: data.term || data.intake_year || '',
           tenth_board: data.tenth_board || '',
           tenth_year: data.tenth_year || '',
           tenth_score: data.tenth_score || '',
@@ -312,43 +394,7 @@ const ProfilePage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getDefaultFormData = (): FormData => ({
-    name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || '',
-    email: user?.email || '',
-    phone: '',
-    city: '',
-    state: '',
-    target_countries: [],
-    target_degree: '',
-    target_field: '',
-    budget: '',
-    intake_year: '',
-    tenth_board: '',
-    tenth_year: '',
-    tenth_score: '',
-    twelfth_board: '',
-    twelfth_year: '',
-    twelfth_score: '',
-    twelfth_stream: '',
-    ug_degree: '',
-    ug_university: '',
-    ug_year: '',
-    ug_score: '',
-    ug_field: '',
-    pg_degree: '',
-    pg_university: '',
-    pg_year: '',
-    pg_score: '',
-    pg_field: '',
-    testScores: [],
-    has_experience: '',
-    experience_years: '',
-    experience_field: '',
-    extracurricular: '',
-    verified: false
-  });
+  }, [user, getDefaultFormData]);
 
   useEffect(() => {
     if (user) {
@@ -361,9 +407,7 @@ const ProfilePage = () => {
         setLoading(false);
       }
     }
-    // fetchUserProfile is intentionally not in deps to prevent infinite loops
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, fetchUserProfile]);
 
   // Fixed: Properly memoized input change handler with field parameter
   const handleInputChange = useCallback((field: string, value: string) => {
@@ -412,10 +456,10 @@ const ProfilePage = () => {
   const shouldShowPG = useMemo(() => formData.target_degree === 'PhD', [formData.target_degree]);
   const shouldShowWorkExp = useMemo(() => ['Masters', 'MBA', 'PhD'].includes(formData.target_degree), [formData.target_degree]);
 
-  const isSectionComplete = useCallback((section: string) => {
+  const isSectionComplete = useCallback((section: string): boolean => {
     switch(section) {
       case 'target':
-        return formData.target_countries.length > 0 && formData.target_degree && formData.target_field;
+        return !!(formData.target_countries.length > 0 && formData.target_degree && formData.target_field);
       case 'personal':
         return !!(formData.name && formData.email && formData.phone && formData.city);
       case 'tenth':
@@ -498,7 +542,8 @@ const ProfilePage = () => {
         degree: formData.target_degree,
         program: formData.target_field,
         budget: formData.budget || null,
-        intake_year: formData.intake_year || null,
+        term: formData.term || null,
+        intake_year: formData.term || null,
         tenth_board: formData.tenth_board || null,
         tenth_year: formData.tenth_year || null,
         tenth_score: formData.tenth_score || null,
@@ -605,42 +650,6 @@ const ProfilePage = () => {
     return formData.name ? formData.name.charAt(0).toUpperCase() : 'U';
   }, [formData.name]);
 
-  const Section = useCallback(({ id, title, icon: Icon, children, visible = true }: SectionProps) => {
-    if (!visible) return null;
-    
-    const isExpanded = expandedSection === id;
-    const isComplete = isSectionComplete(id);
-
-    return (
-      <div className="mb-4 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden transition-all">
-        <button
-          type="button"
-          onClick={() => toggleSection(id)}
-          className="w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-red-50 to-white hover:from-red-100 hover:to-red-50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <Icon className="w-5 h-5 text-red-600" />
-            <span className="font-semibold text-gray-800">{title}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {isComplete && <CheckCircle2 className="w-5 h-5 text-green-500" />}
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-red-600" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-red-600" />
-            )}
-          </div>
-        </button>
-        
-        {isExpanded && (
-          <div className="px-6 py-5 bg-white">
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  }, [expandedSection, isSectionComplete, toggleSection]);
-
   if (loading) {
     return (
       <DefaultLayout>
@@ -746,7 +755,14 @@ const ProfilePage = () => {
           {/* Form Sections */}
           <div className="space-y-4">
             {/* Target Program */}
-            <Section id="target" title="What are you looking to study?" icon={Target}>
+            <Section 
+              id="target" 
+              title="What are you looking to study?" 
+              icon={Target}
+              isExpanded={expandedSection === 'target'}
+              isComplete={isSectionComplete('target')}
+              onToggle={toggleSection}
+            >
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Preferred Countries <span className="text-red-500">*</span>
@@ -791,15 +807,10 @@ const ProfilePage = () => {
                 />
                 <SelectField
                   label="When do you plan to start?"
-                  value={formData.intake_year}
+                  value={formData.term}
                   onChange={handleInputChange}
-                  field="intake_year"
-                  options={[
-                    { value: '2025', label: 'Fall 2025' },
-                    { value: 'Spring 2026', label: 'Spring 2026' },
-                    { value: 'Fall 2026', label: 'Fall 2026' },
-                    { value: '2027', label: '2027 or later' }
-                  ]}
+                  field="term"
+                  options={TERM_OPTIONS}
                   disabled={!isEditing}
                 />
                 <SelectField
@@ -819,7 +830,14 @@ const ProfilePage = () => {
             </Section>
 
             {/* Personal Information */}
-            <Section id="personal" title="Personal Information" icon={User}>
+            <Section 
+              id="personal" 
+              title="Personal Information" 
+              icon={User}
+              isExpanded={expandedSection === 'personal'}
+              isComplete={isSectionComplete('personal')}
+              onToggle={toggleSection}
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField
                   label="Full Name"
@@ -871,7 +889,14 @@ const ProfilePage = () => {
             </Section>
 
             {/* 10th Grade */}
-            <Section id="tenth" title="10th Grade Details" icon={GraduationCap}>
+            <Section 
+              id="tenth" 
+              title="10th Grade Details" 
+              icon={GraduationCap}
+              isExpanded={expandedSection === 'tenth'}
+              isComplete={isSectionComplete('tenth')}
+              onToggle={toggleSection}
+            >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <SelectField
                   label="Board"
@@ -910,7 +935,14 @@ const ProfilePage = () => {
             </Section>
 
             {/* 12th Grade */}
-            <Section id="twelfth" title="12th Grade Details" icon={GraduationCap}>
+            <Section 
+              id="twelfth" 
+              title="12th Grade Details" 
+              icon={GraduationCap}
+              isExpanded={expandedSection === 'twelfth'}
+              isComplete={isSectionComplete('twelfth')}
+              onToggle={toggleSection}
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <SelectField
                   label="Board"
@@ -963,7 +995,15 @@ const ProfilePage = () => {
             </Section>
 
             {/* Undergraduate */}
-            <Section id="ug" title="Undergraduate Details" icon={GraduationCap} visible={shouldShowUG}>
+            <Section 
+              id="ug" 
+              title="Undergraduate Details" 
+              icon={GraduationCap} 
+              visible={shouldShowUG}
+              isExpanded={expandedSection === 'ug'}
+              isComplete={isSectionComplete('ug')}
+              onToggle={toggleSection}
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField
                   label="Degree"
@@ -1014,7 +1054,15 @@ const ProfilePage = () => {
             </Section>
 
             {/* Postgraduate */}
-            <Section id="pg" title="Postgraduate/Masters Details" icon={GraduationCap} visible={shouldShowPG}>
+            <Section 
+              id="pg" 
+              title="Postgraduate/Masters Details" 
+              icon={GraduationCap} 
+              visible={shouldShowPG}
+              isExpanded={expandedSection === 'pg'}
+              isComplete={isSectionComplete('pg')}
+              onToggle={toggleSection}
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField
                   label="Degree"
@@ -1064,7 +1112,14 @@ const ProfilePage = () => {
             </Section>
 
             {/* Test Scores */}
-            <Section id="tests" title="Test Scores" icon={BookOpen}>
+            <Section 
+              id="tests" 
+              title="Test Scores" 
+              icon={BookOpen}
+              isExpanded={expandedSection === 'tests'}
+              isComplete={isSectionComplete('tests')}
+              onToggle={toggleSection}
+            >
               <div className="flex items-center justify-between mb-4">
                 {isEditing && (
                   <button
@@ -1139,7 +1194,15 @@ const ProfilePage = () => {
             </Section>
 
             {/* Work Experience */}
-            <Section id="experience" title="Work Experience" icon={Award} visible={shouldShowWorkExp}>
+            <Section 
+              id="experience" 
+              title="Work Experience" 
+              icon={Award} 
+              visible={shouldShowWorkExp}
+              isExpanded={expandedSection === 'experience'}
+              isComplete={isSectionComplete('experience')}
+              onToggle={toggleSection}
+            >
               <SelectField
                 label="Do you have work experience?"
                 value={formData.has_experience}
@@ -1176,7 +1239,14 @@ const ProfilePage = () => {
             </Section>
 
             {/* Extracurricular Activities */}
-            <Section id="extra" title="Extracurricular Activities" icon={Trophy}>
+            <Section 
+              id="extra" 
+              title="Extracurricular Activities" 
+              icon={Trophy}
+              isExpanded={expandedSection === 'extra'}
+              isComplete={false}
+              onToggle={toggleSection}
+            >
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Describe your achievements, activities, and experiences
