@@ -101,7 +101,7 @@ const DEGREE_OPTIONS = [
 ];
 
 const TERM_OPTIONS = [
-  { value: 'Fall 2025', label: 'Fall 2025' },
+  // { value: 'Fall 2025', label: 'Fall 2025' },
   { value: 'Spring 2026', label: 'Spring 2026' },
   { value: 'Fall 2026', label: 'Fall 2026' },
   { value: '2027', label: '2027 or later' }
