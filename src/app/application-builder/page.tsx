@@ -104,15 +104,19 @@ const ApplicationBuilderPage: React.FC = () => {
   const { data, error } = await supabase.from("courses").select("*");
   if (error) throw error;
 
-  const valid: CourseRow[] = (data || []).filter((c: unknown): c is CourseRow => {
-    return (
-      c !== null &&
-      typeof c === "object" &&
-      "id" in c &&
-      typeof (c as any).id === "number" &&
-      "University" in c
-    );
-  });
+  const valid: CourseRow[] = (data || []).filter(
+  (c: unknown): c is CourseRow => {
+    if (c && typeof c === "object") {
+      const obj = c as Record<string, unknown>;
+      return (
+        typeof obj.id === "number" &&
+        typeof obj.University === "string"
+      );
+    }
+    return false;
+  }
+);
+
 
   setCourses(valid);
 };
