@@ -377,11 +377,11 @@ const DocumentUploadPage = () => {
     const docFeedback = hasVerification ? feedback[category as 'lor' | 'sop' | 'passport'] : null;
 
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-100 hover:border-red-200 transition-all">
+      <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-100 hover:border-[#FECDD3] transition-all">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-1">
-              {title} {required && <span className="text-red-500">*</span>}
+              {title} {required && <span className="text-[#A51C30]">*</span>}
             </h3>
             <p className="text-sm text-gray-600">{description}</p>
             <p className="text-xs text-gray-500 mt-1">
@@ -406,7 +406,7 @@ const DocumentUploadPage = () => {
 
         {/* Upload Area */}
         {docs.length < maxFiles && (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-red-400 hover:bg-red-50 transition-all mb-4">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#A51C30] hover:bg-[#FEF2F3] transition-all mb-4">
             <input
               type="file"
               id={`file-${category}`}
@@ -417,11 +417,11 @@ const DocumentUploadPage = () => {
             />
             <label htmlFor={`file-${category}`} className="cursor-pointer">
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-red-100 to-pink-100 rounded-full flex items-center justify-center mb-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#FEF2F3] to-[#FECDD3] rounded-full flex items-center justify-center mb-3">
                   {isUploading ? (
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#A51C30]"></div>
                   ) : (
-                    <Upload className="text-red-600" size={24} />
+                    <Upload className="text-[#A51C30]" size={24} />
                   )}
                 </div>
                 <p className="text-gray-700 font-semibold text-sm mb-1">
@@ -454,7 +454,7 @@ const DocumentUploadPage = () => {
                   </div>
                   <button
                     onClick={() => handleDelete(category, index)}
-                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all"
+                    className="p-2 text-[#A51C30] hover:bg-[#FEF2F3] rounded-lg transition-all"
                     title="Remove file"
                     disabled={isUploading}
                   >
@@ -467,9 +467,9 @@ const DocumentUploadPage = () => {
         )}
 
         {error && (
-          <div className="mt-3 p-3 bg-red-50 border-2 border-red-200 rounded-lg flex items-start gap-2">
-            <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={18} />
-            <p className="text-red-600 text-sm">{error}</p>
+          <div className="mt-3 p-3 bg-[#FEF2F3] border-2 border-[#FECDD3] rounded-lg flex items-start gap-2">
+            <AlertCircle className="text-[#A51C30] flex-shrink-0 mt-0.5" size={18} />
+            <p className="text-[#A51C30] text-sm">{error}</p>
           </div>
         )}
 
@@ -477,7 +477,7 @@ const DocumentUploadPage = () => {
         {hasVerification && docFeedback?.text && (
           <div className="mt-4 bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
             <div className="flex items-start gap-3 mb-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-[#A51C30] rounded-lg flex items-center justify-center flex-shrink-0">
                 <MessageSquare className="text-white" size={18} />
               </div>
               <div className="flex-1">
@@ -504,9 +504,9 @@ const DocumentUploadPage = () => {
   if (loading) {
     return (
       <DefaultLayout>
-        <div className="min-h-screen bg-gradient-to-br from-pink-50 to-red-50 flex items-center justify-center">
-          <div className="text-xl text-red-600 flex items-center gap-2">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600"></div>
+        <div className="min-h-screen bg-gradient-to-br from-[#FEF2F3] to-[#FECDD3] flex items-center justify-center">
+          <div className="text-xl text-[#A51C30] flex items-center gap-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#A51C30]"></div>
             Loading documents...
           </div>
         </div>
@@ -516,13 +516,13 @@ const DocumentUploadPage = () => {
 
   return (
     <DefaultLayout>
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-red-50 p-4 md:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-[#FEF2F3] to-[#FECDD3] p-4 md:p-8">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-6">
             <button
               onClick={() => window.history.back()}
-              className="flex items-center gap-2 text-red-600 hover:text-red-700 mb-4 font-semibold"
+              className="flex items-center gap-2 text-[#A51C30] hover:text-[#8B1528] mb-4 font-semibold"
             >
               <ArrowLeft size={20} />
               Back to Dashboard
@@ -551,7 +551,7 @@ const DocumentUploadPage = () => {
             {/* Academic Documents Section */}
             <div>
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <FileText className="text-red-600" size={24} />
+                <FileText className="text-[#A51C30]" size={24} />
                 Academic Marksheets
               </h2>
               <div className="space-y-4">
@@ -592,7 +592,7 @@ const DocumentUploadPage = () => {
             {/* Application Documents Section */}
             <div>
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <MessageSquare className="text-red-600" size={24} />
+                <MessageSquare className="text-[#A51C30]" size={24} />
                 Application Documents (Verified)
               </h2>
               <div className="space-y-4">
@@ -617,7 +617,7 @@ const DocumentUploadPage = () => {
             {/* Identity Documents Section */}
             <div>
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <FileText className="text-red-600" size={24} />
+                <FileText className="text-[#A51C30]" size={24} />
                 Identity & Supporting Documents
               </h2>
               <div className="space-y-4">
@@ -654,7 +654,7 @@ const DocumentUploadPage = () => {
               onClick={() => window.history.back()}
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
                 allRequiredDocsUploaded
-                  ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white hover:from-red-700 hover:to-pink-700 shadow-lg'
+                  ? 'bg-gradient-to-r from-[#A51C30] to-[#8B1528] text-white hover:from-[#8B1528] hover:to-[#A51C30] shadow-lg'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >

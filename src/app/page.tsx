@@ -1,494 +1,330 @@
-"use client"; 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../../contexts/AuthContext';
-import DefaultLayout from './defaultLayout';
-import { supabase } from '../../lib/supabase';
-import { 
-  TrendingUp, 
-  CheckCircle, 
-  AlertCircle, 
-  Users, 
-  Target,
-  Sparkles,
-  ArrowRight,
-  User
-} from 'lucide-react';
+"use client";
+import React, { useState, useEffect } from "react";
+import { BookOpen, GraduationCap, Target, ArrowRight, Menu, X, ChevronRight, LogOut, User } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+import { useAuth } from "../../contexts/AuthContext";
+import { CourseMatcherVisual } from "../../components/CourseMatcherVisual";
+import { ScholarshipVisual } from "../../components/ScholarshipVisual";
+import { AdmitFinderVisual } from "../../components/AdmitFinderVisual";
+import { TrustSection } from "../../components/TrustSection";
+import { PainPoints } from "../../components/PainPoints";
 
-interface TestScore {
-  exam: string;
-  score: string;
-}
+const features = [
+  {
+    id: "courses",
+    title: "Course Matcher",
+    description: "Find your perfect stream based on your actual grades and interests.",
+    icon: BookOpen,
+    component: CourseMatcherVisual,
+    cta: "Find Courses",
+  },
+  {
+    id: "scholarships",
+    title: "Scholarship Finder",
+    description: "Match with thousands of financial aid opportunities instantly.",
+    icon: GraduationCap,
+    component: ScholarshipVisual,
+    cta: "Find Scholarships",
+  },
+  {
+    id: "admits",
+    title: "Admit Finder",
+    description: "See real profiles of students who got into your dream colleges.",
+    icon: Target,
+    component: AdmitFinderVisual,
+    cta: "See Admits",
+  },
+];
 
-interface ProfileData {
-  name?: string;
-  degree?: string;
-  program?: string;
-  term?: string;
-  test_scores?: TestScore[];
-  email?: string;
-  phone?: string;
-  target_countries?: string[];
-  tenth_score?: string;
-  twelfth_score?: string;
-  university?: string;
-  extracurricular?: string;
-  last_course_cgpa?: string;
-}
+// Navbar Component
+const Navbar: React.FC = () => {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
-// Global cache to persist data across page navigations
-let cachedProfileData: ProfileData | null = null;
-let cachedSimilarCount = 0;
-let cacheTimestamp = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-const DashboardPage = () => {
-  const router = useRouter();
-  const { user, loading } = useAuth();
-  const [profileData, setProfileData] = useState<ProfileData | null>(cachedProfileData);
-  const [similarProfilesCount, setSimilarProfilesCount] = useState(cachedSimilarCount);
-  const [loadingProfile, setLoadingProfile] = useState(!cachedProfileData);
-  const [shortlistedCount, setShortlistedCount] = useState(0);
-
-  // Memoize calculations with new required fields
-  const profileMetrics = useMemo(() => {
-    if (!profileData) {
-      return {
-        completion: 0,
-        missingFields: [
-          'Degree', 'Program/Field', 'Target Term', 'Test Scores',
-          'Email', 'Phone', 'Target Countries', '10th Score', '12th Score'
-        ]
-      };
-    }
-
-    const hasTestScores = profileData.test_scores && profileData.test_scores.length > 0;
-    const hasTargetCountries = profileData.target_countries && profileData.target_countries.length > 0;
-    
-    // Required fields only
-    const fields = [
-      profileData.degree,              // 1. Degree
-      profileData.program,             // 2. Program
-      profileData.term,                // 3. Term
-      hasTestScores,                   // 4. Test Scores
-      profileData.email,               // 5. Email
-      profileData.phone,               // 6. Phone
-      hasTargetCountries,              // 7. Target Countries
-      profileData.tenth_score,         // 8. 10th Score
-      profileData.twelfth_score        // 9. 12th Score
-    ];
-
-    const filledCount = fields.filter(f => f && (typeof f === 'boolean' ? f : f.toString().trim() !== '')).length;
-    const completion = Math.round((filledCount / fields.length) * 100);
-
-    const missing: string[] = [];
-    if (!profileData.degree) missing.push('Degree');
-    if (!profileData.program) missing.push('Program/Field');
-    if (!profileData.term) missing.push('Target Term');
-    if (!hasTestScores) missing.push('Test Scores');
-    if (!profileData.email) missing.push('Email');
-    if (!profileData.phone) missing.push('Phone');
-    if (!hasTargetCountries) missing.push('Target Countries');
-    if (!profileData.tenth_score) missing.push('10th Score');
-    if (!profileData.twelfth_score) missing.push('12th Score');
-
-    return { completion, missingFields: missing };
-  }, [profileData]);
-
-  const userName = useMemo(() => {
-    return profileData?.name?.split(' ')[0] || 
-           user?.user_metadata?.full_name?.split(' ')[0] || 
-           user?.email?.split('@')[0] || 
-           'User';
-  }, [profileData?.name, user]);
-
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 18) return 'Good Afternoon';
-    return 'Good Evening';
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/register');
-    }
-  }, [user, loading, router]);
-
-  useEffect(() => {
-    if (user && !loading) {
-      const now = Date.now();
-      const isCacheValid = cachedProfileData && (now - cacheTimestamp < CACHE_DURATION);
-      
-      if (!isCacheValid) {
-        fetchProfileData();
-      } else {
-        setLoadingProfile(false);
-      }
-    }
-  }, [user, loading]);
-
-  useEffect(() => {
-    // Load initial shortlist count
-    loadShortlistCount();
-
-    // Listen for updates from Course Finder or Shortlist Builder
-    const handleShortlistUpdate = () => {
-      loadShortlistCount();
-    };
-
-    window.addEventListener('shortlist-updated', handleShortlistUpdate);
-
-    return () => {
-      window.removeEventListener('shortlist-updated', handleShortlistUpdate);
-    };
-  }, []);
-
-  const loadShortlistCount = () => {
-    try {
-      const saved = localStorage.getItem('shortlisted-colleges');
-      if (saved) {
-        const data = JSON.parse(saved);
-        setShortlistedCount(data.ids?.length || 0);
-      } else {
-        setShortlistedCount(0);
-      }
-    } catch (error) {
-      console.log('No saved colleges found:', error);
-      setShortlistedCount(0);
-    }
+  const handleLogout = async () => {
+    await signOut();
+    setMobileMenuOpen(false);
   };
-
-  const fetchProfileData = async () => {
-    if (!user) return;
-    
-    try {
-      setLoadingProfile(true);
-      
-      const { data, error } = await supabase
-        .from('admit_profiles')
-        .select('name, degree, program, term, test_scores, email, phone, target_countries, tenth_score, twelfth_score, university, extracurricular, last_course_cgpa')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        cachedProfileData = null;
-        setProfileData(null);
-      } else if (data) {
-        cachedProfileData = data;
-        cacheTimestamp = Date.now();
-        setProfileData(data);
-        
-        if (data.test_scores?.length > 0 || data.program || data.degree) {
-          fetchSimilarProfilesCount(data);
-        }
-      } else {
-        cachedProfileData = null;
-        setProfileData(null);
-      }
-    } catch (err) {
-      console.error('Error:', err);
-      cachedProfileData = null;
-      setProfileData(null);
-    } finally {
-      setLoadingProfile(false);
-    }
-  };
-
-  const fetchSimilarProfilesCount = async (profile: ProfileData) => {
-    if (!user) return;
-    
-    try {
-      let query = supabase
-        .from('admit_profiles')
-        .select('id', { count: 'exact', head: true })
-        .neq('user_id', user.id);
-
-      // Extract GRE score from test_scores array
-      const greScore = profile.test_scores?.find(t => t.exam === 'GRE')?.score;
-      const greNum = greScore ? parseFloat(greScore) : null;
-      
-      if (greNum) {
-        query = query.gte('gre', greNum - 10).lte('gre', greNum + 10);
-      }
-      if (profile.degree) {
-        query = query.eq('degree', profile.degree);
-      }
-
-      const { count, error } = await query;
-
-      if (!error && count !== null) {
-        cachedSimilarCount = count;
-        setSimilarProfilesCount(count);
-      }
-    } catch (err) {
-      console.error('Error:', err);
-    }
-  };
-
-  const getProgressColor = useCallback(() => {
-    if (profileMetrics.completion >= 80) return 'from-red-500 to-pink-500';
-    if (profileMetrics.completion >= 50) return 'from-red-400 to-pink-400';
-    return 'from-red-600 to-pink-600';
-  }, [profileMetrics.completion]);
-
-  const getProgressMessage = useCallback(() => {
-    if (profileMetrics.completion === 100) return '🎉 Your profile is complete!';
-    if (profileMetrics.completion >= 80) return '🌟 Almost there! Complete your profile';
-    if (profileMetrics.completion >= 50) return '⚡ You\'re halfway there!';
-    return '🚀 Let\'s get started!';
-  }, [profileMetrics.completion]);
-
-  const handleProfileClick = useCallback(() => router.push('/profile'), [router]);
-  const handleAdmitFinderClick = useCallback(() => router.push('/admit-finder'), [router]);
-  const handleCourseFinderClick = useCallback(() => router.push('/course-finder'), [router]);
-  const handleScholarshipClick = useCallback(() => router.push('/scholarship-finder'), [router]);
-  const handleShortlistClick = useCallback(() => router.push('/shortlist-builder'), [router]);
-
-  if (loading || loadingProfile) {
-    return (
-      <DefaultLayout>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-xl text-red-600 flex items-center gap-2">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600"></div>
-            Loading...
-          </div>
-        </div>
-      </DefaultLayout>
-    );
-  }
-
-  if (!user) return null;
 
   return (
-    <DefaultLayout>
-      <div className="flex-1 overflow-auto">
-        <div className="p-6 max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">
-              {greeting}, {userName}! 👋
-            </h1>
-            <p className="text-gray-600">Ready to take the next step in your academic journey?</p>
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled || mobileMenuOpen
+          ? 'bg-white/80 backdrop-blur-md border-b border-slate-100 py-3'
+          : 'bg-transparent py-5'
+      }`}
+    >
+      <div className="container mx-auto px-6 flex items-center justify-between max-w-7xl">
+        <Link href="/" className="flex items-center gap-2 cursor-pointer">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-xl">E</span>
           </div>
+          <span className="text-xl font-bold tracking-tight text-slate-900">EduPortal</span>
+        </Link>
 
-          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border-2 border-red-100">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 bg-gradient-to-br ${getProgressColor()} rounded-full flex items-center justify-center`}>
-                  <TrendingUp className="text-white" size={24} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-800">Profile Completion</h2>
-                  <p className="text-gray-600">{getProgressMessage()}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-4xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
-                  {profileMetrics.completion}%
-                </div>
-                <p className="text-sm text-gray-500">Complete</p>
-              </div>
-            </div>
+        {/* Desktop Menu */}
+        <div className="hidden md:flex items-center gap-8">
+          <a href="#features" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors cursor-pointer">
+            Features
+          </a>
+          <a href="#mission" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors cursor-pointer">
+            Our Mission
+          </a>
+          <a href="#trust" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors cursor-pointer">
+            Why Us
+          </a>
 
-            <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden mb-4">
-              <div 
-                className={`absolute top-0 left-0 h-full bg-gradient-to-r ${getProgressColor()} transition-all duration-700 ease-out rounded-full`}
-                style={{ width: `${profileMetrics.completion}%` }}
+          {user ? (
+            // User is logged in
+            <>
+              <Link href="/home" className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors cursor-pointer">
+                Dashboard
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="group px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full transition-all flex items-center gap-1 cursor-pointer"
               >
-                <div className="absolute inset-0 bg-white opacity-20 animate-pulse"></div>
-              </div>
-            </div>
-
-            {profileMetrics.missingFields.length > 0 && (
-              <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-4 border border-red-200">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="text-red-600 mt-0.5 flex-shrink-0" size={20} />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800 mb-2">Complete these required fields to unlock full features:</h3>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {profileMetrics.missingFields.slice(0, 5).map((field, idx) => (
-                        <span key={idx} className="text-xs bg-white text-red-600 px-3 py-1 rounded-full border border-red-200 font-medium">
-                          {field}
-                        </span>
-                      ))}
-                      {profileMetrics.missingFields.length > 5 && (
-                        <span className="text-xs bg-white text-gray-600 px-3 py-1 rounded-full border border-gray-200 font-medium">
-                          +{profileMetrics.missingFields.length - 5} more
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={handleProfileClick}
-                      className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-pink-600 text-white px-4 py-2 rounded-lg hover:from-red-700 hover:to-pink-700 transition-all text-sm font-semibold shadow-lg"
-                    >
-                      <User size={16} />
-                      Complete Your Profile
-                      <ArrowRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {profileMetrics.completion === 100 && (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="text-green-600" size={24} />
-                  <div>
-                    <h3 className="font-semibold text-gray-800">Awesome! Your profile is 100% complete! 🎉</h3>
-                    <p className="text-sm text-gray-600">You can now access all features and find similar profiles.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {profileMetrics.completion >= 50 && (
-            <div 
-              onClick={handleAdmitFinderClick}
-              className="bg-white rounded-2xl shadow-lg p-6 mb-6 border-2 border-red-100 cursor-pointer hover:shadow-xl transition-shadow"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                    <Users className="text-red-600" size={32} />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-1">Find Similar Profiles</h2>
-                    <p className="text-gray-600">
-                      {similarProfilesCount > 0 
-                        ? `${similarProfilesCount} students with similar background found!` 
-                        : 'Discover students with profiles like yours'}
-                    </p>
-                  </div>
-                </div>
-                <ArrowRight className="text-red-600" size={28} />
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-red-100 hover:shadow-xl transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 font-medium">Shortlisted</p>
-                  <p className="text-3xl font-bold text-red-600">{shortlistedCount}</p>
-                  <p className="text-xs text-gray-500 mt-1">Programs saved</p>
-                </div>
-                <div className="w-14 h-14 bg-gradient-to-br from-red-100 to-pink-100 rounded-full flex items-center justify-center">
-                  <span className="text-3xl">📚</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-blue-100 hover:shadow-xl transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 font-medium">Applications</p>
-                  <p className="text-3xl font-bold text-blue-600">0</p>
-                  <p className="text-xs text-gray-500 mt-1">In progress</p>
-                </div>
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-full flex items-center justify-center">
-                  <span className="text-3xl">📝</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-green-100 hover:shadow-xl transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 font-medium">Scholarships</p>
-                  <p className="text-3xl font-bold text-green-600">0</p>
-                  <p className="text-xs text-gray-500 mt-1">Opportunities</p>
-                </div>
-                <div className="w-14 h-14 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center">
-                  <span className="text-3xl">💰</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl shadow-lg border-2 border-purple-100 hover:shadow-xl transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 font-medium">Admits</p>
-                  <p className="text-3xl font-bold text-purple-600">0</p>
-                  <p className="text-xs text-gray-500 mt-1">Received</p>
-                </div>
-                <div className="w-14 h-14 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
-                  <span className="text-3xl">🎓</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-red-100">
-            <div className="flex items-center gap-2 mb-6">
-              <Target className="text-red-600" size={24} />
-              <h2 className="text-2xl font-semibold text-gray-800">Quick Actions</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <button 
-                onClick={handleCourseFinderClick}
-                className="group p-6 border-2 border-red-200 rounded-xl hover:bg-red-50 transition-all text-left hover:shadow-lg"
-              >
-                <div className="text-4xl mb-3">🔍</div>
-                <div className="font-bold text-gray-800 mb-1 text-lg">Find Courses</div>
-                <div className="text-sm text-gray-600">Explore programs worldwide</div>
-                <ArrowRight className="text-red-600 mt-2 group-hover:translate-x-1 transition-transform" size={20} />
+                Logout <LogOut size={14} className="group-hover:translate-x-0.5 transition-transform" />
               </button>
-
-              <button 
-                onClick={handleAdmitFinderClick}
-                className="group p-6 border-2 border-blue-200 rounded-xl hover:bg-blue-50 transition-all text-left hover:shadow-lg"
-              >
-                <div className="text-4xl mb-3">👥</div>
-                <div className="font-bold text-gray-800 mb-1 text-lg">Admit Finder</div>
-                <div className="text-sm text-gray-600">Connect with admits</div>
-                <ArrowRight className="text-blue-600 mt-2 group-hover:translate-x-1 transition-transform" size={20} />
-              </button>
-
-              <button 
-                onClick={handleScholarshipClick}
-                className="group p-6 border-2 border-green-200 rounded-xl hover:bg-green-50 transition-all text-left hover:shadow-lg"
-              >
-                <div className="text-4xl mb-3">💵</div>
-                <div className="font-bold text-gray-800 mb-1 text-lg">Scholarships</div>
-                <div className="text-sm text-gray-600">Find funding options</div>
-                <ArrowRight className="text-green-600 mt-2 group-hover:translate-x-1 transition-transform" size={20} />
-              </button>
-
-              <button 
-                onClick={handleShortlistClick}
-                className="group p-6 border-2 border-purple-200 rounded-xl hover:bg-purple-50 transition-all text-left hover:shadow-lg"
-              >
-                <div className="text-4xl mb-3">⭐</div>
-                <div className="font-bold text-gray-800 mb-1 text-lg">Shortlist Builder</div>
-                <div className="text-sm text-gray-600">Build your dream list</div>
-                <ArrowRight className="text-purple-600 mt-2 group-hover:translate-x-1 transition-transform" size={20} />
-              </button>
-            </div>
-          </div>
-
-          {profileMetrics.completion < 100 && (
-            <div className="mt-6 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl shadow-lg p-6 border-2 border-yellow-200">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="text-white" size={20} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-800 mb-2 text-lg">💡 Pro Tip</h3>
-                  <p className="text-gray-700">
-                    Complete all 9 required fields in your profile to unlock personalized recommendations and connect with students who have similar academic backgrounds!
-                  </p>
-                </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200">
+                <User size={16} className="text-blue-600" />
+                <span className="text-sm font-medium text-slate-700">{user.user_metadata?.full_name || user.email}</span>
               </div>
-            </div>
+            </>
+          ) : (
+            // User is not logged in
+            <>
+              <Link href="/register" className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors cursor-pointer">
+                Log In
+              </Link>
+              <Link href="/register" className="group px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-full transition-all flex items-center gap-1 cursor-pointer">
+                Get Started <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            </>
           )}
         </div>
+
+        {/* Mobile Toggle */}
+        <div className="md:hidden">
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-slate-600 cursor-pointer">
+            {mobileMenuOpen ? <X /> : <Menu />}
+          </button>
+        </div>
       </div>
-    </DefaultLayout>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-100 p-6 flex flex-col gap-4 shadow-xl">
+          {user && (
+            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl mb-2">
+              <User size={20} className="text-blue-600" />
+              <span className="text-sm font-medium text-slate-700">{user.user_metadata?.full_name || user.email}</span>
+            </div>
+          )}
+
+          <a href="#features" className="text-lg font-medium text-slate-800 cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            Features
+          </a>
+          <a href="#mission" className="text-lg font-medium text-slate-800 cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            Our Mission
+          </a>
+          <a href="#trust" className="text-lg font-medium text-slate-800 cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+            Why Us
+          </a>
+          <hr className="border-slate-100" />
+
+          {user ? (
+            // User is logged in
+            <>
+              <Link href="/home" className="w-full py-3 text-center font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer">
+                Dashboard
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="w-full py-3 text-center font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl cursor-pointer flex items-center justify-center gap-2"
+              >
+                <LogOut size={18} />
+                Logout
+              </button>
+            </>
+          ) : (
+            // User is not logged in
+            <>
+              <Link href="/register" className="w-full py-3 text-center font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer">
+                Log In
+              </Link>
+              <Link href="/register" className="w-full py-3 text-center font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-xl cursor-pointer">
+                Get Started
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+    </nav>
   );
 };
 
-export default DashboardPage;
+export default function Hero() {
+  const [activeFeature, setActiveFeature] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!autoPlay) return;
+    const interval = setInterval(() => {
+      setActiveFeature((prev) => (prev + 1) % features.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [autoPlay]);
+
+  const handleFeatureClick = (index: number) => {
+    setActiveFeature(index);
+    setAutoPlay(false);
+  };
+
+  const ActiveComponent = features[activeFeature].component;
+
+  return (
+    <>
+      {/* Navbar */}
+      <Navbar />
+
+      {/* Hero Section */}
+      <section id="features" className="relative pt-36 pb-20 overflow-hidden bg-white">
+        <div className="absolute inset-0 z-0 pointer-events-none bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-50" />
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10 max-w-7xl">
+          <div className="flex flex-col items-center text-center mb-12 sm:mb-20">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-sm mb-6 sm:mb-8 group cursor-pointer hover:bg-slate-100 transition-colors"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-600 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+              </span>
+              <span className="text-xs font-bold text-slate-600 tracking-wide uppercase">
+                New: Admit Finder 2.0 is live
+              </span>
+              <ArrowRight size={12} className="text-slate-400 group-hover:translate-x-1 transition-transform" />
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-6 sm:mb-8 leading-[1.1] px-4"
+            >
+              Your Future. <br />
+              <span className="text-blue-600">Without the Noise.</span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-base sm:text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed mb-8 sm:mb-10 px-4"
+            >
+              EduNext helps you find the right course, secure scholarships, and connect with alumni—all while keeping your data 100% private.
+            </motion.p>
+            
+            <Link href={user ? "/home" : "/register"}>
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-slate-900 text-white rounded-full font-bold text-base sm:text-lg hover:bg-slate-800 transition-all shadow-xl hover:-translate-y-1 flex items-center gap-2 cursor-pointer"
+              >
+                {user ? "Go to Dashboard" : "Get Started for Free"} <ArrowRight size={20} />
+              </motion.button>
+            </Link>
+          </div>
+
+          <div className="max-w-7xl mx-auto">
+            <div className="grid lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-start">
+              <div className="lg:col-span-4 flex flex-col gap-3 lg:pt-8">
+                {features.map((feature, index) => (
+                  <button
+                    key={feature.id}
+                    onClick={() => handleFeatureClick(index)}
+                    className={`text-left p-4 sm:p-6 rounded-2xl transition-all duration-300 group relative overflow-hidden border cursor-pointer ${
+                      activeFeature === index
+                        ? "bg-white shadow-xl shadow-slate-200/60 border-slate-100 lg:scale-105 z-10 ring-1 ring-black/5"
+                        : "bg-transparent hover:bg-slate-50 border-transparent opacity-60 hover:opacity-100"
+                    }`}
+                  >
+                    <div
+                      className={`absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600 transition-transform duration-300 rounded-l-2xl ${
+                        activeFeature === index ? "scale-y-100" : "scale-y-0"
+                      }`}
+                    />
+
+                    <div className="flex items-center gap-3 mb-3">
+                      <div
+                        className={`p-2.5 rounded-xl transition-colors ${
+                          activeFeature === index
+                            ? "bg-blue-50 text-blue-600"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        <feature.icon size={22} />
+                      </div>
+                      <h3
+                        className={`font-bold text-base sm:text-lg ${
+                          activeFeature === index ? "text-slate-900" : "text-slate-600"
+                        }`}
+                      >
+                        {feature.title}
+                      </h3>
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed pl-1">
+                      {feature.description}
+                    </p>
+                  </button>
+                ))}
+              </div>
+
+              <div className="lg:col-span-8 h-[400px] sm:h-[500px] lg:h-[600px] perspective-1000">
+                <div className="relative w-full h-full">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeFeature}
+                      initial={{ opacity: 0, x: 50, rotateY: 5 }}
+                      animate={{ opacity: 1, x: 0, rotateY: 0 }}
+                      exit={{ opacity: 0, x: -50, rotateY: -5 }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                      className="w-full h-full"
+                    >
+                      <ActiveComponent />
+                    </motion.div>
+                  </AnimatePresence>
+
+                  <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-r from-blue-100/30 to-blue-100/30 blur-3xl rounded-full pointer-events-none" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Section */}
+      <TrustSection />
+
+      {/* Pain Points Section */}
+      <PainPoints />
+    </>
+  );
+}

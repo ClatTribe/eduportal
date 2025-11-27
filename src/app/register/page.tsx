@@ -353,7 +353,7 @@ const RegisterPage = () => {
   // ✅ Redirect if already logged in
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/'); // Use replace to prevent back button issues
+      router.replace('/home'); // Use replace to prevent back button issues
     }
   }, [user, loading, router]);
 
