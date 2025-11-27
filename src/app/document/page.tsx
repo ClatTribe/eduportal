@@ -66,10 +66,17 @@ const DocumentUploadPage = () => {
     other: null
   });
 
-  const [feedback, setFeedback] = useState<Record<'lor' | 'sop' | 'passport', DocumentFeedback>>({
+  // Updated feedback to include all document categories
+  const [feedback, setFeedback] = useState<Record<DocumentCategory, DocumentFeedback>>({
+    tenth: { text: null, updatedAt: null, commentBy: null, status: false },
+    twelfth: { text: null, updatedAt: null, commentBy: null, status: false },
+    graduation: { text: null, updatedAt: null, commentBy: null, status: false },
+    pg: { text: null, updatedAt: null, commentBy: null, status: false },
     lor: { text: null, updatedAt: null, commentBy: null, status: false },
     sop: { text: null, updatedAt: null, commentBy: null, status: false },
-    passport: { text: null, updatedAt: null, commentBy: null, status: false }
+    passport: { text: null, updatedAt: null, commentBy: null, status: false },
+    resume: { text: null, updatedAt: null, commentBy: null, status: false },
+    other: { text: null, updatedAt: null, commentBy: null, status: false }
   });
 
   const [loading, setLoading] = useState(true);
@@ -97,7 +104,6 @@ const DocumentUploadPage = () => {
         setUserProfile({ target_degree: profileData.degree || 'Bachelors' });
       } else if (profileError) {
         console.error('Error fetching profile:', profileError);
-        // Set default if profile doesn't exist yet
         setUserProfile({ target_degree: 'Bachelors' });
       }
       
@@ -122,8 +128,32 @@ const DocumentUploadPage = () => {
           other: docData.other_docs || []
         });
 
-        // Parse feedback for verified categories
+        // Parse feedback for ALL categories
         setFeedback({
+          tenth: {
+            text: docData.tenth_feedback,
+            updatedAt: docData.tenth_feedback_updated_at,
+            commentBy: docData.tenth_feedback_by,
+            status: docData.tenth_status || false
+          },
+          twelfth: {
+            text: docData.twelfth_feedback,
+            updatedAt: docData.twelfth_feedback_updated_at,
+            commentBy: docData.twelfth_feedback_by,
+            status: docData.twelfth_status || false
+          },
+          graduation: {
+            text: docData.graduation_feedback,
+            updatedAt: docData.graduation_feedback_updated_at,
+            commentBy: docData.graduation_feedback_by,
+            status: docData.graduation_status || false
+          },
+          pg: {
+            text: docData.pg_feedback,
+            updatedAt: docData.pg_feedback_updated_at,
+            commentBy: docData.pg_feedback_by,
+            status: docData.pg_status || false
+          },
           lor: {
             text: docData.lor_feedback,
             updatedAt: docData.lor_feedback_updated_at,
@@ -141,19 +171,43 @@ const DocumentUploadPage = () => {
             updatedAt: docData.passport_feedback_updated_at,
             commentBy: docData.passport_feedback_by,
             status: docData.passport_status || false
+          },
+          resume: {
+            text: docData.resume_feedback,
+            updatedAt: docData.resume_feedback_updated_at,
+            commentBy: docData.resume_feedback_by,
+            status: docData.resume_status || false
+          },
+          other: {
+            text: docData.other_feedback,
+            updatedAt: docData.other_feedback_updated_at,
+            commentBy: docData.other_feedback_by,
+            status: docData.other_status || false
           }
         });
       } else if (docError && docError.code === 'PGRST116') {
         // No record exists, create one
-        const { error: insertError } = await supabase
+        console.log('Creating new document record for user:', user?.id);
+        
+        const { data: insertData, error: insertError } = await supabase
           .from('student_documents')
-          .insert([{ user_id: user?.id }]);
+          .insert([{ 
+            user_id: user?.id,
+            username: user?.email || user?.user_metadata?.email || 'Unknown User'
+          }])
+          .select();
         
         if (insertError) {
-          console.error('Error creating document record:', insertError);
+          console.error('Error creating document record:', {
+            message: insertError.message,
+            details: insertError.details,
+            hint: insertError.hint,
+            code: insertError.code,
+            user_id: user?.id
+          });
+        } else {
+          console.log('Document record created successfully:', insertData);
         }
-      } else if (docError) {
-        console.error('Error fetching documents:', docError);
       }
       
     } catch (err) {
@@ -340,9 +394,6 @@ const DocumentUploadPage = () => {
   };
 
   // Determine which categories to show based on degree
-  // Bachelors: 10th + 12th only
-  // Masters/MBA: 10th + 12th + Graduation
-  // PhD: 10th + 12th + Graduation + PG
   const shouldShowGraduation = ['Masters', 'MBA', 'PhD'].includes(userProfile.target_degree);
   const shouldShowPG = userProfile.target_degree === 'PhD';
 
@@ -360,28 +411,26 @@ const DocumentUploadPage = () => {
     category, 
     title, 
     description, 
-    hasVerification = false,
     maxFiles = 5,
     required = true
   }: { 
     category: DocumentCategory; 
     title: string; 
     description: string;
-    hasVerification?: boolean;
     maxFiles?: number;
     required?: boolean;
   }) => {
     const docs = documents[category];
     const isUploading = uploading[category];
     const error = errors[category];
-    const docFeedback = hasVerification ? feedback[category as 'lor' | 'sop' | 'passport'] : null;
+    const docFeedback = feedback[category];
 
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-100 hover:border-[#FECDD3] transition-all">
+      <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-100 hover:border-pink-200 transition-all">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-1">
-              {title} {required && <span className="text-[#A51C30]">*</span>}
+              {title} {required && <span className="text-red-600">*</span>}
             </h3>
             <p className="text-sm text-gray-600">{description}</p>
             <p className="text-xs text-gray-500 mt-1">
@@ -406,7 +455,7 @@ const DocumentUploadPage = () => {
 
         {/* Upload Area */}
         {docs.length < maxFiles && (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#A51C30] hover:bg-[#FEF2F3] transition-all mb-4">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-red-600 hover:bg-red-50 transition-all mb-4">
             <input
               type="file"
               id={`file-${category}`}
@@ -417,11 +466,11 @@ const DocumentUploadPage = () => {
             />
             <label htmlFor={`file-${category}`} className="cursor-pointer">
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#FEF2F3] to-[#FECDD3] rounded-full flex items-center justify-center mb-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-red-50 to-pink-100 rounded-full flex items-center justify-center mb-3">
                   {isUploading ? (
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#A51C30]"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600"></div>
                   ) : (
-                    <Upload className="text-[#A51C30]" size={24} />
+                    <Upload className="text-red-600" size={24} />
                   )}
                 </div>
                 <p className="text-gray-700 font-semibold text-sm mb-1">
@@ -454,7 +503,7 @@ const DocumentUploadPage = () => {
                   </div>
                   <button
                     onClick={() => handleDelete(category, index)}
-                    className="p-2 text-[#A51C30] hover:bg-[#FEF2F3] rounded-lg transition-all"
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
                     title="Remove file"
                     disabled={isUploading}
                   >
@@ -467,21 +516,27 @@ const DocumentUploadPage = () => {
         )}
 
         {error && (
-          <div className="mt-3 p-3 bg-[#FEF2F3] border-2 border-[#FECDD3] rounded-lg flex items-start gap-2">
-            <AlertCircle className="text-[#A51C30] flex-shrink-0 mt-0.5" size={18} />
-            <p className="text-[#A51C30] text-sm">{error}</p>
+          <div className="mt-3 p-3 bg-red-50 border-2 border-pink-200 rounded-lg flex items-start gap-2">
+            <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={18} />
+            <p className="text-red-600 text-sm">{error}</p>
           </div>
         )}
 
-        {/* Feedback Section (Only for LOR, SOP, Passport) */}
-        {hasVerification && docFeedback?.text && (
-          <div className="mt-4 bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
+        {/* Feedback Section (For ALL categories) */}
+        {docFeedback?.text && (
+          <div className={`mt-4 ${docFeedback.status ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'} border-2 rounded-lg p-4`}>
             <div className="flex items-start gap-3 mb-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-[#A51C30] rounded-lg flex items-center justify-center flex-shrink-0">
-                <MessageSquare className="text-white" size={18} />
+              <div className={`w-10 h-10 bg-gradient-to-br ${docFeedback.status ? 'from-green-500 to-emerald-600' : 'from-orange-500 to-red-600'} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                {docFeedback.status ? (
+                  <Check className="text-white" size={18} />
+                ) : (
+                  <MessageSquare className="text-white" size={18} />
+                )}
               </div>
               <div className="flex-1">
-                <h4 className="font-bold text-gray-800 mb-1 text-sm">Agency Feedback</h4>
+                <h4 className="font-bold text-gray-800 mb-1 text-sm">
+                  {docFeedback.status ? 'Verified ✓' : 'Agency Feedback'}
+                </h4>
                 <div className="flex items-center gap-2 text-xs text-gray-600">
                   <Clock size={12} />
                   <span>{docFeedback.updatedAt ? formatDate(docFeedback.updatedAt) : 'N/A'}</span>
@@ -490,7 +545,7 @@ const DocumentUploadPage = () => {
                 </div>
               </div>
             </div>
-            <div className="bg-white border border-orange-200 rounded-lg p-3">
+            <div className={`${docFeedback.status ? 'bg-white border-green-200' : 'bg-white border-orange-200'} border rounded-lg p-3`}>
               <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">
                 {docFeedback.text}
               </p>
@@ -504,9 +559,9 @@ const DocumentUploadPage = () => {
   if (loading) {
     return (
       <DefaultLayout>
-        <div className="min-h-screen bg-gradient-to-br from-[#FEF2F3] to-[#FECDD3] flex items-center justify-center">
-          <div className="text-xl text-[#A51C30] flex items-center gap-2">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#A51C30]"></div>
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
+          <div className="text-xl text-red-600 flex items-center gap-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600"></div>
             Loading documents...
           </div>
         </div>
@@ -516,13 +571,13 @@ const DocumentUploadPage = () => {
 
   return (
     <DefaultLayout>
-      <div className="min-h-screen bg-gradient-to-br from-[#FEF2F3] to-[#FECDD3] p-4 md:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 p-4 md:p-8">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-6">
             <button
               onClick={() => window.history.back()}
-              className="flex items-center gap-2 text-[#A51C30] hover:text-[#8B1528] mb-4 font-semibold"
+              className="flex items-center gap-2 text-red-600 hover:text-red-800 mb-4 font-semibold"
             >
               <ArrowLeft size={20} />
               Back to Dashboard
@@ -540,7 +595,7 @@ const DocumentUploadPage = () => {
               <div className="text-sm">
                 <p className="font-semibold text-blue-900 mb-1">Important:</p>
                 <p className="text-blue-700">
-                  All required documents must have at least 1 file uploaded. You can upload up to 5 files per category. Files must be in PDF, DOC, DOCX, JPG, or PNG format and not exceed 2MB each.
+                  All required documents must have at least 1 file uploaded. You can upload up to 5 files per category. Files must be in PDF, DOC, DOCX, JPG, or PNG format and not exceed 2MB each. Agency will review and provide feedback on your documents.
                 </p>
               </div>
             </div>
@@ -551,7 +606,7 @@ const DocumentUploadPage = () => {
             {/* Academic Documents Section */}
             <div>
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <FileText className="text-[#A51C30]" size={24} />
+                <FileText className="text-red-600" size={24} />
                 Academic Marksheets
               </h2>
               <div className="space-y-4">
@@ -592,15 +647,14 @@ const DocumentUploadPage = () => {
             {/* Application Documents Section */}
             <div>
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <MessageSquare className="text-[#A51C30]" size={24} />
-                Application Documents (Verified)
+                <MessageSquare className="text-red-600" size={24} />
+                Application Documents
               </h2>
               <div className="space-y-4">
                 <DocumentCard
                   category="lor"
                   title="Letter of Recommendation (LOR)"
                   description="Upload your letters of recommendation from professors or employers"
-                  hasVerification={true}
                   maxFiles={5}
                 />
 
@@ -608,7 +662,6 @@ const DocumentUploadPage = () => {
                   category="sop"
                   title="Statement of Purpose (SOP)"
                   description="Upload your statement of purpose documents"
-                  hasVerification={true}
                   maxFiles={5}
                 />
               </div>
@@ -617,7 +670,7 @@ const DocumentUploadPage = () => {
             {/* Identity Documents Section */}
             <div>
               <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <FileText className="text-[#A51C30]" size={24} />
+                <FileText className="text-red-600" size={24} />
                 Identity & Supporting Documents
               </h2>
               <div className="space-y-4">
@@ -625,7 +678,6 @@ const DocumentUploadPage = () => {
                   category="passport"
                   title="Passport"
                   description="Upload clear copies of all pages of your passport"
-                  hasVerification={true}
                   maxFiles={5}
                 />
 
@@ -654,7 +706,7 @@ const DocumentUploadPage = () => {
               onClick={() => window.history.back()}
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
                 allRequiredDocsUploaded
-                  ? 'bg-gradient-to-r from-[#A51C30] to-[#8B1528] text-white hover:from-[#8B1528] hover:to-[#A51C30] shadow-lg'
+                  ? 'bg-gradient-to-r from-red-600 to-red-800 text-white hover:from-red-700 hover:to-red-900 shadow-lg'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >

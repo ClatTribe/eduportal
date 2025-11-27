@@ -18,6 +18,7 @@ import {
   X,
   Clock,
   Check,
+  ClipboardList,
 } from "lucide-react"
 import { supabase } from "../../../../../lib/supabase"
 
@@ -62,6 +63,36 @@ interface StudentDocument {
   resume_docs: UploadedFile[]
   other_docs: UploadedFile[]
 
+  tenth_feedback: string | null
+  tenth_feedback_updated_at: string | null
+  tenth_feedback_by: string | null
+  tenth_status: boolean
+
+  twelfth_feedback: string | null
+  twelfth_feedback_updated_at: string | null
+  twelfth_feedback_by: string | null
+  twelfth_status: boolean
+
+  graduation_feedback: string | null
+  graduation_feedback_updated_at: string | null
+  graduation_feedback_by: string | null
+  graduation_status: boolean
+
+  pg_feedback: string | null
+  pg_feedback_updated_at: string | null
+  pg_feedback_by: string | null
+  pg_status: boolean
+
+  resume_feedback: string | null
+  resume_feedback_updated_at: string | null
+  resume_feedback_by: string | null
+  resume_status: boolean
+
+  other_feedback: string | null
+  other_feedback_updated_at: string | null
+  other_feedback_by: string | null
+  other_status: boolean
+
   created_at: string
   updated_at: string
 }
@@ -77,21 +108,39 @@ interface FeedbackState {
   lor: DocumentFeedback
   sop: DocumentFeedback
   passport: DocumentFeedback
+  tenth: DocumentFeedback
+  twelfth: DocumentFeedback
+  graduation: DocumentFeedback
+  pg: DocumentFeedback
+  resume: DocumentFeedback
+  other: DocumentFeedback
 }
 
 interface EditingState {
   lor: boolean
   sop: boolean
   passport: boolean
+  tenth: boolean
+  twelfth: boolean
+  graduation: boolean
+  pg: boolean
+  resume: boolean
+  other: boolean
 }
 
 interface DraftState {
   lor: string
   sop: string
   passport: string
+  tenth: string
+  twelfth: string
+  graduation: string
+  pg: string
+  resume: string
+  other: string
 }
 
-type DocumentType = "lor" | "sop" | "passport"
+type DocumentType = "lor" | "sop" | "passport" | "tenth" | "twelfth" | "graduation" | "pg" | "resume" | "other"
 
 interface DocumentCardProps {
   type: string
@@ -130,21 +179,45 @@ const StudentDocumentsPage = () => {
     lor: { text: "", updatedAt: null, commentBy: null, status: false },
     sop: { text: "", updatedAt: null, commentBy: null, status: false },
     passport: { text: "", updatedAt: null, commentBy: null, status: false },
+    tenth: { text: "", updatedAt: null, commentBy: null, status: false },
+    twelfth: { text: "", updatedAt: null, commentBy: null, status: false },
+    graduation: { text: "", updatedAt: null, commentBy: null, status: false },
+    pg: { text: "", updatedAt: null, commentBy: null, status: false },
+    resume: { text: "", updatedAt: null, commentBy: null, status: false },
+    other: { text: "", updatedAt: null, commentBy: null, status: false },
   })
   const [isEditing, setIsEditing] = useState<EditingState>({
     lor: false,
     sop: false,
     passport: false,
+    tenth: false,
+    twelfth: false,
+    graduation: false,
+    pg: false,
+    resume: false,
+    other: false,
   })
   const [draft, setDraft] = useState<DraftState>({
     lor: "",
     sop: "",
     passport: "",
+    tenth: "",
+    twelfth: "",
+    graduation: "",
+    pg: "",
+    resume: "",
+    other: "",
   })
   const [isSaving, setIsSaving] = useState<EditingState>({
     lor: false,
     sop: false,
     passport: false,
+    tenth: false,
+    twelfth: false,
+    graduation: false,
+    pg: false,
+    resume: false,
+    other: false,
   })
 
   useEffect(() => {
@@ -201,6 +274,42 @@ const StudentDocumentsPage = () => {
           updatedAt: data[0].passport_feedback_updated_at,
           commentBy: data[0].passport_feedback_by,
           status: data[0].passport_status || false,
+        },
+        tenth: {
+          text: data[0].tenth_feedback || "",
+          updatedAt: data[0].tenth_feedback_updated_at,
+          commentBy: data[0].tenth_feedback_by,
+          status: data[0].tenth_status || false,
+        },
+        twelfth: {
+          text: data[0].twelfth_feedback || "",
+          updatedAt: data[0].twelfth_feedback_updated_at,
+          commentBy: data[0].twelfth_feedback_by,
+          status: data[0].twelfth_status || false,
+        },
+        graduation: {
+          text: data[0].graduation_feedback || "",
+          updatedAt: data[0].graduation_feedback_updated_at,
+          commentBy: data[0].graduation_feedback_by,
+          status: data[0].graduation_status || false,
+        },
+        pg: {
+          text: data[0].pg_feedback || "",
+          updatedAt: data[0].pg_feedback_updated_at,
+          commentBy: data[0].pg_feedback_by,
+          status: data[0].pg_status || false,
+        },
+        resume: {
+          text: data[0].resume_feedback || "",
+          updatedAt: data[0].resume_feedback_updated_at,
+          commentBy: data[0].resume_feedback_by,
+          status: data[0].resume_status || false,
+        },
+        other: {
+          text: data[0].other_feedback || "",
+          updatedAt: data[0].other_feedback_updated_at,
+          commentBy: data[0].other_feedback_by,
+          status: data[0].other_status || false,
         },
       })
     } catch (err) {
@@ -714,12 +823,21 @@ const StudentDocumentsPage = () => {
                 </span>
               </div>
             </div>
-            <div
-              className={`px-4 py-2 rounded-lg font-semibold ${
-                allRequiredDocsUploaded ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
-              }`}
-            >
-              {allRequiredDocsUploaded ? "✓ Complete" : "⚠ Incomplete"}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.push(`/agency/dashboard/${userId}/applications`)}
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold flex items-center gap-2 shadow-md"
+              >
+                <ClipboardList size={18} />
+                View Application
+              </button>
+              <div
+                className={`px-4 py-2 rounded-lg font-semibold ${
+                  allRequiredDocsUploaded ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                }`}
+              >
+                {allRequiredDocsUploaded ? "✓ Complete" : "⚠ Incomplete"}
+              </div>
             </div>
           </div>
         </div>
@@ -743,6 +861,7 @@ const StudentDocumentsPage = () => {
               </div>
               <p className={`text-sm ${student.tenth_marksheets?.length > 0 ? "text-green-600" : "text-gray-500"}`}>
                 {student.tenth_marksheets?.length || 0} file(s)
+                {feedback.tenth.status && " • Verified"}
               </p>
             </div>
 
@@ -761,6 +880,7 @@ const StudentDocumentsPage = () => {
               </div>
               <p className={`text-sm ${student.twelfth_marksheets?.length > 0 ? "text-green-600" : "text-gray-500"}`}>
                 {student.twelfth_marksheets?.length || 0} file(s)
+                {feedback.twelfth.status && " • Verified"}
               </p>
             </div>
 
@@ -779,6 +899,7 @@ const StudentDocumentsPage = () => {
               </div>
               <p className={`text-sm ${student.graduation_docs?.length > 0 ? "text-green-600" : "text-gray-500"}`}>
                 {student.graduation_docs?.length || 0} file(s)
+                {feedback.graduation.status && " • Verified"}
               </p>
             </div>
 
@@ -841,7 +962,7 @@ const StudentDocumentsPage = () => {
           </div>
         </div>
 
-        {/* Academic Documents Section */}
+        {/* Academic Documents Section - Added hasVerification=true for all */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <FileText className="text-red-600" size={24} />
@@ -853,6 +974,17 @@ const StudentDocumentsPage = () => {
               title="10th Grade Marksheet"
               icon={FileText}
               files={student.tenth_marksheets || []}
+              hasVerification={true}
+              feedback={feedback.tenth}
+              isEditing={isEditing.tenth}
+              draft={draft.tenth}
+              isSaving={isSaving.tenth}
+              onEdit={() => handleEditFeedback("tenth")}
+              onSave={() => handleSaveFeedback("tenth")}
+              onDelete={() => handleDeleteFeedback("tenth")}
+              onCancel={() => handleCancelEdit("tenth")}
+              onDraftChange={(value) => setDraft((prev) => ({ ...prev, tenth: value }))}
+              onStatusToggle={() => handleStatusToggle("tenth")}
               formatDate={formatDate}
               formatFileSize={formatFileSize}
               handleDownload={handleDownload}
@@ -864,6 +996,17 @@ const StudentDocumentsPage = () => {
               title="12th Grade Marksheet"
               icon={FileText}
               files={student.twelfth_marksheets || []}
+              hasVerification={true}
+              feedback={feedback.twelfth}
+              isEditing={isEditing.twelfth}
+              draft={draft.twelfth}
+              isSaving={isSaving.twelfth}
+              onEdit={() => handleEditFeedback("twelfth")}
+              onSave={() => handleSaveFeedback("twelfth")}
+              onDelete={() => handleDeleteFeedback("twelfth")}
+              onCancel={() => handleCancelEdit("twelfth")}
+              onDraftChange={(value) => setDraft((prev) => ({ ...prev, twelfth: value }))}
+              onStatusToggle={() => handleStatusToggle("twelfth")}
               formatDate={formatDate}
               formatFileSize={formatFileSize}
               handleDownload={handleDownload}
@@ -875,6 +1018,17 @@ const StudentDocumentsPage = () => {
               title="Graduation Degree / Marksheets"
               icon={FileText}
               files={student.graduation_docs || []}
+              hasVerification={true}
+              feedback={feedback.graduation}
+              isEditing={isEditing.graduation}
+              draft={draft.graduation}
+              isSaving={isSaving.graduation}
+              onEdit={() => handleEditFeedback("graduation")}
+              onSave={() => handleSaveFeedback("graduation")}
+              onDelete={() => handleDeleteFeedback("graduation")}
+              onCancel={() => handleCancelEdit("graduation")}
+              onDraftChange={(value) => setDraft((prev) => ({ ...prev, graduation: value }))}
+              onStatusToggle={() => handleStatusToggle("graduation")}
               formatDate={formatDate}
               formatFileSize={formatFileSize}
               handleDownload={handleDownload}
@@ -886,6 +1040,17 @@ const StudentDocumentsPage = () => {
               title="Postgraduate Degree / Marksheets"
               icon={FileText}
               files={student.pg_docs || []}
+              hasVerification={true}
+              feedback={feedback.pg}
+              isEditing={isEditing.pg}
+              draft={draft.pg}
+              isSaving={isSaving.pg}
+              onEdit={() => handleEditFeedback("pg")}
+              onSave={() => handleSaveFeedback("pg")}
+              onDelete={() => handleDeleteFeedback("pg")}
+              onCancel={() => handleCancelEdit("pg")}
+              onDraftChange={(value) => setDraft((prev) => ({ ...prev, pg: value }))}
+              onStatusToggle={() => handleStatusToggle("pg")}
               formatDate={formatDate}
               formatFileSize={formatFileSize}
               handleDownload={handleDownload}
@@ -947,7 +1112,7 @@ const StudentDocumentsPage = () => {
           </div>
         </div>
 
-        {/* Identity & Supporting Documents Section */}
+        {/* Identity & Supporting Documents Section - Added hasVerification for resume and other */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <FileText className="text-red-600" size={24} />
@@ -981,6 +1146,17 @@ const StudentDocumentsPage = () => {
               title="Resume / CV"
               icon={FileText}
               files={student.resume_docs || []}
+              hasVerification={true}
+              feedback={feedback.resume}
+              isEditing={isEditing.resume}
+              draft={draft.resume}
+              isSaving={isSaving.resume}
+              onEdit={() => handleEditFeedback("resume")}
+              onSave={() => handleSaveFeedback("resume")}
+              onDelete={() => handleDeleteFeedback("resume")}
+              onCancel={() => handleCancelEdit("resume")}
+              onDraftChange={(value) => setDraft((prev) => ({ ...prev, resume: value }))}
+              onStatusToggle={() => handleStatusToggle("resume")}
               formatDate={formatDate}
               formatFileSize={formatFileSize}
               handleDownload={handleDownload}
@@ -992,6 +1168,17 @@ const StudentDocumentsPage = () => {
               title="Other Documents"
               icon={FileText}
               files={student.other_docs || []}
+              hasVerification={true}
+              feedback={feedback.other}
+              isEditing={isEditing.other}
+              draft={draft.other}
+              isSaving={isSaving.other}
+              onEdit={() => handleEditFeedback("other")}
+              onSave={() => handleSaveFeedback("other")}
+              onDelete={() => handleDeleteFeedback("other")}
+              onCancel={() => handleCancelEdit("other")}
+              onDraftChange={(value) => setDraft((prev) => ({ ...prev, other: value }))}
+              onStatusToggle={() => handleStatusToggle("other")}
               formatDate={formatDate}
               formatFileSize={formatFileSize}
               handleDownload={handleDownload}
