@@ -66,7 +66,7 @@ const Navbar: React.FC = () => {
     >
       <div className="container mx-auto px-6 flex items-center justify-between max-w-7xl">
         <Link href="/" className="flex items-center gap-2 cursor-pointer">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-[#A51C30] rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-xl">E</span>
           </div>
           <span className="text-xl font-bold tracking-tight text-slate-900">EduPortal</span>
@@ -74,20 +74,20 @@ const Navbar: React.FC = () => {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors cursor-pointer">
+          <a href="#features" className="text-sm font-medium text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer">
             Features
           </a>
-          <a href="#mission" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors cursor-pointer">
+          <a href="#mission" className="text-sm font-medium text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer">
             Our Mission
           </a>
-          <a href="#trust" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors cursor-pointer">
+          <a href="#trust" className="text-sm font-medium text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer">
             Why Us
           </a>
 
           {user ? (
             // User is logged in
             <>
-              <Link href="/home" className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors cursor-pointer">
+              <Link href="/home" className="px-4 py-2 text-sm font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-full transition-colors cursor-pointer">
                 Dashboard
               </Link>
               <button
@@ -97,14 +97,14 @@ const Navbar: React.FC = () => {
                 Logout <LogOut size={14} className="group-hover:translate-x-0.5 transition-transform" />
               </button>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200">
-                <User size={16} className="text-blue-600" />
+                <User size={16} className="text-[#A51C30]" />
                 <span className="text-sm font-medium text-slate-700">{user.user_metadata?.full_name || user.email}</span>
               </div>
             </>
           ) : (
             // User is not logged in
             <>
-              <Link href="/register" className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors cursor-pointer">
+              <Link href="/register" className="px-4 py-2 text-sm font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-full transition-colors cursor-pointer">
                 Log In
               </Link>
               <Link href="/register" className="group px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-full transition-all flex items-center gap-1 cursor-pointer">
@@ -127,7 +127,7 @@ const Navbar: React.FC = () => {
         <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-100 p-6 flex flex-col gap-4 shadow-xl">
           {user && (
             <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl mb-2">
-              <User size={20} className="text-blue-600" />
+              <User size={20} className="text-[#A51C30]" />
               <span className="text-sm font-medium text-slate-700">{user.user_metadata?.full_name || user.email}</span>
             </div>
           )}
@@ -146,7 +146,7 @@ const Navbar: React.FC = () => {
           {user ? (
             // User is logged in
             <>
-              <Link href="/home" className="w-full py-3 text-center font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer">
+              <Link href="/home" className="w-full py-3 text-center font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer">
                 Dashboard
               </Link>
               <button
@@ -160,7 +160,7 @@ const Navbar: React.FC = () => {
           ) : (
             // User is not logged in
             <>
-              <Link href="/register" className="w-full py-3 text-center font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer">
+              <Link href="/register" className="w-full py-3 text-center font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-xl cursor-pointer">
                 Log In
               </Link>
               <Link href="/register" className="w-full py-3 text-center font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-xl cursor-pointer">
@@ -212,8 +212,8 @@ export default function Hero() {
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-sm mb-6 sm:mb-8 group cursor-pointer hover:bg-slate-100 transition-colors"
             >
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-600 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A51C30] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#A51C30]"></span>
               </span>
               <span className="text-xs font-bold text-slate-600 tracking-wide uppercase">
                 New: Admit Finder 2.0 is live
@@ -228,7 +228,7 @@ export default function Hero() {
               className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-6 sm:mb-8 leading-[1.1] px-4"
             >
               Your Future. <br />
-              <span className="text-blue-600">Without the Noise.</span>
+              <span className="text-[#A51C30]">Without the Noise.</span>
             </motion.h1>
 
             <motion.p
@@ -266,7 +266,7 @@ export default function Hero() {
                     }`}
                   >
                     <div
-                      className={`absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600 transition-transform duration-300 rounded-l-2xl ${
+                      className={`absolute left-0 top-0 bottom-0 w-1.5 bg-[#A51C30] transition-transform duration-300 rounded-l-2xl ${
                         activeFeature === index ? "scale-y-100" : "scale-y-0"
                       }`}
                     />
@@ -275,7 +275,7 @@ export default function Hero() {
                       <div
                         className={`p-2.5 rounded-xl transition-colors ${
                           activeFeature === index
-                            ? "bg-blue-50 text-blue-600"
+                            ? "bg-blue-50 text-[#A51C30]"
                             : "bg-slate-100 text-slate-500"
                         }`}
                       >

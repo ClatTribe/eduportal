@@ -380,6 +380,54 @@ const DashboardPage = () => {
               </div>
             )}
           </div>
+
+          <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-[#FECDD3]">
+            <div className="flex items-center gap-2 mb-6">
+              <Target className="text-[#A51C30]" size={24} />
+              <h2 className="text-2xl font-semibold text-gray-800">Quick Actions</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <button 
+                onClick={handleCourseFinderClick}
+                className="group p-6 border-2 border-[#FECDD3] rounded-xl hover:bg-[#FEF2F3] transition-all text-left hover:shadow-lg"
+              >
+                <div className="text-4xl mb-3">🔍</div>
+                <div className="font-bold text-gray-800 mb-1 text-lg">Find Courses</div>
+                <div className="text-sm text-gray-600">Explore programs worldwide</div>
+                <ArrowRight className="text-[#A51C30] mt-2 group-hover:translate-x-1 transition-transform" size={20} />
+              </button>
+
+              <button 
+                onClick={handleAdmitFinderClick}
+                className="group p-6 border-2 border-blue-200 rounded-xl hover:bg-blue-50 transition-all text-left hover:shadow-lg"
+              >
+                <div className="text-4xl mb-3">👥</div>
+                <div className="font-bold text-gray-800 mb-1 text-lg">Admit Finder</div>
+                <div className="text-sm text-gray-600">Connect with admits</div>
+                <ArrowRight className="text-blue-600 mt-2 group-hover:translate-x-1 transition-transform" size={20} />
+              </button>
+
+              <button 
+                onClick={handleScholarshipClick}
+                className="group p-6 border-2 border-green-200 rounded-xl hover:bg-green-50 transition-all text-left hover:shadow-lg"
+              >
+                <div className="text-4xl mb-3">💵</div>
+                <div className="font-bold text-gray-800 mb-1 text-lg">Scholarships</div>
+                <div className="text-sm text-gray-600">Find funding options</div>
+                <ArrowRight className="text-green-600 mt-2 group-hover:translate-x-1 transition-transform" size={20} />
+              </button>
+
+              <button 
+                onClick={handleShortlistClick}
+                className="group p-6 border-2 border-purple-200 rounded-xl hover:bg-purple-50 transition-all text-left hover:shadow-lg"
+              >
+                <div className="text-4xl mb-3">⭐</div>
+                <div className="font-bold text-gray-800 mb-1 text-lg">Shortlist Builder</div>
+                <div className="text-sm text-gray-600">Build your dream list</div>
+                <ArrowRight className="text-purple-600 mt-2 group-hover:translate-x-1 transition-transform" size={20} />
+              </button>
+            </div>
+          </div>
           
           {/* Applications Section */}
           {applications.length > 0 && (
@@ -489,54 +537,6 @@ const DashboardPage = () => {
                   <span className="text-3xl">🎓</span>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-[#FECDD3]">
-            <div className="flex items-center gap-2 mb-6">
-              <Target className="text-[#A51C30]" size={24} />
-              <h2 className="text-2xl font-semibold text-gray-800">Quick Actions</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <button 
-                onClick={handleCourseFinderClick}
-                className="group p-6 border-2 border-[#FECDD3] rounded-xl hover:bg-[#FEF2F3] transition-all text-left hover:shadow-lg"
-              >
-                <div className="text-4xl mb-3">🔍</div>
-                <div className="font-bold text-gray-800 mb-1 text-lg">Find Courses</div>
-                <div className="text-sm text-gray-600">Explore programs worldwide</div>
-                <ArrowRight className="text-[#A51C30] mt-2 group-hover:translate-x-1 transition-transform" size={20} />
-              </button>
-
-              <button 
-                onClick={handleAdmitFinderClick}
-                className="group p-6 border-2 border-blue-200 rounded-xl hover:bg-blue-50 transition-all text-left hover:shadow-lg"
-              >
-                <div className="text-4xl mb-3">👥</div>
-                <div className="font-bold text-gray-800 mb-1 text-lg">Admit Finder</div>
-                <div className="text-sm text-gray-600">Connect with admits</div>
-                <ArrowRight className="text-blue-600 mt-2 group-hover:translate-x-1 transition-transform" size={20} />
-              </button>
-
-              <button 
-                onClick={handleScholarshipClick}
-                className="group p-6 border-2 border-green-200 rounded-xl hover:bg-green-50 transition-all text-left hover:shadow-lg"
-              >
-                <div className="text-4xl mb-3">💵</div>
-                <div className="font-bold text-gray-800 mb-1 text-lg">Scholarships</div>
-                <div className="text-sm text-gray-600">Find funding options</div>
-                <ArrowRight className="text-green-600 mt-2 group-hover:translate-x-1 transition-transform" size={20} />
-              </button>
-
-              <button 
-                onClick={handleShortlistClick}
-                className="group p-6 border-2 border-purple-200 rounded-xl hover:bg-purple-50 transition-all text-left hover:shadow-lg"
-              >
-                <div className="text-4xl mb-3">⭐</div>
-                <div className="font-bold text-gray-800 mb-1 text-lg">Shortlist Builder</div>
-                <div className="text-sm text-gray-600">Build your dream list</div>
-                <ArrowRight className="text-purple-600 mt-2 group-hover:translate-x-1 transition-transform" size={20} />
-              </button>
             </div>
           </div>
 
