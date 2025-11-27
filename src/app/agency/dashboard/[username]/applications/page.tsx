@@ -81,72 +81,77 @@ const AgencyStudentApplicationsPage: React.FC = () => {
   }, [isAuthenticated, checkingAuth, studentUserId]);
 
   const fetchStudentApplications = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      console.log("========================================");
-      console.log("🎯 FETCHING FOR STUDENT:", studentUserId);
-      console.log("========================================");
+  try {
+    setLoading(true);
+    setError(null);
 
-      // Fetch student profile
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, email, full_name")
-        .eq("id", studentUserId)
-        .single();
+    console.log("========================================");
+    console.log("🎯 FETCHING FOR STUDENT:", studentUserId);
+    console.log("========================================");
 
-      if (profileError) {
-        console.error("❌ Profile error:", profileError);
-        setError("Student not found");
-        return;
-      }
+    // Fetch student profile
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, email, full_name")
+      .eq("id", studentUserId)
+      .single();
 
-      console.log("✅ Profile loaded:", profileData);
-      setStudentProfile(profileData);
-
-      // Fetch applications - DIRECT QUERY
-      console.log("🔍 Querying application_builder for user_id:", studentUserId);
-      
-      const { data: appsData, error: appsError } = await supabase
-        .from("application_builder")
-        .select("*")
-        .eq("user_id", studentUserId);
-
-      if (appsError) {
-        console.error("❌ Apps error:", appsError);
-        setError("Failed to load applications");
-        return;
-      }
-
-      console.log("✅ RAW DATA FROM DATABASE:", appsData);
-      console.log("✅ NUMBER OF APPLICATIONS:", appsData?.length);
-
-      if (!appsData || appsData.length === 0) {
-        console.warn("⚠️ NO APPLICATIONS FOUND FOR USER:", studentUserId);
-        setApplications([]);
-        return;
-      }
-
-      // Map applications with profile
-      const mappedApps = appsData.map((app) => ({
-        ...app,
-        userProfile: profileData,
-      }));
-
-      console.log("✅ MAPPED APPLICATIONS:", mappedApps);
-      console.log("========================================");
-
-      // Set state
-      setApplications(mappedApps);
-
-    } catch (e: any) {
-      console.error("❌ CATCH ERROR:", e);
-      setError(e.message || "Unknown error");
-    } finally {
-      setLoading(false);
+    if (profileError) {
+      console.error("❌ Profile error:", profileError);
+      setError("Student not found");
+      return;
     }
-  };
+
+    console.log("✅ Profile loaded:", profileData);
+    setStudentProfile(profileData);
+
+    // Fetch applications - DIRECT QUERY
+    console.log("🔍 Querying application_builder for user_id:", studentUserId);
+
+    const { data: appsData, error: appsError } = await supabase
+      .from("application_builder")
+      .select("*")
+      .eq("user_id", studentUserId);
+
+    if (appsError) {
+      console.error("❌ Apps error:", appsError);
+      setError("Failed to load applications");
+      return;
+    }
+
+    console.log("✅ RAW DATA FROM DATABASE:", appsData);
+    console.log("✅ NUMBER OF APPLICATIONS:", appsData?.length);
+
+    if (!appsData || appsData.length === 0) {
+      console.warn("⚠️ NO APPLICATIONS FOUND FOR USER:", studentUserId);
+      setApplications([]);
+      return;
+    }
+
+    // Map applications with profile
+    const mappedApps = appsData.map((app) => ({
+      ...app,
+      userProfile: profileData,
+    }));
+
+    console.log("✅ MAPPED APPLICATIONS:", mappedApps);
+    console.log("========================================");
+
+    // Set state
+    setApplications(mappedApps);
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      console.error("❌ CATCH ERROR:", e);
+      setError(e.message);
+    } else {
+      console.error("❌ CATCH ERROR:", e);
+      setError("Unknown error");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const toggleRow = (id: number) => {
     setExpandedRows((prev) => {
@@ -281,7 +286,7 @@ const AgencyStudentApplicationsPage: React.FC = () => {
             <div className="flex-1">
               <h1 className="text-3xl md:text-4xl font-bold text-red-600 mb-2 flex items-center gap-3">
                 <User size={36} />
-                {studentProfile?.full_name || studentProfile?.email || "Student"}'s Applications
+                {studentProfile?.full_name || studentProfile?.email || "Student"} Applications
               </h1>
               <p className="text-gray-600">
                 View and manage applications for this student
@@ -360,7 +365,7 @@ const AgencyStudentApplicationsPage: React.FC = () => {
             <div className="text-center py-16 bg-gray-50 rounded-xl">
               <FileText className="mx-auto mb-4 text-gray-300" size={64} />
               <h3 className="text-xl font-semibold text-gray-600 mb-2">No Applications Yet</h3>
-              <p className="text-gray-500">This student hasn't submitted any applications yet</p>
+              <p className="text-gray-500">This student has not submitted any applications yet</p>
             </div>
           ) : (
             <>
