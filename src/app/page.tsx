@@ -65,12 +65,16 @@ const Navbar: React.FC = () => {
       }`}
     >
       <div className="container mx-auto px-6 flex items-center justify-between max-w-7xl">
-        <Link href="/" className="flex items-center gap-2 cursor-pointer">
-          <div className="w-8 h-8 bg-[#A51C30] rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xl">E</span>
-          </div>
-          <span className="text-xl font-bold tracking-tight text-slate-900">EduPortal</span>
-        </Link>
+        <Link href="/" className="flex items-center gap-2">
+            <img
+              src="/images.svg"
+              alt="EduNext Logo"
+              width={40}
+              height={40}
+              className="h-10 w-10 object-contain"
+            />
+            <span className="text-xl font-bold text-black">EduAbroad</span>
+          </Link>
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8">
@@ -204,53 +208,64 @@ export default function Hero() {
         <div className="absolute inset-0 z-0 pointer-events-none bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-50" />
 
         <div className="container mx-auto px-4 sm:px-6 relative z-10 max-w-7xl">
-          <div className="flex flex-col items-center text-center mb-12 sm:mb-20">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-sm mb-6 sm:mb-8 group cursor-pointer hover:bg-slate-100 transition-colors"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A51C30] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#A51C30]"></span>
-              </span>
-              <span className="text-xs font-bold text-slate-600 tracking-wide uppercase">
-                New: Admit Finder 2.0 is live
-              </span>
-              <ArrowRight size={12} className="text-slate-400 group-hover:translate-x-1 transition-transform" />
-            </motion.div>
+          <div
+  className="relative bg-cover bg-center bg-no-repeat"
+  style={{
+    backgroundImage:
+      "url('https://res.cloudinary.com/daetdadtt/image/upload/v1764789875/university_optimized_9000_pyiilj.png')",
+  }}
+>
+  <div className="flex flex-col items-center text-center mb-12 sm:mb-20 bg-white/50 backdrop-blur-xs m py-10">
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-6 sm:mb-8 leading-[1.1] px-4"
-            >
-              Your Future. <br />
-              <span className="text-[#A51C30]">Without the Noise.</span>
-            </motion.h1>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-sm mb-6 sm:mb-8 group cursor-pointer hover:bg-slate-100 transition-colors"
+    >
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A51C30] opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#A51C30]"></span>
+      </span>
+      <span className="text-xs font-bold text-slate-600 tracking-wide uppercase">
+        New: Admit Finder 2.0 is live
+      </span>
+      <ArrowRight size={12} className="text-slate-400 group-hover:translate-x-1 transition-transform" />
+    </motion.div>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-base sm:text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed mb-8 sm:mb-10 px-4"
-            >
-              EduNext helps you find the right course, secure scholarships, and connect with alumni—all while keeping your data 100% private.
-            </motion.p>
-            
-            <Link href={user ? "/home" : "/register"}>
-              <motion.button
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                className="px-6 sm:px-8 py-3 sm:py-4 bg-slate-900 text-white rounded-full font-bold text-base sm:text-lg hover:bg-slate-800 transition-all shadow-xl hover:-translate-y-1 flex items-center gap-2 cursor-pointer"
-              >
-                {user ? "Go to Dashboard" : "Get Started for Free"} <ArrowRight size={20} />
-              </motion.button>
-            </Link>
-          </div>
+    <motion.h1
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.1 }}
+      className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-6 sm:mb-8 leading-[1.1] px-4"
+    >
+      Your Dream MBA College <br />
+      <span className="text-[#A51C30]">Without the Noise.</span>
+    </motion.h1>
+
+    <motion.p
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.2 }}
+      className="text-base sm:text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed mb-8 sm:mb-10 px-4"
+    >
+      EduAbroad helps you find the right course, secure scholarships,
+      and connect with alumni—all while keeping your data 100% private.
+    </motion.p>
+
+    <Link href={user ? "/home" : "/register"}>
+      <motion.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+        className="px-6 sm:px-8 py-3 sm:py-4 bg-slate-900 text-white rounded-full font-bold text-base sm:text-lg hover:bg-slate-800 transition-all shadow-xl hover:-translate-y-1 flex items-center gap-2 cursor-pointer"
+      >
+        {user ? "Go to Dashboard" : "Get Started for Free"} <ArrowRight size={20} />
+      </motion.button>
+    </Link>
+  </div>
+</div>
+
 
           <div className="max-w-7xl mx-auto">
             <div className="grid lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-start">

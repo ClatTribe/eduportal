@@ -39,7 +39,7 @@ export const PainPoints: React.FC = () => {
               </ul>
             </div>
 
-            {/* EduNext Way */}
+            {/* EduAbroad Way */}
             <div
               className="p-10"
               style={{
@@ -49,12 +49,12 @@ export const PainPoints: React.FC = () => {
             >
               <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#FEF2F3' }}></span>
-                EduNext
+                EduAbroad
               </h3>
               <ul className="space-y-6">
                 <li className="flex gap-4">
                   <Check className="shrink-0" style={{ color: '#FFFFFF' }} />
-                  <span>100% Private. You initiate contact, not them.</span>
+                  <span>100% Private. You initiate contact, not us.</span>
                 </li>
                 <li className="flex gap-4">
                   <Check className="shrink-0" style={{ color: '#FFFFFF' }} />
