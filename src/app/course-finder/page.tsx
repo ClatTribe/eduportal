@@ -22,6 +22,7 @@ import FilterComponent from "../../../components/CourseFinder/Filtering"
 import useSavedCourses from "../../../components/CourseFinder/SavedCourses"
 import CoursesRecommend from "../../../components/CourseFinder/CoursesRecommend"
 
+
 interface Course {
   id: number
   University: string | null

@@ -8,18 +8,7 @@ import {
   Globe,
   Calendar,
 } from "lucide-react"
-
-interface Course {
-  id: number
-  University: string | null
-  Campus: string | null
-  Country: string | null
-  'Study Level': string | null
-  'Program Name': string | null
-  Duration: string | null
-  'Open Intakes': string | null
-  'Scholarship Available': string | null
-}
+import { Course } from "./types"
 
 interface FilterProps {
   courses: Course[]
