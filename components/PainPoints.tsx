@@ -66,7 +66,7 @@ export const PainPoints: React.FC = () => {
                 </li>
                 <li className="flex gap-4">
                   <Check className="shrink-0" style={{ color: '#FFFFFF' }} />
-                  <span>Real-time API sync with university databases.</span>
+                  <span>Regular API sync with university databases.</span>
                 </li>
               </ul>
             </div>

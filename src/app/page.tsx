@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { BookOpen, GraduationCap, Target, ArrowRight, Menu, X, ChevronRight, LogOut, User } from "lucide-react";
+import { BookOpen, GraduationCap, Target, ArrowRight, Menu, X, ChevronRight, LogOut, User, Users, CheckCircle2, } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useAuth } from "../../contexts/AuthContext";
@@ -9,6 +9,8 @@ import { ScholarshipVisual } from "../../components/ScholarshipVisual";
 import { AdmitFinderVisual } from "../../components/AdmitFinderVisual";
 import { TrustSection } from "../../components/TrustSection";
 import { PainPoints } from "../../components/PainPoints";
+import PlaneRoadmap from "../../components/PlaneRoadmap";
+import { Testimonial } from "../../components/Testimonial";
 
 const features = [
   {
@@ -227,7 +229,7 @@ export default function Hero() {
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A51C30] opacity-75"></span>
         <span className="relative inline-flex rounded-full h-2 w-2 bg-[#A51C30]"></span>
       </span>
-      <span className="text-xs font-bold text-slate-600 tracking-wide uppercase">
+      <span className="text-xs font-bold text-slate-600 tracking-wide ">
         New: Admit Finder 2.0 is live
       </span>
       <ArrowRight size={12} className="text-slate-400 group-hover:translate-x-1 transition-transform" />
@@ -260,9 +262,45 @@ export default function Hero() {
         transition={{ duration: 0.6, delay: 0.3 }}
         className="px-6 sm:px-8 py-3 sm:py-4 bg-slate-900 text-white rounded-full font-bold text-base sm:text-lg hover:bg-slate-800 transition-all shadow-xl hover:-translate-y-1 flex items-center gap-2 cursor-pointer"
       >
-        {user ? "Go to Dashboard" : "Get Started for Free"} <ArrowRight size={20} />
+        {user ? "Go to Dashboard" : "Get Started"} <ArrowRight size={20} />
       </motion.button>
     </Link>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.4 }}
+      className="flex flex-wrap items-center justify-center gap-8 sm:gap-12 mt-12 sm:mt-16 px-4"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-[#A51C30]/20 flex items-center justify-center">
+          <Users className="text-[#A51C30]" size={26} strokeWidth={2.5} />
+        </div>
+        <div className="text-left">
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900">10K+</div>
+          <div className="text-sm text-slate-700">Students Placed</div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-[#A51C30]/20 flex items-center justify-center">
+          <CheckCircle2 className="text-[#A51C30]" size={26} strokeWidth={2.5} />
+        </div>
+        <div className="text-left">
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900">95%</div>
+          <div className="text-sm text-slate-700">Visa Success Rate</div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-[#A51C30]/20 flex items-center justify-center">
+          <GraduationCap className="text-[#A51C30]" size={26} strokeWidth={2.5} />
+        </div>
+        <div className="text-left">
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900">Guarantee</div>
+          <div className="text-sm text-slate-700">Admission in 1 of your 5 choice</div>
+        </div>
+      </div>
+    </motion.div>
   </div>
 </div>
 
@@ -334,7 +372,12 @@ export default function Hero() {
           </div>
         </div>
       </section>
-
+       <section id="roadmap">
+        <PlaneRoadmap />
+      </section>
+      <section id="roadmap">
+        <Testimonial />
+      </section>
       {/* Trust Section */}
       <TrustSection />
 

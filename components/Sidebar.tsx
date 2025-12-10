@@ -14,6 +14,7 @@ import {
   ThumbsUp,
   Menu,
   X,
+  TicketsPlane,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -47,6 +48,9 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
       { icon: GraduationCap, label: "Document Upload", path: "/document" },
       // { icon: Award, label: "Manage Applications", path: "/manage-apps" },
       // { icon: Trophy, label: "Guidance", path: "/guidance" },
+    ],
+    Tools: [
+      { icon: TicketsPlane, label: "Fly and Settle Services", path: "/fly-and-settle-services" },
     ],
     postAdmit: [
       { icon: GraduationCap, label: "Finalise Admits", path: "/finalise-admits" },
@@ -252,6 +256,44 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
               <div className="flex-1 h-px bg-[#FECDD3]"></div>
             </div>
             {navItems.applications.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => handleNavClick(item.path)}
+                className={`flex items-center gap-3 p-2.5 w-full text-left rounded-lg transition-all duration-200 group ${
+                  isActive(item.path)
+                    ? "bg-white shadow-md border-l-4 border-[#A51C30] text-[#A51C30]"
+                    : "hover:bg-white hover:shadow-sm"
+                }`}
+              >
+                <item.icon
+                  size={18}
+                  className={`transition-colors ${
+                    isActive(item.path)
+                      ? "text-[#A51C30]"
+                      : "text-gray-600 group-hover:text-[#A51C30]"
+                  }`}
+                />
+                <span
+                  className={`text-sm transition-colors ${
+                    isActive(item.path)
+                      ? "font-semibold"
+                      : "group-hover:text-[#A51C30]"
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </div>
+          {/* Tools */}
+          <div className="pt-4">
+            <div className="flex items-center gap-2 mb-2 px-2">
+              <div className="text-xs font-bold text-[#A51C30] uppercase tracking-wider">
+                Tools
+              </div>
+              <div className="flex-1 h-px bg-[#FECDD3]"></div>
+            </div>
+            {navItems.Tools.map((item) => (
               <button
                 key={item.path}
                 onClick={() => handleNavClick(item.path)}

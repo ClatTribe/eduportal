@@ -26,7 +26,7 @@ export const TrustSection: React.FC = () => {
               className="text-4xl md:text-5xl font-bold leading-tight"
               style={{ color: '#A51C30' }}
             >
-              We fixed what is broken in education search.
+              We disrupted the education search.
             </motion.h2>
           </div>
           <div className="md:mb-2">
@@ -50,8 +50,8 @@ export const TrustSection: React.FC = () => {
         <div className="w-16 h-16 rounded-2xl shadow-sm flex items-center justify-center mb-6" style={{ backgroundColor: '#FFFFFF', color: '#A51C30' }}>
           <UserX size={32} />
         </div>
-        <h3 className="text-3xl font-bold mb-4" style={{ color: '#A51C30' }}>Zero Spam Calls. Your Data Your Control.</h3>
-        <p className="text-lg max-w-md">
+        <h3 className="text-3xl font-bold mb-4" style={{ color: '#A51C30' }}>Zero Spam Calls. Our Promise.</h3>
+        <p className="text-lg">
           We never sell your phone number. Unlike other platforms that trigger 200+ spam calls, EduAbroad keeps your data 100% private until you choose to share it.
         </p>
       </div>
@@ -124,8 +124,8 @@ export const TrustSection: React.FC = () => {
           <MousePointerClick size={32} />
         </div>
         <h3 className="text-3xl font-bold mb-4" style={{ color: '#A51C30' }}>3 Clicks Promise</h3>
-        <p className="text-lg max-w-md">
-          Get your information in 3 Clicks. No endless forms, no complicated steps. Just three simple clicks to access everything you need.
+        <p className="text-lg">
+          Get desired information in 3 Clicks. No endless forms, no complicated steps. Just three simple clicks to access everything you need.
         </p>
       </div>
       {/* <div className="mt-8 flex items-center gap-3">
@@ -152,7 +152,7 @@ export const TrustSection: React.FC = () => {
     style={{ backgroundColor: '#A51C30' }}
   >
     <div>
-      <h3 className="text-3xl font-bold mb-2" style={{ color: '#FFFFFF' }}>Ready to find your dream College?</h3>
+      <h3 className="text-3xl font-bold mb-2" style={{ color: '#FFFFFF' }}>Find your dream College?</h3>
       <p className="text-lg" style={{ color: '#FECDD3' }}>Join 10,000+ students who switched to EduAbroad today.</p>
     </div>
     <button className="px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-2 transition-all shadow-lg"
