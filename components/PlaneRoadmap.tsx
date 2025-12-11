@@ -139,7 +139,7 @@ const PlaneRoadmap: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#A51C30] mb-4">
-            Your Dream MBA Journey
+            Your Dream Study Abroad Journey
           </h1>
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-600">
             Start With EduAbroad
