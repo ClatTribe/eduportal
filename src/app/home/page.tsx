@@ -300,15 +300,41 @@ const DashboardPage = () => {
   return (
     <DefaultLayout>
       <div className="flex-1 overflow-auto">
-        <div className="p-6 max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">
-              {greeting}, {userName}! 👋
-            </h1>
-            <p className="text-gray-600">Ready to take the next step in your academic journey?</p>
+      <div className="p-6 max-w-7xl mx-auto pt-24 md:pt-6">
+        <div className="mb-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold text-gray-800 mb-2">
+                {greeting}, {userName}! 👋
+              </h1>
+              <p className="text-gray-600">Ready to take the next step in your academic journey?</p>
+            </div>
+            
+            {/* Profile Complete Badge - Only shows when 100% */}
+            {profileMetrics.completion === 100 && (
+              <div 
+                className="rounded-xl shadow-lg px-4 py-3 backdrop-blur-xl flex items-center gap-3 self-start md:self-center"
+                style={{ 
+                  background: 'linear-gradient(135deg, rgba(165, 28, 48, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%)',
+                  border: '2px solid #A51C30'
+                }}
+              >
+                <div 
+                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: '#A51C30' }}
+                >
+                  <CheckCircle className="text-white" size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800 text-sm">Profile Complete</h3>
+                  <p className="text-xs text-gray-600">All features unlocked</p>
+                </div>
+              </div>
+            )}
           </div>
-          
+        </div>
 
+          {profileMetrics.completion !== 100 && (
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border-2 border-[#FECDD3]">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -380,6 +406,7 @@ const DashboardPage = () => {
               </div>
             )}
           </div>
+          )}
 
           <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-[#FECDD3]">
             <div className="flex items-center gap-2 mb-6">
