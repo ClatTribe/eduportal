@@ -13,6 +13,7 @@ import {
   Sparkles,
   Trophy,
   Target,
+  GitCompare,
 } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useAuth } from "../../../contexts/AuthContext"
@@ -21,6 +22,7 @@ import Pagination from "../../../components/CourseFinder/Pagination"
 import FilterComponent from "../../../components/CourseFinder/Filtering"
 import useSavedCourses from "../../../components/CourseFinder/SavedCourses"
 import CoursesRecommend from "../../../components/CourseFinder/CoursesRecommend"
+import CollegeComparison, { CompareBadge, CompareFloatingButton } from "../../../components/CourseFinder/CollegeComparison"
 
 
 interface Course {
@@ -71,6 +73,14 @@ const CourseFinder: React.FC = () => {
       fetchCourses()
     }
   }, [viewMode])
+
+  const {
+  compareColleges,
+  toggleCompare,
+  removeFromCompare,
+  isInCompare,
+  goToComparison,
+} = CollegeComparison({ user, courses })
 
   const fetchCourses = async () => {
     try {
@@ -244,10 +254,16 @@ const CourseFinder: React.FC = () => {
                 courses found
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Heart className="text-[#A51C30] flex-shrink-0" size={16} />
-              <span className="text-xs sm:text-sm text-gray-600">{savedCourses.size} saved</span>
-            </div>
+            <div className="flex items-center gap-4">
+  <div className="flex items-center gap-2">
+    <Heart className="text-[#A51C30] flex-shrink-0" size={16} />
+    <span className="text-xs sm:text-sm text-gray-600">{savedCourses.size} saved</span>
+  </div>
+  <div className="flex items-center gap-2">
+    <GitCompare className="text-purple-600 flex-shrink-0" size={16} />
+    <span className="text-xs sm:text-sm text-gray-600 font-medium">{compareColleges.length}/3 to compare</span>
+  </div>
+</div>
           </div>
 
           {/* Loading State */}
@@ -277,13 +293,13 @@ const CourseFinder: React.FC = () => {
                 {paginatedCourses.map((course, index) => {
                   const isBlurred = viewMode === "recommended" && index >= 2
                   const courseIndex = currentPage * perPage + index
-
+                  const inCompare = isInCompare(course.id)
                   return (
                     <div
                       key={course.id}
                       className={`bg-white border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-xl transition-all duration-300 relative ${
                         isBlurred ? "overflow-hidden" : ""
-                      }`}
+                      } ${inCompare ? 'border-2 border-purple-500' : 'border border-gray-200'}`}
                     >
                       {isBlurred && (
                         <div className="absolute inset-0 bg-white/70 backdrop-blur-md z-10 flex flex-col items-center justify-center p-4 sm:p-6 rounded-xl">
@@ -307,43 +323,58 @@ const CourseFinder: React.FC = () => {
                       )}
 
                       {/* Course Card Content */}
-                      <div className="flex items-start justify-between mb-4 gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-xl sm:text-2xl text-gray-900 mb-2 leading-tight break-words">
-                            <span className="font-Bold">{course.University}</span>
-                          </div>
-                          <h3 className="font-medium text-base sm:text-lg text-gray-600 mb-2 leading-tight break-words">
-                            {course["Program Name"] || "Unknown Program"}
-                          </h3>
-                          {course.Concentration && (
-                            <div className="text-xs text-gray-600 mb-2 bg-gray-50 inline-block px-2 py-1 rounded break-words">
-                              <span className="font-medium">Concentration:</span> {course.Concentration}
-                            </div>
-                          )}
-                          {viewMode === "recommended" && <div className="mt-2 sm:mt-3">{getMatchBadge(course)}</div>}
-                        </div>
+                      <div className="flex-1 min-w-0">
+  <div className="font-bold text-xl sm:text-2xl text-gray-900 mb-2 leading-tight break-words">
+    <span className="font-Bold">{course.University}</span>
+  </div>
+  <h3 className="font-medium text-base sm:text-lg text-gray-600 mb-2 leading-tight break-words">
+    {course["Program Name"] || "Unknown Program"}
+  </h3>
+  {course.Concentration && (
+    <div className="text-xs text-gray-600 mb-2 bg-gray-50 inline-block px-2 py-1 rounded break-words">
+      <span className="font-medium">Concentration:</span> {course.Concentration}
+    </div>
+  )}
+  {viewMode === "recommended" && <div className="mt-2 sm:mt-3">{getMatchBadge(course)}</div>}
+</div>
 
-                        <button
-                          onClick={() => toggleSaved(course)}
-                          disabled={isBlurred}
-                          className={`transition-colors ml-2 sm:ml-3 flex-shrink-0 ${
-                            isBlurred
-                              ? "opacity-50 cursor-not-allowed"
-                              : savedCourses.has(course.id)
-                                ? "text-[#A51C30]"
-                                : "text-gray-400 hover:text-[#A51C30]"
-                          }`}
-                          title={
-                            isBlurred
-                              ? "Contact experts to unlock"
-                              : savedCourses.has(course.id)
-                                ? "Remove from shortlist"
-                                : "Add to shortlist"
-                          }
-                        >
-                          <Heart size={20} className="sm:w-[22px] sm:h-[22px]" fill={savedCourses.has(course.id) ? "currentColor" : "none"} />
-                        </button>
-                      </div>
+<div className="flex items-center gap-3 flex-shrink-0">
+  {/* Compare Checkbox */}
+  <label className="flex items-center gap-1.5 cursor-pointer group" title="Add to compare">
+    <input 
+      type="checkbox"
+      checked={inCompare}
+      onChange={() => toggleCompare(course)}
+      disabled={isBlurred}
+      className="w-4 h-4 accent-purple-600 cursor-pointer disabled:opacity-50"
+    />
+    <span className="text-xs text-gray-600 group-hover:text-gray-800 transition-colors">
+      Compare
+    </span>
+  </label>
+
+  {/* Heart Button */}
+  <button
+    onClick={() => toggleSaved(course)}
+    disabled={isBlurred}
+    className={`transition-colors flex-shrink-0 ${
+      isBlurred
+        ? "opacity-50 cursor-not-allowed"
+        : savedCourses.has(course.id)
+          ? "text-[#A51C30]"
+          : "text-gray-400 hover:text-[#A51C30]"
+    }`}
+    title={
+      isBlurred
+        ? "Contact experts to unlock"
+        : savedCourses.has(course.id)
+          ? "Remove from shortlist"
+          : "Add to shortlist"
+    }
+  >
+    <Heart size={20} className="sm:w-[22px] sm:h-[22px]" fill={savedCourses.has(course.id) ? "currentColor" : "none"} />
+  </button>
+</div>
 
                       <div className="space-y-3 sm:space-y-4">
                         <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-gray-200">
@@ -505,6 +536,10 @@ const CourseFinder: React.FC = () => {
             </>
           )}
         </div>
+         <CompareFloatingButton 
+          compareCount={compareColleges.length}
+          onCompareClick={goToComparison}
+        />
       </div>
     </DefaultLayout>
   )

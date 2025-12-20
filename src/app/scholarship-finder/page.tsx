@@ -44,8 +44,12 @@ interface UserProfile {
   program: string
 }
 
+const accentColor = '#A51C30';
+const primaryBg = '#FFFFFF';
+const borderColor = '#FECDD3';
+
 const FEATURED_SCHOLARSHIP: Scholarship = {
-  id: -1, // Special ID to differentiate from database scholarships
+  id: -1,
   country_region: "All",
   scholarship_name: "Pt. J.S. Mishra",
   provider: "Edu Abroad",
@@ -55,7 +59,7 @@ const FEATURED_SCHOLARSHIP: Scholarship = {
     "High-achieving Indian students facing significant economic barriers; program highlights inclusion for persons with disabilities and displaced youth; leadership & community impact valued",
   price: "5 Lakh+",
   link: "#",
-  matchScore: 100, // Always highest match score
+  matchScore: 100,
   isFeatured: true,
 }
 
@@ -160,7 +164,6 @@ const ScholarshipFinder: React.FC = () => {
     }
 
     if (scholarshipId === -1) {
-      // For the featured scholarship, just toggle in local state
       setSavedScholarships((prev) => {
         const newSet = new Set(prev)
         if (newSet.has(-1)) {
@@ -318,7 +321,7 @@ const ScholarshipFinder: React.FC = () => {
 
       const topRecommendations = relevantScholarships
         .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
-        .slice(0, 9) // Get 9 instead of 10 to make room for featured
+        .slice(0, 9)
 
       if (topRecommendations.length < 9) {
         const remaining = scoredScholarships
@@ -413,9 +416,10 @@ const ScholarshipFinder: React.FC = () => {
   const getMatchBadge = (scholarship: Scholarship) => {
     if (scholarship.isFeatured) {
       return (
-        <span className="text-xs bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 px-3 py-1 rounded-full font-semibold flex items-center gap-1 border border-amber-200">
-          <Star size={14} className="fill-amber-500" />
-          Top Recommended
+        <span className="text-xs px-2 sm:px-3 py-1 rounded-full font-semibold flex items-center gap-1" style={{ backgroundColor: 'rgba(251, 191, 36, 0.1)', color: '#d97706', border: '1px solid rgba(251, 191, 36, 0.3)' }}>
+          <Star size={14} className="fill-current" />
+          <span className="hidden sm:inline">Top Recommended</span>
+          <span className="sm:hidden">Top</span>
         </span>
       )
     }
@@ -426,35 +430,40 @@ const ScholarshipFinder: React.FC = () => {
 
     if (score >= 90) {
       return (
-        <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold flex items-center gap-1">
+        <span className="text-xs px-2 sm:px-3 py-1 rounded-full font-semibold flex items-center gap-1" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#16a34a', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
           <Trophy size={14} />
-          Perfect Match ({score}%)
+          <span className="hidden sm:inline">Perfect Match ({score}%)</span>
+          <span className="sm:hidden">{score}%</span>
         </span>
       )
     } else if (score >= 75) {
       return (
-        <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold flex items-center gap-1">
+        <span className="text-xs px-2 sm:px-3 py-1 rounded-full font-semibold flex items-center gap-1" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
           <Award size={14} />
-          Excellent Match ({score}%)
+          <span className="hidden sm:inline">Excellent Match ({score}%)</span>
+          <span className="sm:hidden">{score}%</span>
         </span>
       )
     } else if (score >= 60) {
       return (
-        <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-semibold flex items-center gap-1">
+        <span className="text-xs px-2 sm:px-3 py-1 rounded-full font-semibold flex items-center gap-1" style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)', color: '#9333ea', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
           <Target size={14} />
-          Great Match ({score}%)
+          <span className="hidden sm:inline">Great Match ({score}%)</span>
+          <span className="sm:hidden">{score}%</span>
         </span>
       )
     } else if (score >= 40) {
       return (
-        <span className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-semibold">
-          Good Match ({score}%)
+        <span className="text-xs px-2 sm:px-3 py-1 rounded-full font-semibold" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', color: '#ca8a04', border: '1px solid rgba(250, 204, 21, 0.3)' }}>
+          <span className="hidden sm:inline">Good Match ({score}%)</span>
+          <span className="sm:hidden">{score}%</span>
         </span>
       )
     }
     return (
-      <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-semibold">
-        Relevant ({score}%)
+      <span className="text-xs px-2 sm:px-3 py-1 rounded-full font-semibold" style={{ backgroundColor: 'rgba(148, 163, 184, 0.1)', color: '#64748b', border: '1px solid rgba(148, 163, 184, 0.3)' }}>
+        <span className="hidden sm:inline">Relevant ({score}%)</span>
+        <span className="sm:hidden">{score}%</span>
       </span>
     )
   }
@@ -507,26 +516,30 @@ const ScholarshipFinder: React.FC = () => {
 
   return (
     <DefaultLayout>
-      <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen p-6">
+      <div className="flex-1 min-h-screen p-3 sm:p-4 md:p-6 mt-[72px] sm:mt-0" style={{ backgroundColor: primaryBg }}>
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-red-600 mb-2">Find Scholarships to Fuel Your Dreams</h1>
-            <p className="text-gray-600">Discover scholarships from top universities and institutions worldwide</p>
+          {/* Header */}
+          <div className="mb-4 sm:mb-6 md:mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2" style={{ color: accentColor }}>
+              Find Scholarships to Fuel Your Dreams
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600">Discover scholarships from top universities and institutions worldwide</p>
           </div>
 
-          <div className="mb-6 flex gap-3">
+          {/* View Mode Toggle */}
+          <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-2 sm:gap-3">
             <button
               onClick={() => {
                 setViewMode("all")
                 resetFilters()
               }}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                viewMode === "all"
-                  ? "bg-red-600 text-white shadow-lg"
-                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
-              }`}
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all"
+              style={viewMode === "all"
+                ? { backgroundColor: accentColor, color: 'white' }
+                : { backgroundColor: 'white', color: '#6b7280', border: `1px solid ${borderColor}` }
+              }
             >
-              <Award size={20} />
+              <Award size={18} className="sm:w-5 sm:h-5" />
               All Scholarships
             </button>
             <button
@@ -537,28 +550,30 @@ const ScholarshipFinder: React.FC = () => {
                 }
               }}
               disabled={!canShowRecommendations}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                viewMode === "recommended"
-                  ? "bg-red-600 text-white shadow-lg"
-                  : canShowRecommendations
-                    ? "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
-                    : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
-              }`}
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all"
+              style={viewMode === "recommended"
+                ? { backgroundColor: accentColor, color: 'white' }
+                : canShowRecommendations
+                  ? { backgroundColor: 'white', color: '#6b7280', border: `1px solid ${borderColor}` }
+                  : { backgroundColor: '#f3f4f6', color: '#9ca3af', cursor: 'not-allowed' }
+              }
               title={!hasProfileData ? "Complete your profile to see recommendations" : ""}
             >
-              <Sparkles size={20} />
-              Recommended For You
-              {!loadingProfile && !hasProfileData && <span className="text-xs ml-1">(Complete profile)</span>}
+              <Sparkles size={18} className="sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Recommended For You</span>
+              <span className="sm:inline md:hidden">Recommended</span>
+              {!loadingProfile && !hasProfileData && <span className="text-xs ml-1 hidden lg:inline">(Complete profile)</span>}
             </button>
           </div>
 
+          {/* Profile Info Banner */}
           {viewMode === "recommended" && userProfile && hasProfileData && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)', borderLeft: `4px solid ${accentColor}`, border: `1px solid ${borderColor}` }}>
               <div className="flex items-start gap-2">
-                <Sparkles className="text-blue-600 mt-0.5 flex-shrink-0" size={20} />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-blue-900">Showing your top personalized recommendations</p>
-                  <p className="text-xs text-blue-700 mt-1">
+                <Sparkles className="mt-0.5 flex-shrink-0" style={{ color: accentColor }} size={18} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold mb-1" style={{ color: accentColor }}>Showing your top personalized recommendations</p>
+                  <p className="text-xs text-gray-700 break-words">
                     Based on: <strong>{userProfile.degree}</strong> degree | Countries:{" "}
                     <strong>{userProfile.target_countries.join(", ")}</strong>
                     {userProfile.program && (
@@ -573,83 +588,93 @@ const ScholarshipFinder: React.FC = () => {
             </div>
           )}
 
+          {/* Filters - Only for "All" View */}
           {viewMode === "all" && (
             <>
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <div className="flex gap-4 mb-4">
+              {/* Mobile Filter Toggle Button */}
+              <div className="mb-4 sm:mb-6">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Search Bar */}
                   <div className="flex-1 relative">
                     <input
                       type="text"
-                      placeholder="Search for scholarships by name, provider, or country..."
-                      className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      placeholder="Search scholarships..."
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 pr-10 text-sm sm:text-base rounded-lg focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-400"
+                      style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
-                    <Search className="absolute right-3 top-3.5 h-5 w-5 text-gray-400" />
+                    <Search className="absolute right-3 top-2.5 sm:top-3.5 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                   </div>
+
+                  {/* Filter Button */}
                   <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition"
+                    className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all"
+                    style={{ backgroundColor: accentColor, color: 'white' }}
                   >
-                    <Filter size={20} />
-                    Filters
+                    <Filter size={18} className="sm:w-5 sm:h-5" />
+                    <span>Filters</span>
                     {activeFiltersCount > 0 && (
-                      <span className="bg-white text-red-600 px-2 py-0.5 rounded-full text-sm font-bold">
+                      <span className="bg-white px-2 py-0.5 rounded-full text-xs font-bold" style={{ color: accentColor }}>
                         {activeFiltersCount}
                       </span>
                     )}
                   </button>
                 </div>
 
+                {/* Active Filters */}
                 {activeFiltersCount > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="flex flex-wrap gap-2 mt-3">
                     {searchQuery && (
-                      <div className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                        <span className="font-medium">Search: {searchQuery}</span>
-                        <button onClick={() => clearFilter("search")} className="hover:bg-red-200 rounded-full p-0.5">
+                      <div className="px-3 py-1 rounded-full text-xs sm:text-sm flex items-center gap-2" style={{ backgroundColor: 'rgba(165, 28, 48, 0.1)', color: accentColor }}>
+                        <span className="font-medium truncate max-w-[150px]">Search: {searchQuery}</span>
+                        <button onClick={() => clearFilter("search")} className="hover:opacity-70 rounded-full p-0.5 flex-shrink-0">
                           <X size={14} />
                         </button>
                       </div>
                     )}
                     {selectedCountry && (
-                      <div className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                        <span className="font-medium">{selectedCountry}</span>
-                        <button onClick={() => clearFilter("country")} className="hover:bg-red-200 rounded-full p-0.5">
+                      <div className="px-3 py-1 rounded-full text-xs sm:text-sm flex items-center gap-2" style={{ backgroundColor: 'rgba(165, 28, 48, 0.1)', color: accentColor }}>
+                        <span className="font-medium truncate max-w-[150px]">{selectedCountry}</span>
+                        <button onClick={() => clearFilter("country")} className="hover:opacity-70 rounded-full p-0.5 flex-shrink-0">
                           <X size={14} />
                         </button>
                       </div>
                     )}
                     {selectedLevel && (
-                      <div className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                        <span className="font-medium">{selectedLevel}</span>
-                        <button onClick={() => clearFilter("level")} className="hover:bg-red-200 rounded-full p-0.5">
+                      <div className="px-3 py-1 rounded-full text-xs sm:text-sm flex items-center gap-2" style={{ backgroundColor: 'rgba(165, 28, 48, 0.1)', color: accentColor }}>
+                        <span className="font-medium truncate max-w-[150px]">{selectedLevel}</span>
+                        <button onClick={() => clearFilter("level")} className="hover:opacity-70 rounded-full p-0.5 flex-shrink-0">
                           <X size={14} />
                         </button>
                       </div>
                     )}
-                    <button onClick={resetFilters} className="text-sm text-red-600 hover:text-red-700 font-medium px-2">
+                    <button onClick={resetFilters} className="text-xs sm:text-sm font-medium px-2 hover:opacity-70" style={{ color: accentColor }}>
                       Clear All
                     </button>
                   </div>
                 )}
               </div>
 
+              {/* Filter Panel */}
               {showFilters && (
-                <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                  <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                    <Filter size={20} className="text-red-600" />
+                <div className="rounded-xl shadow-sm p-4 sm:p-6 mb-4 sm:mb-6" style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}>
+                  <h3 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6 flex items-center gap-2">
+                    <Filter size={18} className="sm:w-5 sm:h-5" style={{ color: accentColor }} />
                     Refine Your Search
                   </h3>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                        <Globe size={16} className="text-red-600" />
+                      <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                        <Globe size={14} className="sm:w-4 sm:h-4" style={{ color: accentColor }} />
                         Country
                       </label>
                       <div className="relative">
                         <select
-                          className="appearance-none w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          className="appearance-none w-full rounded-lg px-3 sm:px-4 py-2 pr-8 text-sm sm:text-base focus:outline-none focus:ring-2 text-gray-900"
+                          style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}
                           value={selectedCountry}
                           onChange={(e) => setSelectedCountry(e.target.value)}
                         >
@@ -660,18 +685,19 @@ const ScholarshipFinder: React.FC = () => {
                             </option>
                           ))}
                         </select>
-                        <ChevronDown className="absolute right-2 top-3 h-4 w-4 pointer-events-none text-gray-500" />
+                        <ChevronDown className="absolute right-2 top-2.5 sm:top-3 h-4 w-4 pointer-events-none text-gray-500" />
                       </div>
                     </div>
 
                     <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                        <GraduationCap size={16} className="text-red-600" />
+                      <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                        <GraduationCap size={14} className="sm:w-4 sm:h-4" style={{ color: accentColor }} />
                         Degree Level
                       </label>
                       <div className="relative">
                         <select
-                          className="appearance-none w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          className="appearance-none w-full rounded-lg px-3 sm:px-4 py-2 pr-8 text-sm sm:text-base focus:outline-none focus:ring-2 text-gray-900"
+                          style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}
                           value={selectedLevel}
                           onChange={(e) => setSelectedLevel(e.target.value)}
                         >
@@ -682,7 +708,7 @@ const ScholarshipFinder: React.FC = () => {
                             </option>
                           ))}
                         </select>
-                        <ChevronDown className="absolute right-2 top-3 h-4 w-4 pointer-events-none text-gray-500" />
+                        <ChevronDown className="absolute right-2 top-2.5 sm:top-3 h-4 w-4 pointer-events-none text-gray-500" />
                       </div>
                     </div>
                   </div>
@@ -691,109 +717,117 @@ const ScholarshipFinder: React.FC = () => {
             </>
           )}
 
+          {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3">
-              <AlertCircle className="text-red-600 flex-shrink-0" size={24} />
+            <div className="rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 flex items-start gap-2 sm:gap-3" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)', border: `1px solid ${borderColor}` }}>
+              <AlertCircle className="flex-shrink-0 mt-0.5" style={{ color: accentColor }} size={20} />
               <div>
-                <h3 className="font-semibold text-red-800">Notice</h3>
-                <p className="text-red-600 text-sm">{error}</p>
+                <h3 className="font-semibold text-sm sm:text-base" style={{ color: accentColor }}>Notice</h3>
+                <p className="text-xs sm:text-sm text-gray-700">{error}</p>
               </div>
             </div>
           )}
 
-          <div className="flex items-center justify-between mb-6 bg-white rounded-lg shadow-sm p-4">
+          {/* Results Count */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 rounded-lg shadow-sm p-3 sm:p-4 gap-2" style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}>
             <div className="flex items-center gap-2">
-              <Award className="text-red-600" size={24} />
-              <span className="font-semibold text-lg">
+              <Award style={{ color: accentColor }} size={20} className="sm:w-6 sm:h-6 flex-shrink-0" />
+              <span className="font-semibold text-sm sm:text-base text-gray-900">
                 {filteredScholarships.length.toLocaleString()} {viewMode === "recommended" ? "recommended " : ""}
-                scholarships found
+                scholarship{filteredScholarships.length !== 1 ? 's' : ''} found
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Heart className="text-red-600" size={18} />
-              <span className="text-sm text-gray-600">{savedScholarships.size} saved</span>
+              <Heart style={{ color: accentColor }} size={16} className="sm:w-5 sm:h-5" />
+              <span className="text-xs sm:text-sm text-gray-600">{savedScholarships.size} saved</span>
             </div>
           </div>
 
+          {/* Loading State */}
           {loading ? (
             <div className="flex justify-center items-center h-64">
-              <div className="text-gray-500 flex flex-col items-center gap-3">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-                <p>Loading scholarships...</p>
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2" style={{ borderColor: accentColor }}></div>
+                <p className="text-sm sm:text-base text-gray-600">Loading scholarships...</p>
               </div>
             </div>
           ) : filteredScholarships.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-lg shadow-sm">
-              <Award size={48} className="mx-auto text-gray-300 mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            <div className="text-center py-12 sm:py-16 rounded-lg shadow-sm" style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}>
+              <Award size={40} className="sm:w-12 sm:h-12 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                 {viewMode === "recommended" ? "No recommended scholarships found" : "No scholarships found"}
               </h3>
-              <p className="text-gray-500">
+              <p className="text-sm sm:text-base text-gray-600 px-4">
                 {viewMode === "recommended"
                   ? "Try updating your profile or check back later for more options"
                   : "Try adjusting your filters or search query"}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredScholarships.map((s, index) => {
-                const isBlurred = viewMode === "recommended" && index >= 3 // Changed from 2 to 3 to account for featured
+                const isBlurred = viewMode === "recommended" && index >= 3
                 const isFeatured = s.isFeatured
 
                 return (
                   <div
                     key={s.id}
-                    className={`bg-white border rounded-xl p-6 hover:shadow-lg transition-shadow relative ${
+                    className={`rounded-xl p-4 sm:p-6 hover:shadow-lg transition-shadow relative ${
                       isBlurred ? "overflow-hidden" : ""
-                    } ${isFeatured ? "border-amber-300 ring-2 ring-amber-200 shadow-md" : "border-gray-200"}`}
+                    }`}
+                    style={isFeatured 
+                      ? { backgroundColor: 'white', border: `2px solid #fbbf24`, boxShadow: '0 4px 6px -1px rgba(251, 191, 36, 0.1)' }
+                      : { backgroundColor: 'white', border: `1px solid ${borderColor}` }
+                    }
                   >
+                    {/* Featured Badge */}
                     {isFeatured && (
                       <div className="absolute -top-1 -right-1">
-                        <div className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg shadow-md flex items-center gap-1">
+                        <div className="text-white text-xs font-bold px-2 sm:px-3 py-1 rounded-bl-lg rounded-tr-lg shadow-md flex items-center gap-1" style={{ backgroundColor: '#fbbf24' }}>
                           <Star size={12} className="fill-white" />
                           FEATURED
                         </div>
                       </div>
                     )}
 
+                    {/* Blur Overlay */}
                     {isBlurred && (
-                      <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center p-6 rounded-xl">
-                        <div className="bg-white shadow-2xl rounded-2xl p-8 text-center max-w-sm border-2 border-red-100">
+                      <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center p-4 sm:p-6 rounded-xl">
+                        <div className="bg-white shadow-2xl rounded-2xl p-4 sm:p-8 text-center max-w-sm" style={{ border: `2px solid ${borderColor}` }}>
                           <div className="mb-4 flex justify-center">
-                            <div className="bg-red-100 rounded-full p-4">
-                              <AlertCircle className="text-red-600" size={32} />
+                            <div className="rounded-full p-3 sm:p-4" style={{ backgroundColor: 'rgba(165, 28, 48, 0.1)' }}>
+                              <AlertCircle style={{ color: accentColor }} size={28} />
                             </div>
                           </div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-3">Unlock More Recommendations</h3>
-                          <p className="text-gray-600 mb-6">
+                          <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Unlock More Recommendations</h3>
+                          <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
                             Talk to our experts to view detailed information about this and{" "}
                             {filteredScholarships.length - index - 1} more personalized scholarship recommendations
                           </p>
-                          <button className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors w-full flex items-center justify-center gap-2">
-                            <Sparkles size={18} />
+                          <button className="text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold hover:opacity-90 transition-colors w-full flex items-center justify-center gap-2 text-xs sm:text-sm" style={{ backgroundColor: accentColor }}>
+                            <Sparkles size={16} />
                             Contact Our Experts
                           </button>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3
-                          className={`font-bold text-lg leading-tight mb-2 ${isFeatured ? "text-amber-900" : "text-gray-900"}`}
-                        >
+                    {/* Scholarship Header */}
+                    <div className="flex items-start justify-between mb-3 sm:mb-4 gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`font-bold text-base sm:text-lg leading-tight mb-2 break-words ${isFeatured ? 'text-amber-900' : 'text-gray-900'}`}>
                           {s.scholarship_name}
                         </h3>
 
-                        <div className="flex items-center gap-2 text-gray-600 text-sm mb-2">
-                          <MapPin size={14} />
-                          <span>{s.country_region}</span>
+                        <div className="flex items-center gap-2 text-gray-600 text-xs sm:text-sm mb-2">
+                          <MapPin size={12} className="sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+                          <span className="truncate">{s.country_region}</span>
                         </div>
 
-                        {s.provider && <p className="text-gray-700 font-medium text-sm mb-2">{s.provider}</p>}
+                        {s.provider && <p className="text-gray-700 font-medium text-xs sm:text-sm mb-2 truncate">{s.provider}</p>}
 
                         {isFeatured && s.price && (
-                          <p className="text-amber-700 font-semibold text-sm mb-2">Value: {s.price}</p>
+                          <p className="text-amber-700 font-semibold text-xs sm:text-sm mb-2">Value: {s.price}</p>
                         )}
 
                         <div className="mt-2">{getMatchBadge(s)}</div>
@@ -802,13 +836,14 @@ const ScholarshipFinder: React.FC = () => {
                       <button
                         onClick={() => toggleSaveScholarship(s.id)}
                         disabled={isBlurred}
-                        className={`transition-colors ${
+                        className={`transition-colors flex-shrink-0 ${
                           isBlurred
                             ? "opacity-50 cursor-not-allowed"
                             : savedScholarships.has(s.id)
-                              ? "text-red-600"
-                              : "text-gray-400 hover:text-red-600"
+                              ? ""
+                              : "text-gray-400"
                         }`}
+                        style={savedScholarships.has(s.id) && !isBlurred ? { color: accentColor } : {}}
                         title={
                           isBlurred
                             ? "Contact experts to unlock"
@@ -817,50 +852,59 @@ const ScholarshipFinder: React.FC = () => {
                               : "Save scholarship"
                         }
                       >
-                        <Heart size={20} fill={savedScholarships.has(s.id) ? "currentColor" : "none"} />
+                        <Heart size={18} className="sm:w-5 sm:h-5" fill={savedScholarships.has(s.id) ? "currentColor" : "none"} />
                       </button>
                     </div>
 
+                    {/* Eligibility Description */}
                     {s.detailed_eligibility && (
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                      <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-3">
                         {truncateText(s.detailed_eligibility, 180)}
                       </p>
                     )}
 
-                    <div className="flex flex-wrap gap-2 mb-4">
+                    {/* Degree Level Badge */}
+                    <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
                       {s.degree_level && (
                         <span
-                          className={`text-xs px-3 py-1 rounded-full font-medium ${
-                            isFeatured ? "bg-amber-100 text-amber-800" : "bg-green-100 text-green-800"
-                          }`}
+                          className="text-xs px-2 sm:px-3 py-1 rounded-full font-medium"
+                          style={isFeatured 
+                            ? { backgroundColor: 'rgba(251, 191, 36, 0.1)', color: '#d97706' }
+                            : { backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#16a34a' }
+                          }
                         >
                           {s.degree_level}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 text-gray-700 mb-4 pt-4 border-t border-gray-100">
-                      <Calendar size={16} className="text-red-600" />
-                      <span className="text-sm">
+                    {/* Deadline */}
+                    <div className="flex items-center gap-2 text-gray-700 mb-3 sm:mb-4 pt-3 sm:pt-4" style={{ borderTop: `1px solid ${borderColor}` }}>
+                      <Calendar size={14} className="sm:w-4 sm:h-4 flex-shrink-0" style={{ color: accentColor }} />
+                      <span className="text-xs sm:text-sm">
                         <strong>Deadline:</strong> {formatDeadline(s.deadline)}
                       </span>
                     </div>
 
+                    {/* Apply Button */}
                     {s.link && (
                       <a
                         href={s.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-colors ${
+                        className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
                           isBlurred
-                            ? "opacity-50 cursor-not-allowed pointer-events-none bg-red-600 text-white"
-                            : isFeatured
-                              ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-white hover:from-amber-600 hover:to-yellow-600"
-                              : "bg-red-600 text-white hover:bg-red-700"
+                            ? "opacity-50 cursor-not-allowed pointer-events-none"
+                            : ""
                         }`}
+                        style={isFeatured
+                          ? { backgroundColor: '#fbbf24', color: 'white' }
+                          : { backgroundColor: accentColor, color: 'white' }
+                        }
                       >
-                        {isFeatured ? "Apply Now - Highly Recommended" : "Apply Now"}
-                        <ExternalLink size={16} />
+                        <span className="hidden sm:inline">{isFeatured ? "Apply Now - Highly Recommended" : "Apply Now"}</span>
+                        <span className="sm:hidden">Apply Now</span>
+                        <ExternalLink size={14} className="sm:w-4 sm:h-4" />
                       </a>
                     )}
                   </div>
@@ -869,16 +913,6 @@ const ScholarshipFinder: React.FC = () => {
             </div>
           )}
         </div>
-
-        <style>{`
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          .animate-fadeIn {
-            animation: fadeIn 0.3s ease-out;
-          }
-        `}</style>
       </div>
     </DefaultLayout>
   )

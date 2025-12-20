@@ -42,6 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
       { icon: Users, label: "Admit Finder", path: "/admit-finder" },
       { icon: DollarSign, label: "Scholarship Finder", path: "/scholarship-finder" },
       { icon: Building2, label: "Shortlist Builder", path: "/shortlist-builder" },
+      { icon: Building2, label: "Compare Your College", path: "/compare-your-college" },
     ],
     applications: [
       { icon: BookOpen, label: "Application Builder", path: "/application-builder" },
@@ -51,6 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
     ],
     Tools: [
       { icon: TicketsPlane, label: "Fly and Settle Services", path: "/fly-and-settle-services" },
+      { icon: GraduationCap, label: "Study Materials", path: "/study-material" },
     ],
     postAdmit: [
       { icon: GraduationCap, label: "Finalise Admits", path: "/finalise-admits" },

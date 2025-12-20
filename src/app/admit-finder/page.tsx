@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, BookOpen, Calendar, Users, User, Building2, Filter, UserCheck, AlertCircle, Sparkles } from 'lucide-react';
+import { Search, ChevronDown, BookOpen, Calendar, Users, User, Building2, Filter, UserCheck, AlertCircle, Sparkles, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import DefaultLayout from '../defaultLayout';
 
@@ -32,6 +32,10 @@ interface UserProfile {
   last_course_cgpa?: string;
 }
 
+const accentColor = '#A51C30';
+const primaryBg = '#FFFFFF';
+const borderColor = '#FECDD3';
+
 const AdmitFinder: React.FC = () => {
   const [profiles, setProfiles] = useState<AdmitProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +47,7 @@ const AdmitFinder: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     fetchCurrentUserProfile();
@@ -301,13 +306,25 @@ const AdmitFinder: React.FC = () => {
     const score = profile.similarityScore;
     
     if (score >= 80) {
-      return <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">Very Similar ({score}%)</span>;
+      return <span className="text-xs px-2 sm:px-3 py-1 rounded-full font-semibold" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#16a34a', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+        <span className="hidden sm:inline">Very Similar ({score}%)</span>
+        <span className="sm:hidden">{score}%</span>
+      </span>;
     } else if (score >= 60) {
-      return <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">Similar ({score}%)</span>;
+      return <span className="text-xs px-2 sm:px-3 py-1 rounded-full font-semibold" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+        <span className="hidden sm:inline">Similar ({score}%)</span>
+        <span className="sm:hidden">{score}%</span>
+      </span>;
     } else if (score >= 40) {
-      return <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-semibold">Somewhat Similar ({score}%)</span>;
+      return <span className="text-xs px-2 sm:px-3 py-1 rounded-full font-semibold" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', color: '#ca8a04', border: '1px solid rgba(250, 204, 21, 0.3)' }}>
+        <span className="hidden sm:inline">Somewhat Similar ({score}%)</span>
+        <span className="sm:hidden">{score}%</span>
+      </span>;
     } else if (score >= 20) {
-      return <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full font-semibold">Match ({score}%)</span>;
+      return <span className="text-xs px-2 sm:px-3 py-1 rounded-full font-semibold" style={{ backgroundColor: 'rgba(148, 163, 184, 0.1)', color: '#64748b', border: '1px solid rgba(148, 163, 184, 0.3)' }}>
+        <span className="hidden sm:inline">Match ({score}%)</span>
+        <span className="sm:hidden">{score}%</span>
+      </span>;
     }
     return null;
   };
@@ -326,264 +343,297 @@ const AdmitFinder: React.FC = () => {
 
   return (
     <DefaultLayout>
-      <div className="flex-1 bg-white p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-red-600 mb-2">Access 375K+ Admits & Rejects!</h1>
-          <p className="text-gray-600">Find folks at your dream school with the same background, interests, and stats as you</p>
-        </div>
+      <div className="flex-1 min-h-screen p-3 sm:p-4 md:p-6 mt-[72px] sm:mt-0" style={{ backgroundColor: primaryBg }}>
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-4 sm:mb-6 md:mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2" style={{ color: accentColor }}>
+              Access 375K+ Admits & Rejects!
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600">Find folks at your dream school with the same background, interests, and stats as you</p>
+          </div>
 
-        {viewMode === 'similar' && userProfile && (
-          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="text-blue-600 mt-0.5 flex-shrink-0" size={20} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-blue-900">Matching based on your profile:</p>
-                <p className="text-xs text-blue-700 break-words">
-                  Tests: {formatTestScoresForDisplay(userProfile.test_scores)} | 
-                  Program: {userProfile.program || 'N/A'} | Degree: {userProfile.degree || 'N/A'} | CGPA: {userProfile.last_course_cgpa || 'N/A'}
-                </p>
+          {/* Profile Info Banner */}
+          {viewMode === 'similar' && userProfile && (
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)', borderLeft: `4px solid ${accentColor}`, border: `1px solid ${borderColor}` }}>
+              <div className="flex items-start gap-2">
+                <AlertCircle className="mt-0.5 flex-shrink-0" style={{ color: accentColor }} size={18} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold mb-1" style={{ color: accentColor }}>Matching based on your profile:</p>
+                  <p className="text-xs text-gray-700 break-words">
+                    Tests: {formatTestScoresForDisplay(userProfile.test_scores)} | 
+                    Program: {userProfile.program || 'N/A'} | Degree: {userProfile.degree || 'N/A'} | CGPA: {userProfile.last_course_cgpa || 'N/A'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* View Mode Toggle */}
+          <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button
+              onClick={() => setViewMode('all')}
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all"
+              style={viewMode === 'all'
+                ? { backgroundColor: accentColor, color: 'white' }
+                : { backgroundColor: 'white', color: '#6b7280', border: `1px solid ${borderColor}` }
+              }
+            >
+              <Users size={18} className="sm:w-5 sm:h-5" />
+              All Profiles
+            </button>
+            <button
+              onClick={() => {
+                if (hasProfileData && !loadingProfile) {
+                  setViewMode('similar');
+                }
+              }}
+              disabled={!hasProfileData || loadingProfile}
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all"
+              style={viewMode === 'similar'
+                ? { backgroundColor: accentColor, color: 'white' }
+                : hasProfileData && !loadingProfile
+                  ? { backgroundColor: 'white', color: '#6b7280', border: `1px solid ${borderColor}` }
+                  : { backgroundColor: '#f3f4f6', color: '#9ca3af', cursor: 'not-allowed' }
+              }
+              title={!hasProfileData && !loadingProfile ? 'Complete your profile to see similar profiles' : ''}
+            >
+              <UserCheck size={18} className="sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Similar Profiles</span>
+              <span className="sm:inline md:hidden">Similar</span>
+              {!loadingProfile && !hasProfileData && <span className="text-xs ml-1 hidden lg:inline">(Complete profile first)</span>}
+            </button>
+          </div>
+
+          {/* Mobile Filter Toggle Button */}
+          <div className="mb-4 sm:mb-6">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="lg:hidden w-full flex items-center justify-between gap-2 px-4 py-3 rounded-lg text-sm font-semibold transition-all"
+              style={{ backgroundColor: 'white', border: `1px solid ${borderColor}`, color: '#6b7280' }}
+            >
+              <span className="flex items-center gap-2">
+                <Filter size={18} />
+                Filters {(selectedUniversity || selectedMajor || searchQuery) && '(Active)'}
+              </span>
+              {showFilters ? <X size={18} /> : <ChevronDown size={18} />}
+            </button>
+
+            {/* Filters */}
+            <div className={`${showFilters ? 'block' : 'hidden'} lg:flex flex-col lg:flex-row gap-3 lg:gap-4 mt-3 lg:mt-0`}>
+              <div className="relative w-full lg:w-auto">
+                <select 
+                  className="w-full lg:w-auto appearance-none rounded-lg px-3 sm:px-4 py-2 pr-8 text-sm sm:text-base focus:outline-none focus:ring-2 text-gray-900"
+                  style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}
+                  value={selectedUniversity}
+                  onChange={(e) => setSelectedUniversity(e.target.value)}
+                >
+                  <option value="">All Universities</option>
+                  <option>Stanford University</option>
+                  <option>Duke University</option>
+                  <option>Carnegie Mellon University</option>
+                  <option>University of California Berkeley</option>
+                  <option>Massachusetts Institute of Technology</option>
+                  <option>Harvard University</option>
+                  <option>Columbia University</option>
+                  <option>Cornell University</option>
+                  <option>University of Pennsylvania</option>
+                  <option>Georgia Institute of Technology</option>
+                </select>
+                <ChevronDown className="absolute right-2 top-2.5 sm:top-3 h-4 w-4 pointer-events-none text-gray-400" />
+              </div>
+
+              <div className="relative w-full lg:w-auto">
+                <select 
+                  className="w-full lg:w-auto appearance-none rounded-lg px-3 sm:px-4 py-2 pr-8 text-sm sm:text-base focus:outline-none focus:ring-2 text-gray-900"
+                  style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}
+                  value={selectedMajor}
+                  onChange={(e) => setSelectedMajor(e.target.value)}
+                >
+                  <option value="">All Majors</option>
+                  <option>Computer Science</option>
+                  <option>CSE</option>
+                  <option>Data Science</option>
+                  <option>Electrical Engineering</option>
+                  <option>Mechanical Engineering</option>
+                  <option>Artificial Intelligence</option>
+                  <option>Machine Learning</option>
+                </select>
+                <ChevronDown className="absolute right-2 top-2.5 sm:top-3 h-4 w-4 pointer-events-none text-gray-400" />
+              </div>
+
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Search by name, university, or program"
+                  className="w-full px-3 sm:px-4 py-2 pr-10 text-sm sm:text-base rounded-lg focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-400"
+                  style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <Search className="absolute right-3 top-2.5 sm:top-3 h-4 w-4 text-gray-400" />
               </div>
             </div>
           </div>
-        )}
 
-        <div className="mb-6 flex gap-3">
-          <button
-            onClick={() => setViewMode('all')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-              viewMode === 'all'
-                ? 'bg-red-600 text-white shadow-lg'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <Users size={20} />
-            All Profiles
-          </button>
-          <button
-            onClick={() => {
-              if (hasProfileData && !loadingProfile) {
-                setViewMode('similar');
-              }
-            }}
-            disabled={!hasProfileData || loadingProfile}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-              viewMode === 'similar'
-                ? 'bg-red-600 text-white shadow-lg'
-                : hasProfileData && !loadingProfile
-                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
-            title={!hasProfileData && !loadingProfile ? 'Complete your profile to see similar profiles' : ''}
-          >
-            <UserCheck size={20} />
-            Similar Profiles
-            {!loadingProfile && !hasProfileData && <span className="text-xs ml-1">(Complete profile first)</span>}
-          </button>
-        </div>
-
-        <div className="flex gap-4 mb-6">
-          <div className="relative">
-            <select 
-              className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-red-500"
-              value={selectedUniversity}
-              onChange={(e) => setSelectedUniversity(e.target.value)}
-            >
-              <option value="">All Universities</option>
-              <option>Stanford University</option>
-              <option>Duke University</option>
-              <option>Carnegie Mellon University</option>
-              <option>University of California Berkeley</option>
-              <option>Massachusetts Institute of Technology</option>
-              <option>Harvard University</option>
-              <option>Columbia University</option>
-              <option>Cornell University</option>
-              <option>University of Pennsylvania</option>
-              <option>Georgia Institute of Technology</option>
-            </select>
-            <ChevronDown className="absolute right-2 top-3 h-4 w-4 pointer-events-none text-gray-600" />
-          </div>
-
-          <div className="relative">
-            <select 
-              className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-red-500"
-              value={selectedMajor}
-              onChange={(e) => setSelectedMajor(e.target.value)}
-            >
-              <option value="">All Majors</option>
-              <option>Computer Science</option>
-              <option>CSE</option>
-              <option>Data Science</option>
-              <option>Electrical Engineering</option>
-              <option>Mechanical Engineering</option>
-              <option>Artificial Intelligence</option>
-              <option>Machine Learning</option>
-            </select>
-            <ChevronDown className="absolute right-2 top-3 h-4 w-4 pointer-events-none text-gray-600" />
-          </div>
-
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              placeholder="Search by name, university, or program"
-              className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Users className="text-red-600" size={20} />
-            <span className="font-semibold">
-              {profiles.length} {viewMode === 'similar' ? 'similar ' : ''}profile{profiles.length !== 1 ? 's' : ''} found
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Show Verified only</span>
-            <button
-              onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                showVerifiedOnly ? 'bg-red-600' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                  showVerifiedOnly ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="text-gray-500 text-lg">Loading profiles...</div>
-          </div>
-        ) : profiles.length === 0 ? (
-          <div className="flex flex-col justify-center items-center h-64 text-center">
-            <UserCheck size={48} className="text-gray-300 mb-4" />
-            <div className="text-gray-500 text-lg mb-2">
-              {viewMode === 'similar' 
-                ? 'No similar profiles found'
-                : 'No profiles found'}
+          {/* Results Count and Verified Toggle */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 rounded-lg shadow-sm p-3 sm:p-4" style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}>
+            <div className="flex items-center gap-2">
+              <Users className="flex-shrink-0" style={{ color: accentColor }} size={20} />
+              <span className="font-semibold text-sm sm:text-base text-gray-900">
+                {profiles.length} {viewMode === 'similar' ? 'similar ' : ''}profile{profiles.length !== 1 ? 's' : ''} found
+              </span>
             </div>
-            <div className="text-gray-400 text-sm">
-              {viewMode === 'similar' 
-                ? 'Try adjusting your filters or complete more profile information'
-                : 'Try adjusting your search filters'}
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-6">
-            {profiles.map((profile, index) => {
-              const isBlurred = viewMode === 'similar' && index >= 2;
-              
-              return (
-                <div 
-                  key={profile.id} 
-                  className={`border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow bg-white relative ${
-                    isBlurred ? 'overflow-hidden' : ''
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm text-gray-600">Show Verified only</span>
+              <button
+                onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                style={{ backgroundColor: showVerifiedOnly ? accentColor : '#d1d5db' }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                    showVerifiedOnly ? 'translate-x-6' : 'translate-x-1'
                   }`}
-                >
-                  {isBlurred && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center p-6 rounded-lg">
-                      <div className="bg-white shadow-2xl rounded-2xl p-6 text-center max-w-sm border-2 border-red-100">
-                        <div className="mb-4 flex justify-center">
-                          <div className="bg-red-100 rounded-full p-3">
-                            <AlertCircle className="text-red-600" size={28} />
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* Loading State */}
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2" style={{ borderColor: accentColor }}></div>
+                <p className="text-sm sm:text-base text-gray-600">Loading profiles...</p>
+              </div>
+            </div>
+          ) : profiles.length === 0 ? (
+            <div className="text-center py-12 sm:py-16 rounded-lg shadow-sm" style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}>
+              <UserCheck size={40} className="sm:w-12 sm:h-12 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                {viewMode === 'similar' 
+                  ? 'No similar profiles found'
+                  : 'No profiles found'}
+              </h3>
+              <p className="text-sm sm:text-base text-gray-600 px-4">
+                {viewMode === 'similar' 
+                  ? 'Try adjusting your filters or complete more profile information'
+                  : 'Try adjusting your search filters'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {profiles.map((profile, index) => {
+                const isBlurred = viewMode === 'similar' && index >= 2;
+                
+                return (
+                  <div 
+                    key={profile.id} 
+                    className={`rounded-xl p-4 sm:p-6 hover:shadow-lg transition-shadow bg-white relative ${
+                      isBlurred ? 'overflow-hidden' : ''
+                    }`}
+                    style={{ border: `1px solid ${borderColor}` }}
+                  >
+                    {isBlurred && (
+                      <div className="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center p-4 sm:p-6 rounded-xl">
+                        <div className="bg-white shadow-2xl rounded-2xl p-4 sm:p-6 text-center max-w-sm" style={{ border: `2px solid ${borderColor}` }}>
+                          <div className="mb-4 flex justify-center">
+                            <div className="rounded-full p-3" style={{ backgroundColor: 'rgba(165, 28, 48, 0.1)' }}>
+                              <AlertCircle style={{ color: accentColor }} size={28} />
+                            </div>
                           </div>
+                          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">
+                            Unlock More Profiles
+                          </h3>
+                          <p className="text-gray-600 text-xs sm:text-sm mb-4 sm:mb-5">
+                            Talk to our experts to view detailed information about this and {profiles.length - index - 1} more similar profiles
+                          </p>
+                          <button className="text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg font-semibold hover:opacity-90 transition-colors w-full flex items-center justify-center gap-2 text-xs sm:text-sm" style={{ backgroundColor: accentColor }}>
+                            <Sparkles size={16} />
+                            Contact Our Experts
+                          </button>
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">
-                          Unlock More Profiles
-                        </h3>
-                        <p className="text-gray-600 text-sm mb-5">
-                          Talk to our experts to view detailed information about this and {profiles.length - index - 1} more similar profiles
-                        </p>
-                        <button className="bg-red-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-red-700 transition-colors w-full flex items-center justify-center gap-2 text-sm">
-                          <Sparkles size={16} />
-                          Contact Our Experts
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-full ${
-                        profile.avatar_type === 'S' ? 'bg-purple-600' : 'bg-green-600'
-                      } text-white flex items-center justify-center font-bold text-lg flex-shrink-0`}>
-                        {profile.name ? profile.name.charAt(0).toUpperCase() : profile.avatar_type}
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-semibold flex items-center gap-1 text-gray-800">
-                          {profile.name}
-                          {profile.verified && (
-                            <span className="text-red-600 text-sm">👑</span>
-                          )}
-                        </h3>
-                        {getSimilarityBadge(profile)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 flex-shrink-0">
-                      <Calendar size={16} />
-                      <span className="whitespace-nowrap">{profile.term}</span>
-                    </div>
-                  </div>
-
-                  {profile.test_scores && profile.test_scores.length > 0 && (
-                    <div className="grid grid-cols-3 gap-3 mb-4">
-                      {profile.test_scores.slice(0, 3).map((test, idx) => (
-                        <div key={idx} className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                            <BookOpen size={12} />
-                            <span className="truncate">{test.exam}</span>
-                          </div>
-                          <p className="font-bold text-sm text-gray-800 truncate">{test.score}</p>
-                        </div>
-                      ))}
-                      {profile.test_scores.length > 3 && (
-                        <div className="flex-1 flex items-center justify-center">
-                          <span className="text-xs text-gray-500">+{profile.test_scores.length - 3} more</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2">
-                      <Building2 size={14} className="text-gray-400 flex-shrink-0" />
-                      <span className="text-sm font-semibold text-gray-800 line-clamp-1">{profile.university}</span>
-                    </div>
-                    <div className="text-sm text-gray-600 line-clamp-2">{profile.program}</div>
-                    {profile.degree && (
-                      <div className="text-xs text-gray-500">
-                        <span className="font-medium">Degree:</span> {profile.degree}
                       </div>
                     )}
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500">Applications:</span>
-                      <span className="font-semibold text-gray-800">{profile.applications_count}</span>
+
+                    {/* Header with Avatar and Name - Full Width */}
+                    <div className="flex items-center justify-between mb-4 gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full ${
+                          profile.avatar_type === 'S' ? 'bg-purple-600' : 'bg-green-600'
+                        } text-white flex items-center justify-center font-bold text-lg sm:text-xl flex-shrink-0`}>
+                          {profile.name ? profile.name.charAt(0).toUpperCase() : profile.avatar_type}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-bold text-base sm:text-lg text-gray-900 break-words mb-1 flex items-center gap-1">
+                            <span className="truncate">{profile.name}</span>
+                            {profile.verified && (
+                              <span className="text-sm flex-shrink-0" style={{ color: accentColor }}>👑</span>
+                            )}
+                          </h3>
+                          {getSimilarityBadge(profile)}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 flex-shrink-0">
+                        <Calendar size={14} className="sm:w-4 sm:h-4" />
+                        <span className="whitespace-nowrap">{profile.term}</span>
+                      </div>
+                    </div>
+
+                    {/* 2x2 Grid Layout */}
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      {/* Test Scores - Top Left */}
+                      {profile.test_scores && profile.test_scores.length > 0 && (
+                        <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)' }}>
+                          <div className="flex items-center gap-1 mb-2">
+                            <BookOpen size={14} style={{ color: accentColor }} />
+                            <span className="text-xs font-medium text-gray-600">Test Scores</span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {profile.test_scores.slice(0, 2).map((test, idx) => (
+                              <div key={idx} className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600 truncate">{test.exam}</span>
+                                <span className="font-bold text-sm ml-2" style={{ color: accentColor }}>{test.score}</span>
+                              </div>
+                            ))}
+                            {profile.test_scores.length > 2 && (
+                              <span className="text-xs text-gray-500">+{profile.test_scores.length - 2} more</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Program - Top Right */}
+                      <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)' }}>
+                        <div className="flex items-center gap-1 mb-2">
+                          <Building2 size={14} style={{ color: accentColor }} />
+                          <span className="text-xs font-medium text-gray-600">Program</span>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-900 line-clamp-2 mb-1">{profile.program}</p>
+                        {profile.degree && (
+                          <p className="text-xs text-gray-500 truncate">{profile.degree}</p>
+                        )}
+                      </div>
+
+                      {/* University - Bottom Left */}
+                      <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)' }}>
+                        <span className="text-xs font-medium text-gray-600 block mb-2">University</span>
+                        <p className="text-sm font-semibold text-gray-900 line-clamp-2">{profile.university}</p>
+                      </div>
+
+                      {/* Applications - Bottom Right */}
+                      <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)' }}>
+                        <span className="text-xs font-medium text-gray-600 block mb-2">Applications</span>
+                        <p className="text-2xl font-bold" style={{ color: accentColor }}>{profile.applications_count}</p>
+                      </div>
                     </div>
                   </div>
-
-                  <button 
-                    disabled={isBlurred}
-                    className={`w-full border border-gray-300 rounded-lg py-2 px-4 flex items-center justify-center gap-2 transition-all ${
-                      isBlurred 
-                        ? 'opacity-50 cursor-not-allowed text-gray-400' 
-                        : 'hover:bg-gray-50 hover:border-red-600 text-gray-700 hover:text-red-600'
-                    }`}
-                  >
-                    <User size={16} />
-                    View Profile
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </DefaultLayout>
   );
