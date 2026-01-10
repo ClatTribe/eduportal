@@ -7,6 +7,7 @@ import {
   GraduationCap,
   Globe,
   Calendar,
+  BookOpen,
 } from "lucide-react"
 import { Course } from "./types"
 
@@ -16,7 +17,8 @@ interface FilterProps {
   onFilterChange: (filtered: Course[]) => void
 }
 
-const countries = ['Italy', 'United States of America', 'United Kingdom', 'Australia', 'Canada', 'Singapore']
+const countries = ['Australia', 'Canada', 'China', 'Denmark', 'Finland', 'France', 'Georgia', 'Hungary', 'Indonesia', 'Ireland', 'Italy', 'Japan', 'Kazakhstan', 'Lithuania', 'Luxembourg', 'Malaysia', 'Monaco', 'Netherlands', 'New Zealand', 'Poland', 'Russia', 'Singapore', 'South Korea', 'Spain', 'Sri Lanka', 'Sweden', 'Switzerland', 'United Arab Emirates', 'United Kingdom', 'United States of America', 'Vietnam'];
+
 const studyLevels = ['Undergraduate', 'Postgraduate']
 
 const durationRanges = [
@@ -36,6 +38,9 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
   const [selectedStudyLevel, setSelectedStudyLevel] = useState("")
   const [selectedUniversity, setSelectedUniversity] = useState("")
   const [selectedDurationRange, setSelectedDurationRange] = useState("")
+  const [programNameInput, setProgramNameInput] = useState("")
+  const [selectedProgramName, setSelectedProgramName] = useState("")
+  const [showProgramDropdown, setShowProgramDropdown] = useState(false)
 
   // Helper function to extract months from duration string
   const extractMonths = (duration: string | null): number | null => {
@@ -77,6 +82,8 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
     selectedStudyLevel,
     selectedUniversity,
     selectedDurationRange,
+    programNameInput,
+    selectedProgramName,
     courses,
     viewMode,
   ])
@@ -110,6 +117,18 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
       filtered = filtered.filter((course) => matchesDurationRange(course, selectedDurationRange))
     }
 
+    // Program Name filter - works with both input and dropdown
+    if (programNameInput) {
+      const query = programNameInput.toLowerCase()
+      filtered = filtered.filter((course) => 
+        course["Program Name"]?.toLowerCase().includes(query)
+      )
+    }
+
+    if (selectedProgramName) {
+      filtered = filtered.filter((course) => course["Program Name"] === selectedProgramName)
+    }
+
     onFilterChange(filtered)
   }
 
@@ -128,6 +147,8 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
     setSelectedStudyLevel("")
     setSelectedUniversity("")
     setSelectedDurationRange("")
+    setProgramNameInput("")
+    setSelectedProgramName("")
   }
 
   const clearFilter = (filterName: string) => {
@@ -147,6 +168,10 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
       case "search":
         setSearchQuery("")
         break
+      case "programName":
+        setProgramNameInput("")
+        setSelectedProgramName("")
+        break
     }
   }
 
@@ -157,7 +182,20 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
     return Array.from(new Set(filtered.map((c) => c.University).filter((u): u is string => Boolean(u))))
   }
 
+  const getFilteredProgramNames = () => {
+    let filtered = courses
+    if (selectedCountry) filtered = filtered.filter((c) => c.Country === selectedCountry)
+    if (selectedStudyLevel) filtered = filtered.filter((c) => c["Study Level"] === selectedStudyLevel)
+    if (selectedUniversity) filtered = filtered.filter((c) => c.University === selectedUniversity)
+    if (programNameInput) {
+      const query = programNameInput.toLowerCase()
+      filtered = filtered.filter((c) => c["Program Name"]?.toLowerCase().includes(query))
+    }
+    return Array.from(new Set(filtered.map((c) => c["Program Name"]).filter((p): p is string => Boolean(p)))).sort()
+  }
+
   const uniqueUniversities = getFilteredUniversities()
+  const uniqueProgramNames = getFilteredProgramNames()
 
   const activeFiltersCount = [
     searchQuery,
@@ -165,7 +203,10 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
     selectedStudyLevel,
     selectedUniversity,
     selectedDurationRange,
+    programNameInput || selectedProgramName,
   ].filter(Boolean).length
+
+  const displayProgramValue = selectedProgramName || programNameInput
 
   if (viewMode !== "all") return null
 
@@ -245,6 +286,15 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
               </div>
             )}
 
+            {(programNameInput || selectedProgramName) && (
+              <div className="bg-[#A51C30]/10 text-[#A51C30] px-3 py-1 rounded-full text-sm flex items-center gap-2 border border-[#A51C30]/20">
+                <span className="font-medium">Program: {displayProgramValue}</span>
+                <button onClick={() => clearFilter("programName")} className="hover:bg-[#A51C30]/20 rounded-full p-0.5 transition-colors">
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
             <button onClick={resetFilters} className="text-sm text-[#A51C30] hover:text-[#8A1828] font-medium px-2 transition-colors">
               Clear All
             </button>
@@ -259,7 +309,7 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
             Refine Your Search
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <Globe size={16} className="text-[#A51C30]" />
@@ -349,6 +399,53 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
                   ))}
                 </select>
                 <ChevronDown className="absolute right-2 top-3 h-4 w-4 pointer-events-none text-gray-500" />
+              </div>
+            </div>
+
+            {/* Combined Program Name Field */}
+            <div className="relative">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <BookOpen size={16} className="text-[#A51C30]" />
+                Program Name
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Type or select..."
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-[#A51C30]"
+                  value={displayProgramValue}
+                  onChange={(e) => {
+                    setProgramNameInput(e.target.value)
+                    setSelectedProgramName("")
+                    setShowProgramDropdown(true)
+                  }}
+                  onFocus={() => setShowProgramDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowProgramDropdown(false), 200)}
+                />
+                <button
+                  onClick={() => setShowProgramDropdown(!showProgramDropdown)}
+                  className="absolute right-2 top-3 cursor-pointer"
+                >
+                  <ChevronDown className="h-4 w-4 text-gray-500" />
+                </button>
+                
+                {showProgramDropdown && uniqueProgramNames.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {uniqueProgramNames.map((program) => (
+                      <div
+                        key={program}
+                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                        onClick={() => {
+                          setSelectedProgramName(program)
+                          setProgramNameInput("")
+                          setShowProgramDropdown(false)
+                        }}
+                      >
+                        {program}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
