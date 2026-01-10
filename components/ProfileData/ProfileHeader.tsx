@@ -55,7 +55,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </div>
           
           {/* EduScore Circle - hidden on mobile, shown on larger screens */}
-          <div className="hidden md:flex flex-col items-center flex-shrink-0">
+          {/* <div className="hidden md:flex flex-col items-center flex-shrink-0">
             <div className="relative w-20 lg:w-24 h-20 lg:h-24">
               <svg className="w-20 lg:w-24 h-20 lg:h-24 transform -rotate-90">
                 <circle cx="40" cy="40" r="34" stroke="#e5e7eb" strokeWidth="7" fill="none" className="lg:hidden" />
@@ -96,11 +96,11 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 {scoreInfo.label}
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
         
         {/* EduScore for mobile - shown below header */}
-        <div className="flex md:hidden justify-center">
+        {/* <div className="flex md:hidden justify-center">
           <div className="flex items-center gap-4">
             <div className="relative w-16 h-16">
               <svg className="w-16 h-16 transform -rotate-90">
@@ -131,7 +131,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
         
         {/* Action buttons */}
         {hasProfile && !isEditing && (

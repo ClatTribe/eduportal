@@ -17,7 +17,7 @@ import { CourseFeatures } from "../../components/CourseFeatures";
 const features = [
   {
     id: "courses",
-    title: "Find MBA Colleges",
+    title: "Find Courses",
     description: "Find your perfect stream based on your actual grades and interests.",
     icon: BookOpen,
     component: () => <CourseFeatures activeTab="courses" />,

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check, X } from 'lucide-react';
+import Link from 'next/link';
 
 export const PainPoints: React.FC = () => {
   return (
@@ -77,7 +78,7 @@ export const PainPoints: React.FC = () => {
           <p className="text-[#A51C30] text-sm mb-6">
             Join 10,000+ students who switched for peace of mind.
           </p>
-          <button
+          <Link href="/home"
             className="px-8 py-3 font-bold rounded-full transition-all shadow-lg"
             style={{
               backgroundColor: '#A51C30',
@@ -86,7 +87,7 @@ export const PainPoints: React.FC = () => {
             }}
           >
             Experience the Difference
-          </button>
+          </Link>
         </div>
       </div>
     </section>

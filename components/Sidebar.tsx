@@ -16,6 +16,7 @@ import {
   X,
   TicketsPlane,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 
 interface SidebarProps {
@@ -51,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
       // { icon: Trophy, label: "Guidance", path: "/guidance" },
     ],
     Tools: [
-      { icon: TicketsPlane, label: "Fly and Settle Services", path: "/fly-and-settle-services" },
+      { icon: TicketsPlane, label: "Fly & Settle Services", path: "/fly-&-settle-services" },
       { icon: GraduationCap, label: "Study Materials", path: "/study-material" },
     ],
     postAdmit: [
@@ -108,10 +109,15 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
       <div className="md:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-[#FEF2F3] to-[#FEF2F3] border-b border-[#FECDD3] shadow-md z-40">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#A51C30] rounded-lg flex items-center justify-center text-white font-bold text-lg">
-              E
-            </div>
-            <div className="text-xl font-bold text-[#A51C30]">EduAbroad</div>
+            <Link href="/" className="flex items-center gap-2 mb-2">
+              <img
+                src="/edulogo.svg"
+                alt="EduNext Logo"
+                width={32}
+                height={32}
+                className="h-10 w-32 object-contain brightness-110"
+              />
+            </Link>
           </div>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -149,12 +155,17 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
         {/* Header - Hidden on mobile */}
         <div className="mb-8 hidden md:block">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-[#A51C30] rounded-lg flex items-center justify-center text-white font-bold text-lg">
-              E
-            </div>
-            <div className="text-2xl font-bold text-[#A51C30]">EduAbroad</div>
+            <Link href="/" className="flex items-center gap-2 mb-2">
+              <img
+                src="/edulogo.svg"
+                alt="EduNext Logo"
+                width={32}
+                height={32}
+                className="h-12 w-64 object-contain brightness-110"
+              />
+            </Link>
           </div>
-          <div className="h-1 w-16 bg-[#A51C30] rounded-full"></div>
+          {/* <div className="h-1 w-16 bg-[#A51C30] rounded-full"></div> */}
         </div>
 
         {/* Mobile: Add padding top */}

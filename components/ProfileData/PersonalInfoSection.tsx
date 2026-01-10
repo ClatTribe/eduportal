@@ -42,6 +42,37 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
   Section,
   InputField,
 }) => {
+  const handleContactPreferenceClick = (value: string) => {
+    if (!isEditing) return;
+    
+    const currentPreferences = formData.contact_preferences || [];
+    
+    // If clicking "Do not disturb"
+    if (value === "Do not disturb") {
+      // If DND is already selected, deselect it
+      if (currentPreferences.includes("Do not disturb")) {
+        onMultiSelectContactPreference(value);
+      } else {
+        // Clear all other options first by deselecting them
+        currentPreferences.forEach(pref => {
+          if (pref !== "Do not disturb") {
+            onMultiSelectContactPreference(pref);
+          }
+        });
+        // Then select only DND
+        onMultiSelectContactPreference(value);
+      }
+    } else {
+      // If clicking any other option (WhatsApp, Email, Calling)
+      // If "Do not disturb" is currently selected, remove it first
+      if (currentPreferences.includes("Do not disturb")) {
+        onMultiSelectContactPreference("Do not disturb");
+      }
+      // Then toggle the clicked option
+      onMultiSelectContactPreference(value);
+    }
+  };
+
   return (
     <Section
       id="personal"
@@ -109,7 +140,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
             <button
               key={option.value}
               type="button"
-              onClick={() => isEditing && onMultiSelectContactPreference(option.value)}
+              onClick={() => handleContactPreferenceClick(option.value)}
               disabled={!isEditing}
               className={`px-3 sm:px-4 py-2 rounded-lg border-2 transition-all text-sm sm:text-base font-medium ${
                 !isEditing ? "opacity-60 cursor-not-allowed" : ""

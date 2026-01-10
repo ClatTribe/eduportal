@@ -29,13 +29,14 @@ const COUNTRIES = ['United States of America', 'United Kingdom', 'Italy', 'Austr
 const DEGREE_OPTIONS = [
   { value: 'Bachelors', label: 'Bachelors (Undergraduate)' },
   { value: 'Masters', label: 'Masters' },
-  { value: 'MBA', label: 'MBA' },
+  // { value: 'MBA', label: 'MBA' },
   { value: 'PhD', label: 'PhD / Doctorate' },
   { value: 'Diploma', label: 'Diploma/Certificate' }
 ];
 
 const TERM_OPTIONS = [
   { value: 'Spring 2026', label: 'Spring 2026' },
+  { value: 'Summer 2026', label: 'Summer 2026' },
   { value: 'Fall 2026', label: 'Fall 2026' },
   { value: '2027', label: '2027 or later' }
 ];

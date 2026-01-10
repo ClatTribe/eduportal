@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldCheck, UserX, Database, Zap, ArrowRight, MousePointerClick } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 export const TrustSection: React.FC = () => {
   return (
@@ -148,18 +149,18 @@ export const TrustSection: React.FC = () => {
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     transition={{ delay: 0.4 }}
-    className="md:col-span-6 rounded-3xl p-8 md:px-12 md:py-10 flex flex-col md:flex-row items-center justify-between gap-8 hover:shadow-xl transition-colors group cursor-pointer"
+    className="md:col-span-6 rounded-3xl p-8 md:px-12 md:py-10 flex flex-col md:flex-row items-center justify-between gap-8 hover:shadow-xl transition-colors group"
     style={{ backgroundColor: '#A51C30' }}
   >
     <div>
       <h3 className="text-3xl font-bold mb-2" style={{ color: '#FFFFFF' }}>Find your dream College?</h3>
       <p className="text-lg" style={{ color: '#FECDD3' }}>Join 10,000+ students who switched to EduAbroad today.</p>
     </div>
-    <button className="px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-2 transition-all shadow-lg"
+    <Link href="/home" className="px-8 py-4 rounded-xl font-bold text-lg flex items-center gap-2 transition-all shadow-lg  cursor-pointer"
       style={{ backgroundColor: '#FFFFFF', color: '#A51C30' }}
     >
-      Get Started Free <ArrowRight size={20} />
-    </button>
+      Get Started for FREE <ArrowRight size={20} />
+    </Link>
   </motion.div>
 </div>
       </div>

@@ -535,7 +535,7 @@ const ApplicationBuilderPage: React.FC = () => {
               </div>
 
               {/* Documents */}
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Attach documents</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Documents Status</h3>
 
               {!documents ? (
                 <div className="text-sm text-gray-600 mb-6">
@@ -551,10 +551,16 @@ const ApplicationBuilderPage: React.FC = () => {
                           {category} document
                         </label>
                         <select
-                          className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                          value={selectedDocs[category] || ""}
-                          onChange={(e) => handleDocSelect(category, e.target.value)}
-                        >
+  className={`w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 ${
+    selectedDocs[category] 
+      ? 'bg-gray-50' 
+      : files.length > 0 
+        ? 'bg-gray-100' 
+        : 'bg-red-100'
+  }`}
+  value={selectedDocs[category] || ""}
+  onChange={(e) => handleDocSelect(category, e.target.value)}
+>
                           <option value="">
                             {files.length > 0
                               ? `Select ${category} document`
