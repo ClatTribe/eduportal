@@ -9,6 +9,7 @@ import {
   BookOpen,
   GraduationCap,
 } from "lucide-react";
+import { spring } from "framer-motion";
 
 interface AdmitFinderData {
   id: number;
@@ -411,5 +412,8 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
     </>
   );
 };
-
+// spring
+// summer 
+// fall 
+// winter
 export default AdmitFilter;
