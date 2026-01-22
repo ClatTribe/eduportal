@@ -55,16 +55,41 @@ const StudyMaterialPage: React.FC = () => {
       // Fallback: Use the existing PDFs in public folder
       const defaultMaterials: StudyMaterial[] = [
         {
-          id: "1",
-          title: "Formula Book",
-          fileName: "Formula Book.pdf",
-          category: "Mathematics",
-          description: "Comprehensive collection of essential formulas for competitive exams including JEE, NEET, and engineering entrance tests. Covers algebra, calculus, geometry, and trigonometry.",
-          uploadDate: "2024-03-15",
-          size: "2.5 MB",
-          pages: 45,
-          featured: true
-        },
+    id: "1",
+    title: "GMAT Focus Edition Guide",
+    fileName: "GMAT Focus Edition Guide_EduAbroad.pdf",
+    category: "GMAT",
+    description:
+      "Official-style overview of the GMAT Focus Edition covering exam structure, section-wise breakdown (Verbal, Quant, Data Insights), candidate-friendly features, scoring insights, and sample questions designed for business school aspirants.",
+    uploadDate: "2024-03-15",
+    size: "2.5 MB",
+    pages: 38,
+    featured: true
+  },
+  {
+    id: "2",
+    title: "PTE Priority Tasks Guide",
+    fileName: "PTE Priority Tasks Guide_EduAbroad.pdf",
+    category: "PTE",
+    description:
+      "High-impact PTE preparation guide categorizing tasks by priority levels. Focuses on must-attempt scoring tasks, risk-managed strategies, negative marking awareness, and smart exam behavior for maximizing overall PTE score.",
+    uploadDate: "2024-03-18",
+    size: "1.8 MB",
+    pages: 12,
+    featured: true
+  },
+  {
+    id: "3",
+    title: "TOEFL iBT Preparation Guide",
+    fileName: "TOEFL Preparation Guide_EduAbroad.pdf",
+    category: "TOEFL",
+    description:
+      "Comprehensive TOEFL iBT preparation guide covering exam format, section-wise strategies for Reading, Listening, Speaking, and Writing, scoring system, preparation plans, and expert tips curated by Harvard-Cambridge alumni.",
+    uploadDate: "2024-03-20",
+    size: "2.1 MB",
+    pages: 15,
+    featured: false
+  }
       ];
       
       setStudyMaterials(defaultMaterials);

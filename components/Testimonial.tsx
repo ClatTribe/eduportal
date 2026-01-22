@@ -49,7 +49,7 @@ export const Testimonial: React.FC = () => {
           <div className="relative" style={{ paddingBottom: '42%', maxHeight: '500px' }}>
             <iframe
               className="absolute top-0 left-0 w-full h-full"
-              src="https://www.youtube.com/embed/xeYCACJjShM?si=ln0gYtT8gFaLI94S"
+              src="https://www.youtube.com/embed/iVhTlBGnLU4?si=AH2Yd2wtwhvWEc8e"
               title="Student Testimonial"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
