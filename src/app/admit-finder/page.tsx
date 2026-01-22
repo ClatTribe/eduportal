@@ -18,6 +18,7 @@ interface AdmitFinderData {
   "IELTS/TOEFL": string | null;
   "Papers": string | null;
   "Work Exp": string | null;
+  "Acceptance": string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -43,14 +44,12 @@ const AdmitFinder: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch data - note: we'll sort by years and intake after fetching
       const { data, error: supabaseError } = await supabase
         .from('admit_finder')
         .select('*');
 
       if (supabaseError) throw supabaseError;
 
-      // Filter valid data (non-null University Name and Course)
       let validData = (data || []).filter(
         (item) => 
           item["University Name"] !== null && 
@@ -59,30 +58,20 @@ const AdmitFinder: React.FC = () => {
           item["Course"]?.trim() !== ""
       );
 
-      // Sort data by year (descending - 2025 first) and then by id (descending)
       validData.sort((a, b) => {
-        // First sort by year (newest first)
         const yearA = Number(a.years?.trim() || "0");
         const yearB = Number(b.years?.trim() || "0");
         
         if (yearB !== yearA) {
-          return yearB - yearA; // 2025 before 2024 before 2023 etc.
+          return yearB - yearA;
         }
         
-        // If years are same, sort by id (descending - newest entries first)
         return b.id - a.id;
       });
 
       console.log('Total records from database:', data?.length || 0);
       console.log('Valid records after filtering:', validData.length);
       console.log('Sample data:', validData[0]);
-      console.log('Year distribution:', 
-        validData.reduce((acc, item) => {
-          const year = item.years || 'Unknown';
-          acc[year] = (acc[year] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>)
-      );
 
       setAdmitData(validData);
       setFilteredData(validData);
@@ -99,7 +88,6 @@ const AdmitFinder: React.FC = () => {
     setCurrentPage(1);
   };
 
-  // Pagination
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -118,7 +106,6 @@ const AdmitFinder: React.FC = () => {
   const formatWorkExp = (workExp: string | null): string => {
     if (!workExp || workExp === 'NA') return 'No Experience';
     
-    // Handle "months" format
     const monthsMatch = workExp.match(/(\d+)\s*months?/i);
     if (monthsMatch) {
       const months = parseInt(monthsMatch[1], 10);
@@ -130,7 +117,6 @@ const AdmitFinder: React.FC = () => {
       return `${years}y ${remainingMonths}m`;
     }
     
-    // Handle "mon" format
     const monthMatch = workExp.match(/(\d+)\s*mon/i);
     if (monthMatch) {
       const months = parseInt(monthMatch[1], 10);
@@ -142,7 +128,6 @@ const AdmitFinder: React.FC = () => {
       return `${years}y ${remainingMonths}m`;
     }
     
-    // Handle just numbers (assume months)
     const numMatch = workExp.match(/^(\d+)$/);
     if (numMatch) {
       const months = parseInt(numMatch[1], 10);
@@ -161,7 +146,6 @@ const AdmitFinder: React.FC = () => {
     <DefaultLayout>
       <div className="flex-1 min-h-screen p-3 sm:p-4 md:p-6 mt-[72px] sm:mt-0" style={{ backgroundColor: '#f9fafb' }}>
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
           <div className="mb-4 sm:mb-6 md:mb-8">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2" style={{ color: accentColor }}>
               Access 1000+ Admit Profiles!
@@ -171,10 +155,8 @@ const AdmitFinder: React.FC = () => {
             </p>
           </div>
 
-          {/* Filter Component - Pass only valid data */}
           <AdmitFilter data={admitData} onFilterChange={handleFilterChange} />
 
-          {/* Error Message */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 flex items-start gap-2 sm:gap-3">
               <AlertCircle className="text-[#A51C30] flex-shrink-0 mt-0.5" size={20} />
@@ -185,7 +167,6 @@ const AdmitFinder: React.FC = () => {
             </div>
           )}
 
-          {/* Results Count */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 rounded-lg shadow-sm p-3 sm:p-4" style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}>
             <div className="flex items-center gap-2">
               <Users className="flex-shrink-0" style={{ color: accentColor }} size={20} />
@@ -198,7 +179,6 @@ const AdmitFinder: React.FC = () => {
             </div>
           </div>
 
-          {/* Loading State */}
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="flex flex-col items-center gap-3">
@@ -218,7 +198,6 @@ const AdmitFinder: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* Admit Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {currentData.map((admit) => (
                   <div
@@ -226,7 +205,6 @@ const AdmitFinder: React.FC = () => {
                     className="rounded-xl p-4 sm:p-6 hover:shadow-lg transition-shadow bg-white"
                     style={{ border: `1px solid ${borderColor}` }}
                   >
-                    {/* University & Course Header */}
                     <div className="mb-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1 min-w-0">
@@ -238,15 +216,25 @@ const AdmitFinder: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mt-2">
-                        <Calendar size={14} />
-                        <span className="font-medium">
-                          {admit.intake || 'N/A'} {admit.years || 'Year N/A'}
-                        </span>
+                      <div className="flex items-center justify-between gap-2 mt-2">
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500">
+                          <Calendar size={14} />
+                          <span className="font-medium">
+                            {admit.intake || 'N/A'} {admit.years || 'Year N/A'}
+                          </span>
+                        </div>
+                        {admit["Acceptance"] && admit["Acceptance"].toLowerCase() !== 'na' && (
+                          <div className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            admit["Acceptance"].toLowerCase() === 'yes' 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {admit["Acceptance"].toLowerCase() === 'yes' ? '✓ Accepted' : '✗ Rejected'}
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Academic Background */}
                     {admit["Undergrad Institute & Branch"] && admit["Undergrad Institute & Branch"] !== "NA" && (
                       <div className="mb-3 p-3 rounded-lg" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)' }}>
                         <div className="flex items-center gap-1 mb-1.5">
@@ -262,9 +250,7 @@ const AdmitFinder: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Test Scores & Stats Grid */}
                     <div className="grid grid-cols-2 gap-3 mb-3">
-                      {/* GPA */}
                       {admit["GPA"] && admit["GPA"] !== "NA" && (
                         <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)' }}>
                           <div className="flex items-center gap-1 mb-1">
@@ -277,7 +263,6 @@ const AdmitFinder: React.FC = () => {
                         </div>
                       )}
 
-                      {/* GRE */}
                       {admit["GRE"] && admit["GRE"] !== "NA" && (
                         <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)' }}>
                           <div className="flex items-center gap-1 mb-1">
@@ -290,7 +275,6 @@ const AdmitFinder: React.FC = () => {
                         </div>
                       )}
 
-                      {/* IELTS/TOEFL */}
                       {admit["IELTS/TOEFL"] && admit["IELTS/TOEFL"] !== "NA" && (
                         <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)' }}>
                           <div className="flex items-center gap-1 mb-1">
@@ -303,7 +287,6 @@ const AdmitFinder: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Work Experience */}
                       {admit["Work Exp"] && admit["Work Exp"] !== "NA" && (
                         <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)' }}>
                           <div className="flex items-center gap-1 mb-1">
@@ -316,7 +299,6 @@ const AdmitFinder: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Research Papers */}
                       {admit["Papers"] && admit["Papers"] !== 'NA' && (
                         <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)' }}>
                           <div className="flex items-center gap-1 mb-1">
@@ -333,7 +315,6 @@ const AdmitFinder: React.FC = () => {
                 ))}
               </div>
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-6 sm:mt-8 flex-wrap">
                   <button

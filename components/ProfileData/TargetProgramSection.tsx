@@ -26,12 +26,13 @@ interface TargetProgramSectionProps {
 
 const COUNTRIES = ['United States of America', 'United Kingdom', 'Italy', 'Australia', 'Germany', 'Europe (Other)'];
 
+// ✅ UPDATED: Added all study level options to match filter and database
 const DEGREE_OPTIONS = [
-  { value: 'Bachelors', label: 'Bachelors (Undergraduate)' },
-  { value: 'Masters', label: 'Masters' },
-  // { value: 'MBA', label: 'MBA' },
-  { value: 'PhD', label: 'PhD / Doctorate' },
-  { value: 'Diploma', label: 'Diploma/Certificate' }
+  { value: 'Undergraduate', label: 'Undergraduate' },
+  { value: 'Postgraduate', label: 'Postgraduate' },
+  { value: 'PhD', label: 'PhD' },
+  { value: 'UG Diploma /Certificate /Associate Degree', label: 'UG Diploma / Certificate / Associate Degree' },
+  { value: 'PG Diploma /Certificate', label: 'PG Diploma / Certificate' }
 ];
 
 const TERM_OPTIONS = [

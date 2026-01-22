@@ -7,9 +7,8 @@ import {
   Calendar,
   Briefcase,
   BookOpen,
-  GraduationCap,
+  CheckCircle,
 } from "lucide-react";
-import { spring } from "framer-motion";
 
 interface AdmitFinderData {
   id: number;
@@ -24,6 +23,7 @@ interface AdmitFinderData {
   "IELTS/TOEFL": string | null;
   "Papers": string | null;
   "Work Exp": string | null;
+  "Acceptance": string | null;
 }
 
 interface FilterProps {
@@ -38,6 +38,7 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedWorkExp, setSelectedWorkExp] = useState("");
+  const [selectedAcceptance, setSelectedAcceptance] = useState("");
 
   // Extract unique values and filter out nulls with proper trimming
   const intakes = Array.from(
@@ -45,7 +46,7 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
       data
         .map((d) => d.intake)
         .filter((v): v is string => v !== null && v.trim() !== "")
-        .map(v => v.trim()) // Trim to remove extra spaces
+        .map(v => v.trim())
     )
   ).sort();
 
@@ -58,10 +59,9 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
         .map(v => v.trim())
     )
   ).sort((a, b) => {
-    // Parse years and sort in descending order
     const yearA = parseInt(a);
     const yearB = parseInt(b);
-    return yearB - yearA; // Descending order
+    return yearB - yearA;
   });
 
   const courses = Array.from(
@@ -84,6 +84,12 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
     { label: "5+ years", value: "60+" },
   ];
 
+  // Acceptance options
+  const acceptanceOptions = [
+    { label: "Accepted", value: "yes" },
+    { label: "Not Accepted", value: "no" },
+  ];
+
   // Helper function to extract months from work_exp
   const extractMonths = (workExp: string | null): number | null => {
     if (!workExp) return null;
@@ -93,13 +99,11 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
       return parseInt(monthMatch[1], 10);
     }
     
-    // Also check for "months" format
     const monthsMatch = workExp.match(/(\d+)\s*months?/i);
     if (monthsMatch) {
       return parseInt(monthsMatch[1], 10);
     }
     
-    // Check for just numbers
     const numMatch = workExp.match(/^(\d+)$/);
     if (numMatch) {
       return parseInt(numMatch[1], 10);
@@ -126,7 +130,7 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
 
   useEffect(() => {
     applyFilters();
-  }, [searchQuery, selectedIntake, selectedYear, selectedCourse, selectedWorkExp, data]);
+  }, [searchQuery, selectedIntake, selectedYear, selectedCourse, selectedWorkExp, selectedAcceptance, data]);
 
   const applyFilters = () => {
     let filtered = [...data];
@@ -158,6 +162,13 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
       filtered = filtered.filter((admit) => matchesWorkExpRange(admit, selectedWorkExp));
     }
 
+    if (selectedAcceptance) {
+      filtered = filtered.filter((admit) => {
+        const acceptance = admit["Acceptance"]?.toLowerCase().trim();
+        return acceptance === selectedAcceptance;
+      });
+    }
+
     onFilterChange(filtered);
   };
 
@@ -167,6 +178,7 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
     setSelectedYear("");
     setSelectedCourse("");
     setSelectedWorkExp("");
+    setSelectedAcceptance("");
   };
 
   const clearFilter = (filterName: string) => {
@@ -183,6 +195,9 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
       case "workExp":
         setSelectedWorkExp("");
         break;
+      case "acceptance":
+        setSelectedAcceptance("");
+        break;
       case "search":
         setSearchQuery("");
         break;
@@ -195,6 +210,7 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
     selectedYear,
     selectedCourse,
     selectedWorkExp,
+    selectedAcceptance,
   ].filter(Boolean).length;
 
   return (
@@ -291,6 +307,20 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
               </div>
             )}
 
+            {selectedAcceptance && (
+              <div className="bg-[#A51C30]/10 text-[#A51C30] px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm flex items-center gap-1 sm:gap-2 border border-[#A51C30]/20">
+                <span className="font-medium">
+                  {acceptanceOptions.find((r) => r.value === selectedAcceptance)?.label}
+                </span>
+                <button
+                  onClick={() => clearFilter("acceptance")}
+                  className="hover:bg-[#A51C30]/20 rounded-full p-0.5 transition-colors flex-shrink-0"
+                >
+                  <X size={12} className="sm:w-3.5 sm:h-3.5" />
+                </button>
+              </div>
+            )}
+
             <button
               onClick={resetFilters}
               className="text-xs sm:text-sm text-[#A51C30] hover:text-[#8A1828] font-medium px-2 transition-colors"
@@ -308,7 +338,7 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
             Refine Your Search
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             <div>
               <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 <Calendar size={14} className="sm:w-4 sm:h-4 text-[#A51C30]" />
@@ -396,6 +426,28 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
                 <ChevronDown className="absolute right-2 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 pointer-events-none text-gray-500" />
               </div>
             </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                <CheckCircle size={14} className="sm:w-4 sm:h-4 text-[#A51C30]" />
+                Acceptance
+              </label>
+              <div className="relative">
+                <select
+                  className="appearance-none w-full bg-gray-50 border border-gray-300 rounded-lg px-3 sm:px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-[#A51C30] text-sm sm:text-base"
+                  value={selectedAcceptance}
+                  onChange={(e) => setSelectedAcceptance(e.target.value)}
+                >
+                  <option value="">All</option>
+                  {acceptanceOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 pointer-events-none text-gray-500" />
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -412,8 +464,5 @@ const AdmitFilter: React.FC<FilterProps> = ({ data, onFilterChange }) => {
     </>
   );
 };
-// spring
-// summer 
-// fall 
-// winter
+
 export default AdmitFilter;

@@ -19,7 +19,14 @@ interface FilterProps {
 
 const countries = ['Australia', 'Canada', 'China', 'Denmark', 'Finland', 'France', 'Georgia', 'Hungary', 'Indonesia', 'Ireland', 'Italy', 'Japan', 'Kazakhstan', 'Lithuania', 'Luxembourg', 'Malaysia', 'Monaco', 'Netherlands', 'New Zealand', 'Poland', 'Russia', 'Singapore', 'South Korea', 'Spain', 'Sri Lanka', 'Sweden', 'Switzerland', 'United Arab Emirates', 'United Kingdom', 'United States of America', 'Vietnam'];
 
-const studyLevels = ['Undergraduate', 'Postgraduate']
+// ✅ UPDATED: Fixed spacing to match exact database values
+const studyLevels = [
+  'Undergraduate',
+  'Postgraduate',
+  'PhD',
+  'UG Diploma /Certificate /Associate Degree',
+  'PG Diploma /Certificate'
+]
 
 const durationRanges = [
   { label: "0–1 Year", min: 0, max: 12 },
@@ -336,6 +343,7 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
               </div>
             </div>
 
+            {/* ✅ UPDATED: Added dependent filter resets when study level changes */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <GraduationCap size={16} className="text-[#A51C30]" />
@@ -345,7 +353,11 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
                 <select
                   className="appearance-none w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-[#A51C30]"
                   value={selectedStudyLevel}
-                  onChange={(e) => setSelectedStudyLevel(e.target.value)}
+                  onChange={(e) => handleFilterChange(setSelectedStudyLevel, e.target.value, [
+                    () => setSelectedUniversity(""),
+                    () => setSelectedProgramName(""),
+                    () => setProgramNameInput("")
+                  ])}
                 >
                   <option value="">All Study Levels</option>
                   {studyLevels.map((level) => (
@@ -402,7 +414,6 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
               </div>
             </div>
 
-            {/* Combined Program Name Field */}
             <div className="relative">
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <BookOpen size={16} className="text-[#A51C30]" />

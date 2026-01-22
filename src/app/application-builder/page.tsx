@@ -1,10 +1,10 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../contexts/AuthContext";
 import DefaultLayout from "../defaultLayout";
 import ApplicationCard from "../../../components/ApplicationCard";
-import { AlertCircle, CheckCircle, Trash2, Plus, Edit2 } from "lucide-react";
+import { AlertCircle, CheckCircle, Trash2, Plus, Edit2, ChevronDown } from "lucide-react";
 
 // ---------- Types ----------
 type DocumentCategory =
@@ -62,8 +62,10 @@ const ApplicationBuilderPage: React.FC = () => {
   const [applications, setApplications] = useState<ApplicationBuilderRow[]>([]);
   
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [selectedUniversity, setSelectedUniversity] = useState<string>("");
-  const [selectedProgram, setSelectedProgram] = useState<string>("");
+  const [universityInput, setUniversityInput] = useState<string>("");
+  const [showUniversityDropdown, setShowUniversityDropdown] = useState<boolean>(false);
+  const [programInput, setProgramInput] = useState<string>("");
+  const [showProgramDropdown, setShowProgramDropdown] = useState<boolean>(false);
   const [selectedDocs, setSelectedDocs] = useState<Record<DocumentCategory, string>>({
     tenth: "",
     twelfth: "",
@@ -82,6 +84,9 @@ const ApplicationBuilderPage: React.FC = () => {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [showForm, setShowForm] = useState<boolean>(false);
 
+  const universityDropdownRef = useRef<HTMLDivElement>(null);
+  const programDropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!user) return;
     const init = async () => {
@@ -99,86 +104,98 @@ const ApplicationBuilderPage: React.FC = () => {
     init();
   }, [user?.id]);
 
+  // Click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (universityDropdownRef.current && !universityDropdownRef.current.contains(event.target as Node)) {
+        setShowUniversityDropdown(false);
+      }
+      if (programDropdownRef.current && !programDropdownRef.current.contains(event.target as Node)) {
+        setShowProgramDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // ---------- Data fetching ----------
   const fetchCourses = async () => {
-  const { data, error } = await supabase.from("courses").select("*");
-  if (error) throw error;
-
-  const valid: CourseRow[] = (data || []).filter(
-  (c: unknown): c is CourseRow => {
-    if (c && typeof c === "object") {
-      const obj = c as Record<string, unknown>;
-      return (
-        typeof obj.id === "number" &&
-        typeof obj.University === "string"
-      );
+    const { data, error } = await supabase.from("courses").select("*");
+    if (error) {
+      console.error("Error fetching courses:", error);
+      throw error;
     }
-    return false;
-  }
-);
 
+    console.log("Raw courses data:", data);
+    console.log("Total courses fetched:", data?.length || 0);
 
-  setCourses(valid);
-};
+    const valid: CourseRow[] = (data || []).filter(
+      (c: unknown): c is CourseRow => {
+        if (c && typeof c === "object") {
+          const obj = c as Record<string, unknown>;
+          return typeof obj.id === "number";
+        }
+        return false;
+      }
+    );
 
+    console.log("Valid courses after filtering:", valid.length);
+    setCourses(valid);
+  };
 
   const fetchDocuments = async () => {
-  const { data, error } = await supabase
-    .from("student_documents")
-    .select("*")
-    .eq("user_id", user!.id)
-    .single();
-
-  if (error && error.code !== "PGRST116") {
-    throw error;
-  }
-
-  if (!data && error?.code === "PGRST116") {
-    console.log('Creating new document record for user:', user?.id);
-    
-    const { error: insertError } = await supabase
+    const { data, error } = await supabase
       .from("student_documents")
-      .insert([{ 
-        user_id: user!.id,
-        username: user?.email || user?.user_metadata?.email || 'Unknown User' // Add username
-      }]);
+      .select("*")
+      .eq("user_id", user!.id)
+      .single();
+
+    if (error && error.code !== "PGRST116") {
+      throw error;
+    }
+
+    if (!data && error?.code === "PGRST116") {
+      console.log('Creating new document record for user:', user?.id);
       
-    if (insertError) {
-      console.error('Error creating document record:', {
-        message: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint,
-        code: insertError.code
+      const { error: insertError } = await supabase
+        .from("student_documents")
+        .insert([{ 
+          user_id: user!.id,
+          username: user?.email || user?.user_metadata?.email || 'Unknown User'
+        }]);
+        
+      if (insertError) {
+        console.error('Error creating document record:', insertError);
+        throw insertError;
+      }
+
+      setDocuments({
+        tenth: [],
+        twelfth: [],
+        graduation: [],
+        pg: [],
+        lor: [],
+        sop: [],
+        passport: [],
+        resume: [],
+        other: [],
       });
-      throw insertError;
+      return;
     }
 
     setDocuments({
-      tenth: [],
-      twelfth: [],
-      graduation: [],
-      pg: [],
-      lor: [],
-      sop: [],
-      passport: [],
-      resume: [],
-      other: [],
+      tenth: (data.tenth_marksheets as UploadedFile[]) || [],
+      twelfth: (data.twelfth_marksheets as UploadedFile[]) || [],
+      graduation: (data.graduation_docs as UploadedFile[]) || [],
+      pg: (data.pg_docs as UploadedFile[]) || [],
+      lor: (data.lor_docs as UploadedFile[]) || [],
+      sop: (data.sop_docs as UploadedFile[]) || [],
+      passport: (data.passport_docs as UploadedFile[]) || [],
+      resume: (data.resume_docs as UploadedFile[]) || [],
+      other: (data.other_docs as UploadedFile[]) || [],
     });
-    return;
-  }
-
-  setDocuments({
-    tenth: (data.tenth_marksheets as UploadedFile[]) || [],
-    twelfth: (data.twelfth_marksheets as UploadedFile[]) || [],
-    graduation: (data.graduation_docs as UploadedFile[]) || [],
-    pg: (data.pg_docs as UploadedFile[]) || [],
-    lor: (data.lor_docs as UploadedFile[]) || [],
-    sop: (data.sop_docs as UploadedFile[]) || [],
-    passport: (data.passport_docs as UploadedFile[]) || [],
-    resume: (data.resume_docs as UploadedFile[]) || [],
-    other: (data.other_docs as UploadedFile[]) || [],
-  });
-};
+  };
 
   const fetchExistingApplications = async () => {
     const { data, error } = await supabase
@@ -200,14 +217,26 @@ const ApplicationBuilderPage: React.FC = () => {
   const universities: string[] = useMemo(() => {
     const set = new Set<string>();
     courses.forEach((c) => {
-      if (c.University) set.add(c.University);
+      if (c.University && typeof c.University === 'string' && c.University.trim()) {
+        set.add(c.University.trim());
+      }
     });
-    return Array.from(set).sort();
+    const sorted = Array.from(set).sort();
+    console.log("Available universities:", sorted);
+    return sorted;
   }, [courses]);
 
+  const getFilteredUniversities = (): string[] => {
+    if (!universityInput) return universities;
+    const query = universityInput.toLowerCase();
+    return universities.filter(uni => uni.toLowerCase().includes(query));
+  };
+
   const programsForSelectedUniversity: string[] = useMemo(() => {
-    return courses
-      .filter((c) => c.University === selectedUniversity)
+    if (!universityInput) return [];
+    
+    const programs = courses
+      .filter((c) => c.University === universityInput)
       .map((c) => (c["Program Name"] || "").trim())
       .filter(Boolean)
       .reduce<string[]>((acc, p) => {
@@ -215,7 +244,16 @@ const ApplicationBuilderPage: React.FC = () => {
         return acc;
       }, [])
       .sort();
-  }, [courses, selectedUniversity]);
+    
+    console.log(`Programs for ${universityInput}:`, programs);
+    return programs;
+  }, [courses, universityInput]);
+
+  const getFilteredPrograms = (): string[] => {
+    if (!programInput) return programsForSelectedUniversity;
+    const query = programInput.toLowerCase();
+    return programsForSelectedUniversity.filter(prog => prog.toLowerCase().includes(query));
+  };
 
   // ---------- Handlers ----------
   const handleDocSelect = (category: DocumentCategory, url: string) => {
@@ -224,8 +262,8 @@ const ApplicationBuilderPage: React.FC = () => {
 
   const handleNewApplication = () => {
     setEditingIndex(null);
-    setSelectedUniversity("");
-    setSelectedProgram("");
+    setUniversityInput("");
+    setProgramInput("");
     setSelectedDocs({
       tenth: "",
       twelfth: "",
@@ -243,8 +281,9 @@ const ApplicationBuilderPage: React.FC = () => {
 
   const handleEditApplication = (app: ApplicationBuilderRow, index: number) => {
     setEditingIndex(index);
-    setSelectedUniversity(app.university || "");
-    setSelectedProgram(app.program || "");
+    setUniversityInput(app.university || "");
+    setProgramInput(app.program || "");
+    
     const docMap = app.documents || {};
     setSelectedDocs({
       tenth: (docMap.tenth || "") as string,
@@ -285,8 +324,12 @@ const ApplicationBuilderPage: React.FC = () => {
   const handleSaveApplication = async () => {
     setSaveMessage(null);
     if (!user) return;
-    if (!selectedUniversity || !selectedProgram) {
-      setSaveMessage("Please select both university and program.");
+    
+    const finalUniversity = universityInput.trim();
+    const finalProgram = programInput.trim();
+    
+    if (!finalUniversity || !finalProgram) {
+      setSaveMessage("Please provide both university and program.");
       return;
     }
 
@@ -299,8 +342,8 @@ const ApplicationBuilderPage: React.FC = () => {
     try {
       const payload: ApplicationBuilderRow = {
         user_id: user.id,
-        university: selectedUniversity,
-        program: selectedProgram,
+        university: finalUniversity,
+        program: finalProgram,
         documents: selectedDocs,
       };
 
@@ -339,6 +382,21 @@ const ApplicationBuilderPage: React.FC = () => {
     setEditingIndex(null);
     setSaveMessage(null);
   };
+
+  const handleUniversitySelect = (university: string) => {
+    setUniversityInput(university);
+    setShowUniversityDropdown(false);
+    // Reset program when university changes
+    setProgramInput("");
+  };
+
+  const handleProgramSelect = (program: string) => {
+    setProgramInput(program);
+    setShowProgramDropdown(false);
+  };
+
+  const filteredUniversities = getFilteredUniversities();
+  const filteredPrograms = getFilteredPrograms();
 
   // ---------- UI ----------
   if (loading) {
@@ -403,71 +461,20 @@ const ApplicationBuilderPage: React.FC = () => {
             )}
 
             {/* Applications List */}
-            {/* {!showForm && applications.length > 0 && (
+            {!showForm && applications.length > 0 && (
               <div className="space-y-4">
                 {applications.map((app, index) => (
-                  <div
+                  <ApplicationCard
                     key={app.id || index}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-gray-800">
-                          {app.university}
-                        </h3>
-                        <p className="text-gray-600 mt-1">{app.program}</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {Object.entries(app.documents || {}).map(([key, value]) => {
-                            if (value) {
-                              return (
-                                <span
-                                  key={key}
-                                  className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold"
-                                >
-                                  <CheckCircle size={10} />
-                                  {key}
-                                </span>
-                              );
-                            }
-                            return null;
-                          })}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditApplication(app, index)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteApplication(app)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    application={app}
+                    index={index}
+                    variant="rectangular"
+                    onEdit={handleEditApplication}
+                    onDelete={handleDeleteApplication}
+                  />
                 ))}
               </div>
-            )} */}
-            {!showForm && applications.length > 0 && (
-  <div className="space-y-4">
-    {applications.map((app, index) => (
-      <ApplicationCard
-        key={app.id || index}
-        application={app}
-        index={index}
-        variant="rectangular"
-        onEdit={handleEditApplication}
-        onDelete={handleDeleteApplication}
-      />
-    ))}
-  </div>
-)}
+            )}
 
             {!showForm && applications.length === 0 && (
               <div className="text-center py-12">
@@ -490,48 +497,119 @@ const ApplicationBuilderPage: React.FC = () => {
                 {editingIndex !== null ? "Edit Application" : "New Application"}
               </h2>
 
-              {/* University */}
+              {/* University Input with Dropdown */}
               <div className="mb-4">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   University
                 </label>
-                <select
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                  value={selectedUniversity}
-                  onChange={(e) => {
-                    setSelectedUniversity(e.target.value);
-                    setSelectedProgram("");
-                  }}
-                >
-                  <option value="">Select University</option>
-                  {universities.map((uni: string) => (
-                    <option key={uni} value={uni}>
-                      {uni}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative" ref={universityDropdownRef}>
+                  <input
+                    type="text"
+                    placeholder="Type or select university..."
+                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    value={universityInput}
+                    onChange={(e) => {
+                      setUniversityInput(e.target.value);
+                      setShowUniversityDropdown(true);
+                      // Reset program when university changes
+                      setProgramInput("");
+                    }}
+                    onFocus={() => setShowUniversityDropdown(true)}
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowUniversityDropdown(!showUniversityDropdown);
+                    }}
+                    className="absolute right-2 top-3 cursor-pointer"
+                    type="button"
+                  >
+                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                  </button>
+                  
+                  {showUniversityDropdown && filteredUniversities.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredUniversities.map((university) => (
+                        <div
+                          key={university}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleUniversitySelect(university);
+                          }}
+                        >
+                          {university}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {universities.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    No universities found in database. You can type any university name.
+                  </p>
+                )}
               </div>
 
-              {/* Program */}
+              {/* Program Input with Dropdown */}
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Program
                 </label>
-                <select
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                  value={selectedProgram}
-                  onChange={(e) => setSelectedProgram(e.target.value)}
-                  disabled={!selectedUniversity}
-                >
-                  <option value="">
-                    {selectedUniversity ? "Select Program" : "Choose a university first"}
-                  </option>
-                  {programsForSelectedUniversity.map((program: string) => (
-                    <option key={program} value={program}>
-                      {program}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative" ref={programDropdownRef}>
+                  <input
+                    type="text"
+                    placeholder="Type or select program..."
+                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    value={programInput}
+                    onChange={(e) => {
+                      setProgramInput(e.target.value);
+                      setShowProgramDropdown(true);
+                    }}
+                    onFocus={() => setShowProgramDropdown(true)}
+                    disabled={!universityInput}
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (universityInput) {
+                        setShowProgramDropdown(!showProgramDropdown);
+                      }
+                    }}
+                    className="absolute right-2 top-3 cursor-pointer"
+                    type="button"
+                    disabled={!universityInput}
+                  >
+                    <ChevronDown className={`h-4 w-4 ${universityInput ? 'text-gray-500' : 'text-gray-300'}`} />
+                  </button>
+                  
+                  {showProgramDropdown && filteredPrograms.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredPrograms.map((program) => (
+                        <div
+                          key={program}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleProgramSelect(program);
+                          }}
+                        >
+                          {program}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {!universityInput && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Please select a university first
+                  </p>
+                )}
+                {universityInput && programsForSelectedUniversity.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    No programs found for this university. You can type any program name.
+                  </p>
+                )}
               </div>
 
               {/* Documents */}
@@ -551,16 +629,16 @@ const ApplicationBuilderPage: React.FC = () => {
                           {category} document
                         </label>
                         <select
-  className={`w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 ${
-    selectedDocs[category] 
-      ? 'bg-gray-50' 
-      : files.length > 0 
-        ? 'bg-gray-100' 
-        : 'bg-red-100'
-  }`}
-  value={selectedDocs[category] || ""}
-  onChange={(e) => handleDocSelect(category, e.target.value)}
->
+                          className={`w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                            selectedDocs[category] 
+                              ? 'bg-gray-50' 
+                              : files.length > 0 
+                                ? 'bg-gray-100' 
+                                : 'bg-red-100'
+                          }`}
+                          value={selectedDocs[category] || ""}
+                          onChange={(e) => handleDocSelect(category, e.target.value)}
+                        >
                           <option value="">
                             {files.length > 0
                               ? `Select ${category} document`
