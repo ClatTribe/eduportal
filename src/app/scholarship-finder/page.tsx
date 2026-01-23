@@ -321,7 +321,7 @@ const ScholarshipFinder: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="mb-4 sm:mb-6 md:mb-8">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2" style={{ color: accentColor }}>
-              Find Scholarships to Fuel Your Dreams
+              Find Scholarships to Fuel Your Dream
             </h1>
             <p className="text-sm sm:text-base text-gray-600">Discover scholarships from top universities and institutions worldwide</p>
           </div>
@@ -419,7 +419,7 @@ const ScholarshipFinder: React.FC = () => {
             <div className="flex items-center gap-2">
               <Award style={{ color: accentColor }} size={20} className="sm:w-6 sm:h-6 flex-shrink-0" />
               <span className="font-semibold text-sm sm:text-base text-gray-900">
-                {filteredScholarships.length.toLocaleString()} {viewMode === "recommended" ? "recommended " : ""}scholarship{filteredScholarships.length !== 1 ? 's' : ''} found
+                {filteredScholarships.length.toLocaleString()} {viewMode === "recommended" ? "recommended " : ""}scholarship{filteredScholarships.length !== 1 ? 's' : ''} found,  Stay Tuned for More !
               </span>
             </div>
             <div className="flex items-center gap-2">
