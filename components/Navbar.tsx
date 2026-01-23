@@ -29,23 +29,26 @@ export const Navbar: React.FC = () => {
   const navigateToSection = async (id: string) => {
     // Check if we're already on the home page
     const isHomePage = window.location.pathname === "/";
-    
+
     if (!isHomePage) {
       await router.push("/");
       // Wait for navigation to complete
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
     }
 
     // Scroll to the section
-    setTimeout(() => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
-    }, isHomePage ? 50 : 200);
+    setTimeout(
+      () => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      },
+      isHomePage ? 50 : 200,
+    );
 
     setMobileMenuOpen(false);
   };
@@ -76,13 +79,13 @@ export const Navbar: React.FC = () => {
       >
         <div className="container mx-auto px-6 flex items-center justify-between max-w-7xl">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 mb-2">
+          <Link href="/" className="flex items-center mb-2">
             <img
-              src="/edulogo.svg"
+              src="/edulogo.png"
               alt="EduNext Logo"
-              width={32}
-              height={32}
-              className="h-10 w-32 object-contain brightness-110"
+              width={34}
+              height={34}
+              className="h-12 w-32 object-contain"
             />
             <span className="relative inline-flex items-center px-3 py-1 text-xs font-bold text-white bg-gradient-to-r from-[#A51C30] to-[#d4243e] rounded-full overflow-hidden">
               <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 -skew-x-12 animate-shimmer"></span>
@@ -105,7 +108,8 @@ export const Navbar: React.FC = () => {
             >
               Why Us
             </button>
-            <Link href = "/ielts-online-test-kit"
+            <Link
+              href="/ielts-online-test-kit"
               className="text-sm font-medium text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer"
             >
               IELTS Online Test Kit
@@ -197,7 +201,8 @@ export const Navbar: React.FC = () => {
             >
               Why Us
             </button>
-             <Link href = "/ielts-online-test-kit"
+            <Link
+              href="/ielts-online-test-kit"
               className="text-lg font-bold text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer"
             >
               IELTS Online Test Kit

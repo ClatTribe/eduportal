@@ -126,10 +126,10 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2 mb-2">
               <img
-                src="/edulogo.svg"
+                src="/edulogo.png"
                 alt="EduNext Logo"
-                width={32}
-                height={32}
+                width={34}
+                height={34}
                 className="h-10 w-32 object-contain brightness-110"
               />
             </Link>
@@ -176,10 +176,10 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
           <div className="flex flex-col items-center gap-2 mb-2">
             <Link href="/" className="flex items-center gap-2">
               <img
-                src="/edulogo.svg"
+                src="/edulogo.png"
                 alt="EduNext Logo"
-                width={32}
-                height={32}
+                width={34}
+                height={34}
                 className="h-12 w-64 object-contain brightness-110"
               />
             </Link>
