@@ -83,9 +83,9 @@ export const Navbar: React.FC = () => {
             <img
               src="/edulogo.png"
               alt="EduNext Logo"
-              width={34}
-              height={34}
-              className="h-12 w-32 object-contain"
+              width={48}
+              height={48}
+              className="h-16 w-40 object-contain"
             />
             <span className="relative inline-flex items-center px-3 py-1 text-xs font-bold text-white bg-gradient-to-r from-[#A51C30] to-[#d4243e] rounded-full overflow-hidden">
               <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 -skew-x-12 animate-shimmer"></span>
