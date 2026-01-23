@@ -51,179 +51,200 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled || mobileMenuOpen
-          ? "bg-white/80 backdrop-blur-md border-b border-slate-100 py-3"
-          : "bg-transparent py-5"
-      }`}
-    >
-      <div className="container mx-auto px-6 flex items-center justify-between max-w-7xl">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 mb-2">
-          <img
-            src="/edulogo.svg"
-            alt="EduNext Logo"
-            width={32}
-            height={32}
-            className="h-10 w-32 object-contain brightness-110"
-          />
-        </Link>
+    <>
+      <style jsx>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
 
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-8">
-          <button
-            onClick={() => navigateToSection("trust-section")}
-            className="text-sm font-medium text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer"
-          >
-            Features
-          </button>
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+      `}</style>
 
-          <button
-            onClick={() => navigateToSection("why-us")}
-            className="text-sm font-medium text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer"
-          >
-            Why Us
-          </button>
-          <Link href = "/ielts-online-test-kit"
-            className="text-sm font-medium text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer"
-          >
-            IELTS Online Test Kit
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled || mobileMenuOpen
+            ? "bg-white/80 backdrop-blur-md border-b border-slate-100 py-3"
+            : "bg-transparent py-5"
+        }`}
+      >
+        <div className="container mx-auto px-6 flex items-center justify-between max-w-7xl">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 mb-2">
+            <img
+              src="/edulogo.svg"
+              alt="EduNext Logo"
+              width={32}
+              height={32}
+              className="h-10 w-32 object-contain brightness-110"
+            />
+            <span className="relative inline-flex items-center px-3 py-1 text-xs font-bold text-white bg-gradient-to-r from-[#A51C30] to-[#d4243e] rounded-full overflow-hidden">
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 -skew-x-12 animate-shimmer"></span>
+              <span className="relative">BETA</span>
+            </span>
           </Link>
 
-          {user ? (
-            <>
-              <Link
-                href="/home"
-                className="px-4 py-2 text-sm font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-full"
-              >
-                Dashboard
-              </Link>
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center gap-8">
+            <button
+              onClick={() => navigateToSection("trust-section")}
+              className="text-sm font-medium text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer"
+            >
+              Features
+            </button>
 
-              <button
-                onClick={handleLogout}
-                className="group px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full flex items-center gap-1"
-              >
-                Logout
-                <LogOut
-                  size={14}
-                  className="group-hover:translate-x-0.5 transition-transform"
-                />
-              </button>
+            <button
+              onClick={() => navigateToSection("why-us")}
+              className="text-sm font-medium text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer"
+            >
+              Why Us
+            </button>
+            <Link href = "/ielts-online-test-kit"
+              className="text-sm font-medium text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer"
+            >
+              IELTS Online Test Kit
+            </Link>
 
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200">
-                <User size={16} className="text-[#A51C30]" />
+            {user ? (
+              <>
+                <Link
+                  href="/home"
+                  className="px-4 py-2 text-sm font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-full"
+                >
+                  Dashboard
+                </Link>
+
+                <button
+                  onClick={handleLogout}
+                  className="group px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full flex items-center gap-1"
+                >
+                  Logout
+                  <LogOut
+                    size={14}
+                    className="group-hover:translate-x-0.5 transition-transform"
+                  />
+                </button>
+
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-200">
+                  <User size={16} className="text-[#A51C30]" />
+                  <span className="text-sm font-medium text-slate-700">
+                    {user.user_metadata?.full_name || user.email}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/register"
+                  className="px-4 py-2 text-sm font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-full"
+                >
+                  Log In
+                </Link>
+
+                <Link
+                  href="/register"
+                  className="group px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-full flex items-center gap-1"
+                >
+                  Get Started
+                  <ChevronRight
+                    size={14}
+                    className="group-hover:translate-x-0.5 transition-transform"
+                  />
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Mobile Toggle */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-slate-600"
+            >
+              {mobileMenuOpen ? <X /> : <Menu />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-100 p-6 flex flex-col gap-4 shadow-xl">
+            {user && (
+              <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl mb-2">
+                <User size={20} className="text-[#A51C30]" />
                 <span className="text-sm font-medium text-slate-700">
                   {user.user_metadata?.full_name || user.email}
                 </span>
               </div>
-            </>
-          ) : (
-            <>
-              <Link
-                href="/register"
-                className="px-4 py-2 text-sm font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-full"
-              >
-                Log In
-              </Link>
+            )}
 
-              <Link
-                href="/register"
-                className="group px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-full flex items-center gap-1"
-              >
-                Get Started
-                <ChevronRight
-                  size={14}
-                  className="group-hover:translate-x-0.5 transition-transform"
-                />
-              </Link>
-            </>
-          )}
-        </div>
+            <button
+              onClick={() => navigateToSection("trust-section")}
+              className="text-lg font-medium text-slate-800 text-left"
+            >
+              Features
+            </button>
 
-        {/* Mobile Toggle */}
-        <div className="md:hidden">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-slate-600"
-          >
-            {mobileMenuOpen ? <X /> : <Menu />}
-          </button>
-        </div>
-      </div>
+            <button
+              onClick={() => navigateToSection("why-us")}
+              className="text-lg font-medium text-slate-800 text-left"
+            >
+              Why Us
+            </button>
+             <Link href = "/ielts-online-test-kit"
+              className="text-lg font-bold text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer"
+            >
+              IELTS Online Test Kit
+            </Link>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-100 p-6 flex flex-col gap-4 shadow-xl">
-          {user && (
-            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl mb-2">
-              <User size={20} className="text-[#A51C30]" />
-              <span className="text-sm font-medium text-slate-700">
-                {user.user_metadata?.full_name || user.email}
-              </span>
-            </div>
-          )}
+            <hr className="border-slate-100" />
 
-          <button
-            onClick={() => navigateToSection("trust-section")}
-            className="text-lg font-medium text-slate-800 text-left"
-          >
-            Features
-          </button>
+            {user ? (
+              <>
+                <Link
+                  href="/home"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-3 text-center font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-xl"
+                >
+                  Dashboard
+                </Link>
 
-          <button
-            onClick={() => navigateToSection("why-us")}
-            className="text-lg font-medium text-slate-800 text-left"
-          >
-            Why Us
-          </button>
-           <Link href = "/ielts-online-test-kit"
-            className="text-lg font-bold text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer"
-          >
-            IELTS Online Test Kit
-          </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full py-3 text-center font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl flex items-center justify-center gap-2"
+                >
+                  <LogOut size={18} />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-3 text-center font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-xl"
+                >
+                  Log In
+                </Link>
 
-          <hr className="border-slate-100" />
-
-          {user ? (
-            <>
-              <Link
-                href="/home"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-3 text-center font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-xl"
-              >
-                Dashboard
-              </Link>
-
-              <button
-                onClick={handleLogout}
-                className="w-full py-3 text-center font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl flex items-center justify-center gap-2"
-              >
-                <LogOut size={18} />
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-3 text-center font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-xl"
-              >
-                Log In
-              </Link>
-
-              <Link
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-3 text-center font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-xl"
-              >
-                Get Started
-              </Link>
-            </>
-          )}
-        </div>
-      )}
-    </nav>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-3 text-center font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-xl"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
+          </div>
+        )}
+      </nav>
+    </>
   );
 };
