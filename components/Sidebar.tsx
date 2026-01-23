@@ -105,6 +105,21 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
 
   return (
     <>
+      <style jsx>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+      `}</style>
+
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-[#FEF2F3] to-[#FEF2F3] border-b border-[#FECDD3] shadow-md z-40">
         <div className="flex items-center justify-between p-4">
@@ -118,6 +133,10 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
                 className="h-10 w-32 object-contain brightness-110"
               />
             </Link>
+            <span className="relative inline-flex items-center px-2.5 py-1 text-xs font-bold text-white bg-gradient-to-r from-[#A51C30] to-[#d4243e] rounded-full overflow-hidden">
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 -skew-x-12 animate-shimmer"></span>
+              <span className="relative">BETA</span>
+            </span>
           </div>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -154,8 +173,8 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
       >
         {/* Header - Hidden on mobile */}
         <div className="mb-8 hidden md:block">
-          <div className="flex items-center gap-2 mb-2">
-            <Link href="/" className="flex items-center gap-2 mb-2">
+          <div className="flex flex-col items-center gap-2 mb-2">
+            <Link href="/" className="flex items-center gap-2">
               <img
                 src="/edulogo.svg"
                 alt="EduNext Logo"
@@ -164,6 +183,10 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
                 className="h-12 w-64 object-contain brightness-110"
               />
             </Link>
+            <span className="relative inline-flex items-center px-3 py-1 text-xs font-bold text-white bg-gradient-to-r from-[#A51C30] to-[#d4243e] rounded-full overflow-hidden">
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 -skew-x-12 animate-shimmer"></span>
+              <span className="relative">BETA</span>
+            </span>
           </div>
           {/* <div className="h-1 w-16 bg-[#A51C30] rounded-full"></div> */}
         </div>
