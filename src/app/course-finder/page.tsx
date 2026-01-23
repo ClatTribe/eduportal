@@ -55,6 +55,51 @@ interface Course {
   matchScore?: number
 }
 
+// Utility function to extract QS Ranking from the ranking string
+const extractQSRanking = (rankingString: string | null): number | null => {
+  if (!rankingString) return null
+  
+  // Match "QS Ranking - [number]" or "QS Ranking - NA"
+  const qsMatch = rankingString.match(/QS Ranking\s*-\s*(\d+|NA)/i)
+  
+  if (!qsMatch) return null
+  
+  const rankValue = qsMatch[1]
+  
+  // If it's "NA" or not a number, return null
+  if (rankValue.toUpperCase() === 'NA' || isNaN(Number(rankValue))) {
+    return null
+  }
+  
+  return Number(rankValue)
+}
+
+// Sorting function for courses by QS Ranking
+const sortCoursesByQSRanking = (courses: Course[]): Course[] => {
+  return [...courses].sort((a, b) => {
+    const qsA = extractQSRanking(a["University Ranking"])
+    const qsB = extractQSRanking(b["University Ranking"])
+    
+    // If both have QS rankings, sort by number (lower is better)
+    if (qsA !== null && qsB !== null) {
+      return qsA - qsB
+    }
+    
+    // If only A has QS ranking, A comes first
+    if (qsA !== null && qsB === null) {
+      return -1
+    }
+    
+    // If only B has QS ranking, B comes first
+    if (qsA === null && qsB !== null) {
+      return 1
+    }
+    
+    // If neither has QS ranking, maintain original order
+    return 0
+  })
+}
+
 const CourseFinder: React.FC = () => {
   const { user } = useAuth()
   const [courses, setCourses] = useState<Course[]>([])
@@ -75,12 +120,12 @@ const CourseFinder: React.FC = () => {
   }, [viewMode])
 
   const {
-  compareColleges,
-  toggleCompare,
-  removeFromCompare,
-  isInCompare,
-  goToComparison,
-} = CollegeComparison({ user, courses })
+    compareColleges,
+    toggleCompare,
+    removeFromCompare,
+    isInCompare,
+    goToComparison,
+  } = CollegeComparison({ user, courses })
 
   const fetchCourses = async () => {
     try {
@@ -111,8 +156,12 @@ const CourseFinder: React.FC = () => {
       }
 
       const validCourses = allCourses.filter((course) => course.University !== null)
-      setCourses(validCourses)
-      setFilteredCourses(validCourses)
+      
+      // Sort by QS Ranking
+      const sortedCourses = sortCoursesByQSRanking(validCourses)
+      
+      setCourses(sortedCourses)
+      setFilteredCourses(sortedCourses)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch courses")
       console.error("Error fetching courses:", err)
@@ -127,7 +176,9 @@ const CourseFinder: React.FC = () => {
   }
 
   const handleFilterChange = (filtered: Course[]) => {
-    setFilteredCourses(filtered)
+    // Apply QS Ranking sort to filtered results
+    const sortedFiltered = sortCoursesByQSRanking(filtered)
+    setFilteredCourses(sortedFiltered)
     setCurrentPage(0)
   }
 
@@ -255,15 +306,15 @@ const CourseFinder: React.FC = () => {
               </span>
             </div>
             <div className="flex items-center gap-4">
-  <div className="flex items-center gap-2">
-    <Heart className="text-[#A51C30] flex-shrink-0" size={16} />
-    <span className="text-xs sm:text-sm text-gray-600">{savedCourses.size} saved</span>
-  </div>
-  <div className="flex items-center gap-2">
-    <GitCompare className="text-purple-600 flex-shrink-0" size={16} />
-    <span className="text-xs sm:text-sm text-gray-600 font-medium">{compareColleges.length}/3 to compare</span>
-  </div>
-</div>
+              <div className="flex items-center gap-2">
+                <Heart className="text-[#A51C30] flex-shrink-0" size={16} />
+                <span className="text-xs sm:text-sm text-gray-600">{savedCourses.size} saved</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <GitCompare className="text-purple-600 flex-shrink-0" size={16} />
+                <span className="text-xs sm:text-sm text-gray-600 font-medium">{compareColleges.length}/3 to compare</span>
+              </div>
+            </div>
           </div>
 
           {/* Loading State */}
@@ -323,58 +374,60 @@ const CourseFinder: React.FC = () => {
                       )}
 
                       {/* Course Card Content */}
-                      <div className="flex-1 min-w-0">
-  <div className="font-bold text-xl sm:text-2xl text-gray-900 mb-2 leading-tight break-words">
-    <span className="font-Bold">{course.University}</span>
-  </div>
-  <h3 className="font-medium text-base sm:text-lg text-gray-600 mb-2 leading-tight break-words">
-    {course["Program Name"] || "Unknown Program"}
-  </h3>
-  {course.Concentration && (
-    <div className="text-xs text-gray-600 mb-2 bg-gray-50 inline-block px-2 py-1 rounded break-words">
-      <span className="font-medium">Concentration:</span> {course.Concentration}
-    </div>
-  )}
-  {viewMode === "recommended" && <div className="mt-2 sm:mt-3">{getMatchBadge(course)}</div>}
-</div>
+                      <div className="flex justify-between items-start gap-3 mb-3 sm:mb-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-xl sm:text-2xl text-gray-900 mb-2 leading-tight break-words">
+                            <span className="font-Bold">{course.University}</span>
+                          </div>
+                          <h3 className="font-medium text-base sm:text-lg text-gray-600 mb-2 leading-tight break-words">
+                            {course["Program Name"] || "Unknown Program"}
+                          </h3>
+                          {course.Concentration && (
+                            <div className="text-xs text-gray-600 mb-2 bg-gray-50 inline-block px-2 py-1 rounded break-words">
+                              <span className="font-medium">Concentration:</span> {course.Concentration}
+                            </div>
+                          )}
+                          {viewMode === "recommended" && <div className="mt-2 sm:mt-3">{getMatchBadge(course)}</div>}
+                        </div>
 
-<div className="flex items-center gap-3 flex-shrink-0">
-  {/* Compare Checkbox */}
-  <label className="flex items-center gap-1.5 cursor-pointer group" title="Add to compare">
-    <input 
-      type="checkbox"
-      checked={inCompare}
-      onChange={() => toggleCompare(course)}
-      disabled={isBlurred}
-      className="w-4 h-4 accent-purple-600 cursor-pointer disabled:opacity-50"
-    />
-    <span className="text-xs text-gray-600 group-hover:text-gray-800 transition-colors">
-      Compare
-    </span>
-  </label>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          {/* Compare Checkbox */}
+                          <label className="flex items-center gap-1.5 cursor-pointer group" title="Add to compare">
+                            <input 
+                              type="checkbox"
+                              checked={inCompare}
+                              onChange={() => toggleCompare(course)}
+                              disabled={isBlurred}
+                              className="w-4 h-4 accent-purple-600 cursor-pointer disabled:opacity-50"
+                            />
+                            <span className="text-xs text-gray-600 group-hover:text-gray-800 transition-colors">
+                              Compare
+                            </span>
+                          </label>
 
-  {/* Heart Button */}
-  <button
-    onClick={() => toggleSaved(course)}
-    disabled={isBlurred}
-    className={`transition-colors flex-shrink-0 ${
-      isBlurred
-        ? "opacity-50 cursor-not-allowed"
-        : savedCourses.has(course.id)
-          ? "text-[#A51C30]"
-          : "text-gray-400 hover:text-[#A51C30]"
-    }`}
-    title={
-      isBlurred
-        ? "Contact experts to unlock"
-        : savedCourses.has(course.id)
-          ? "Remove from shortlist"
-          : "Add to shortlist"
-    }
-  >
-    <Heart size={20} className="sm:w-[22px] sm:h-[22px]" fill={savedCourses.has(course.id) ? "currentColor" : "none"} />
-  </button>
-</div>
+                          {/* Heart Button */}
+                          <button
+                            onClick={() => toggleSaved(course)}
+                            disabled={isBlurred}
+                            className={`transition-colors flex-shrink-0 ${
+                              isBlurred
+                                ? "opacity-50 cursor-not-allowed"
+                                : savedCourses.has(course.id)
+                                  ? "text-[#A51C30]"
+                                  : "text-gray-400 hover:text-[#A51C30]"
+                            }`}
+                            title={
+                              isBlurred
+                                ? "Contact experts to unlock"
+                                : savedCourses.has(course.id)
+                                  ? "Remove from shortlist"
+                                  : "Add to shortlist"
+                            }
+                          >
+                            <Heart size={20} className="sm:w-[22px] sm:h-[22px]" fill={savedCourses.has(course.id) ? "currentColor" : "none"} />
+                          </button>
+                        </div>
+                      </div>
 
                       <div className="space-y-3 sm:space-y-4">
                         <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-gray-200">
