@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   BookOpen,
   AlertTriangle,
@@ -14,6 +14,8 @@ import { ResourceTab, Question } from './types';
 /**
  * UI & NAVIGATION CONSTANTS
  */
+
+
 export const RESOURCE_TABS = [
   { id: ResourceTab.IELTS, icon: <BookOpen className="w-5 h-5" />, label: 'IELTS' },
   { id: ResourceTab.FAILURE_PATTERNS, icon: <AlertTriangle className="w-5 h-5" />, label: 'Failure Patterns' },
@@ -32,7 +34,6 @@ export const RESOURCE_TABS = [
 export const READING_PASSAGE = `
 Urbanization represents one of the most significant transformations of the global landscape in the 21st century. As cities expand to accommodate a burgeoning population, the natural habitats that once thrived are replaced by concrete jungles. This process has profound implications for biodiversity. While some species, often referred to as "urban exploiters" like pigeons and rodents, thrive in these new environments, many specialized species face local extinction. The fragmentation of habitats prevents the migration of wildlife, leading to isolated populations that are more susceptible to genetic bottlenecks and environmental changes. Furthermore, the "urban heat island" effect alters local climates, forcing flora and fauna to adapt at an unprecedented rate or perish. However, some researchers argue that urban planning incorporating "green corridors" can mitigate these negative impacts, providing a blueprint for sustainable coexistence between human expansion and natural preservation.
 `;
-
 export const READING_QUESTIONS: Question[] = [
   {
     id: 1,

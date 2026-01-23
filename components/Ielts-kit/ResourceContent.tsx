@@ -9,7 +9,7 @@ import { FreeMockSection } from '../sections/FreeMock';
 // import ContactPage from '../sections/ContactUs';
 import IELTSFlashcards from '../sections/Flashcards';
 import SampleSectionsPage from '../sections/SampleTasks';
-import { BandPredictorSection } from '../sections/BandPredcitor';
+import BandPredictorSection  from '../sections/BandPredcitor';
 import ContactUs from '../sections/ContactUs';
 import  MindJournalsSection  from '../sections/MindJournalsSection';
 // import UnifiedCutoffsPage from './cut-offs/UnifiedCutoffsPage';

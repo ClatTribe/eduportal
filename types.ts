@@ -86,3 +86,4 @@ export const SECTION_DURATIONS: Record<Section, number> = {
   [Section.SPEAKING]: 120, // 2 minutes
   [Section.RESULTS]: 0
 };
+
