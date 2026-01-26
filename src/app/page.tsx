@@ -61,7 +61,7 @@ export default function Hero() {
 
   return (
     <>
-      {/* Navbar */}
+      {/* Navbar */} 
       <Navbar />
 
       {/* Hero Section */}
