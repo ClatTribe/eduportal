@@ -61,7 +61,7 @@ const App: React.FC = () => {
               </div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-3 sm:mb-4 text-gray-800">
                 IELTS ONLINE <span style={{ color: accentColor }}> TEST KIT 2026
-.</span>
+</span>
               </h1>
               <p className="text-gray-600 text-base sm:text-lg max-w-2xl leading-relaxed">
                 Empowering your IELTS journey with curated study materials, expert insights, and an under-10-minute IELTS Band Predictor. Join the club now.

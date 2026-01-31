@@ -23,7 +23,7 @@ const FlyAndSettleServices: React.FC = () => {
       borderColor: "border-emerald-200",
       textColor: "text-emerald-700",
       hoverColor: "group-hover:border-emerald-400",
-      link: "#"
+      link: "/fly-&-settle-services/loans"
     },
     {
       id: 2,

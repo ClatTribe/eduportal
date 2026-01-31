@@ -23,7 +23,7 @@ const PlaneRoadmap: React.FC = () => {
       id: 1,
       title: "Research",
       emoji: "✨",
-      description: "Explore 15000+ Dream MBA Colleges",
+      description: "Explore 15000+ Dream Colleges",
       buttonText: "Try Course Finder",
       buttonLink: "/course-finder",
       position: "right",

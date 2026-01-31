@@ -291,7 +291,7 @@ export const CourseFeatures: React.FC<CourseFeaturesProps> = ({ activeTab = 'cou
 
           <h3 className="text-xl md:text-2xl lg:text-3xl font-bold mb-1 tracking-tight"
               style={{ color: accentColor }}>
-            Access 375K+ Admits & Rejects!
+            Access 100K+ Admits & Rejects!
           </h3>
           <p className="text-xs md:text-sm text-gray-600">
             Find folks at your dream school with the same background as you
