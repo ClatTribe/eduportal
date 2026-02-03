@@ -40,7 +40,7 @@ const durationRanges = [
 
 const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterChange }) => {
   const [searchQuery, setSearchQuery] = useState("")
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(true)
   const [selectedCountry, setSelectedCountry] = useState("")
   const [selectedStudyLevel, setSelectedStudyLevel] = useState("")
   const [selectedUniversity, setSelectedUniversity] = useState("")
