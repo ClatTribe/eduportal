@@ -19,7 +19,6 @@ interface FilterProps {
 
 const countries = ['Australia', 'Canada', 'China', 'Denmark', 'Finland', 'France', 'Georgia', 'Hungary', 'Indonesia', 'Ireland', 'Italy', 'Japan', 'Kazakhstan', 'Lithuania', 'Luxembourg', 'Malaysia', 'Monaco', 'Netherlands', 'New Zealand', 'Poland', 'Russia', 'Singapore', 'South Korea', 'Spain', 'Sri Lanka', 'Sweden', 'Switzerland', 'United Arab Emirates', 'United Kingdom', 'United States of America', 'Vietnam'];
 
-// ✅ UPDATED: Fixed spacing to match exact database values
 const studyLevels = [
   'Undergraduate',
   'Postgraduate',
@@ -28,14 +27,12 @@ const studyLevels = [
   'PG Diploma /Certificate'
 ]
 
-const durationRanges = [
-  { label: "0–1 Year", min: 0, max: 12 },
-  { label: "1–2 Years", min: 13, max: 24 },
-  { label: "2–3 Years", min: 25, max: 36 },
-  { label: "3–4 Years", min: 37, max: 48 },
-  { label: "4–5 Years", min: 49, max: 60 },
-  { label: "5–6 Years", min: 61, max: 72 },
-  { label: "6+ Years", min: 73, max: Infinity },
+// ✅ FIXED: Changed to match actual Open Intakes field values
+const intakeOptions = [
+  { value: 'Spring', label: 'Spring (Jan/Feb/Mar/Apr)' },
+  { value: 'Summer', label: 'Summer (May/Jun/Jul)' },
+  { value: 'Fall', label: 'Fall (Aug/Sep/Oct)' },
+  { value: 'Winter', label: 'Winter (Nov/Dec)' }
 ]
 
 const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterChange }) => {
@@ -44,39 +41,23 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
   const [selectedCountry, setSelectedCountry] = useState("")
   const [selectedStudyLevel, setSelectedStudyLevel] = useState("")
   const [selectedUniversity, setSelectedUniversity] = useState("")
-  const [selectedDurationRange, setSelectedDurationRange] = useState("")
+  const [selectedIntake, setSelectedIntake] = useState("")
   const [programNameInput, setProgramNameInput] = useState("")
   const [selectedProgramName, setSelectedProgramName] = useState("")
   const [showProgramDropdown, setShowProgramDropdown] = useState(false)
 
-  // Helper function to extract months from duration string
-  const extractMonths = (duration: string | null): number | null => {
-    if (!duration) return null
+  // ✅ FIXED: Helper function to check if course matches selected intake season
+  const matchesIntake = (course: Course, intakeValue: string): boolean => {
+    const openIntakes = (course as any)["Open Intakes"] || ''
     
-    // Check if it contains month pattern like "12 Months", "24 Months", etc.
-    const monthMatch = duration.match(/^(\d+)\s*Months?$/i)
-    if (monthMatch) {
-      return parseInt(monthMatch[1], 10)
-    }
+    if (!openIntakes) return false
     
-    // Ignore durations that contain commas, parentheses, or are intake dates
-    if (duration.includes(',') || duration.includes('(') || duration.includes('Fall') || 
-        duration.includes('Spring') || duration.includes('Summer') || duration.includes('Winter')) {
-      return null
-    }
+    const intakeLower = openIntakes.toLowerCase()
+    const seasonLower = intakeValue.toLowerCase()
     
-    return null
-  }
-
-  // Helper function to check if course matches duration range
-  const matchesDurationRange = (course: Course, rangeLabel: string): boolean => {
-    const months = extractMonths(course.Duration)
-    if (months === null) return false
-    
-    const range = durationRanges.find(r => r.label === rangeLabel)
-    if (!range) return false
-    
-    return months >= range.min && months <= range.max
+    // Check if the Open Intakes field contains the season
+    // For example: "Springjan", "Springmar", "Spring" all match "Spring"
+    return intakeLower.includes(seasonLower)
   }
 
   useEffect(() => {
@@ -88,7 +69,7 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
     selectedCountry,
     selectedStudyLevel,
     selectedUniversity,
-    selectedDurationRange,
+    selectedIntake,
     programNameInput,
     selectedProgramName,
     courses,
@@ -120,8 +101,9 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
       filtered = filtered.filter((course) => course.University === selectedUniversity)
     }
 
-    if (selectedDurationRange) {
-      filtered = filtered.filter((course) => matchesDurationRange(course, selectedDurationRange))
+    // ✅ FIXED: Filter by intake season
+    if (selectedIntake) {
+      filtered = filtered.filter((course) => matchesIntake(course, selectedIntake))
     }
 
     // Program Name filter - works with both input and dropdown
@@ -153,7 +135,7 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
     setSelectedCountry("")
     setSelectedStudyLevel("")
     setSelectedUniversity("")
-    setSelectedDurationRange("")
+    setSelectedIntake("")
     setProgramNameInput("")
     setSelectedProgramName("")
   }
@@ -169,8 +151,8 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
       case "university":
         setSelectedUniversity("")
         break
-      case "duration":
-        setSelectedDurationRange("")
+      case "intake":
+        setSelectedIntake("")
         break
       case "search":
         setSearchQuery("")
@@ -209,7 +191,7 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
     selectedCountry,
     selectedStudyLevel,
     selectedUniversity,
-    selectedDurationRange,
+    selectedIntake,
     programNameInput || selectedProgramName,
   ].filter(Boolean).length
 
@@ -284,10 +266,10 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
               </div>
             )}
 
-            {selectedDurationRange && (
+            {selectedIntake && (
               <div className="bg-[#A51C30]/10 text-[#A51C30] px-3 py-1 rounded-full text-sm flex items-center gap-2 border border-[#A51C30]/20">
-                <span className="font-medium">{selectedDurationRange}</span>
-                <button onClick={() => clearFilter("duration")} className="hover:bg-[#A51C30]/20 rounded-full p-0.5 transition-colors">
+                <span className="font-medium">{intakeOptions.find(opt => opt.value === selectedIntake)?.label}</span>
+                <button onClick={() => clearFilter("intake")} className="hover:bg-[#A51C30]/20 rounded-full p-0.5 transition-colors">
                   <X size={14} />
                 </button>
               </div>
@@ -343,7 +325,6 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
               </div>
             </div>
 
-            {/* ✅ UPDATED: Added dependent filter resets when study level changes */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <GraduationCap size={16} className="text-[#A51C30]" />
@@ -392,21 +373,22 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
               </div>
             </div>
 
+            {/* ✅ FIXED: Intake filter now matches actual data structure */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <Calendar size={16} className="text-[#A51C30]" />
-                Duration
+                Intake
               </label>
               <div className="relative">
                 <select
                   className="appearance-none w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-[#A51C30]"
-                  value={selectedDurationRange}
-                  onChange={(e) => setSelectedDurationRange(e.target.value)}
+                  value={selectedIntake}
+                  onChange={(e) => setSelectedIntake(e.target.value)}
                 >
-                  <option value="">All Durations</option>
-                  {durationRanges.map((range) => (
-                    <option key={range.label} value={range.label}>
-                      {range.label}
+                  <option value="">All Intakes</option>
+                  {intakeOptions.map((intake) => (
+                    <option key={intake.value} value={intake.value}>
+                      {intake.label}
                     </option>
                   ))}
                 </select>

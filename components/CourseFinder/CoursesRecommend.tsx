@@ -91,7 +91,7 @@ const CoursesRecommend: React.FC<CoursesRecommendProps> = ({
         .single()
 
       if (profileError) {
-        console.error("Profile fetch error:", profileError)
+        // console.error("Profile fetch error:", profileError)
         setUserProfile(null)
       } else if (data) {
         setUserProfile(data)

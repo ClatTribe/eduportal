@@ -1,14 +1,14 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { 
-  Heart, 
-  Trash2, 
-  BookOpen, 
-  Award, 
-  MapPin, 
-  Calendar, 
-  GraduationCap, 
-  Globe, 
+import React, { useState, useEffect } from "react";
+import {
+  Heart,
+  Trash2,
+  BookOpen,
+  Award,
+  MapPin,
+  Calendar,
+  GraduationCap,
+  Globe,
   DollarSign,
   ExternalLink,
   FileText,
@@ -16,28 +16,28 @@ import {
   CheckCircle,
   Clock,
   X,
-  Sparkles
-} from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
-import { useAuth } from '../../../contexts/AuthContext';
-import DefaultLayout from '../defaultLayout';
+  Sparkles,
+} from "lucide-react";
+import { supabase } from "../../../lib/supabase";
+import { useAuth } from "../../../contexts/AuthContext";
+import DefaultLayout from "../defaultLayout";
 
 interface Course {
   id: number;
   University: string | null;
-  'Program Name': string | null;
+  "Program Name": string | null;
   Concentration: string | null;
-  'Website URL': string | null;
+  "Website URL": string | null;
   Campus: string | null;
   Country: string | null;
-  'Study Level': string | null;
+  "Study Level": string | null;
   Duration: string | null;
-  'Open Intakes': string | null;
-  'Yearly Tuition Fees': string | null;
-  'Scholarship Available': string | null;
-  'IELTS Score': string | null;
-  'TOEFL Score': string | null;
-  'Entry Requirements': string | null;
+  "Open Intakes": string | null;
+  "Yearly Tuition Fees": string | null;
+  "Scholarship Available": string | null;
+  "IELTS Score": string | null;
+  "TOEFL Score": string | null;
+  "Entry Requirements": string | null;
 }
 
 interface Scholarship {
@@ -54,7 +54,7 @@ interface Scholarship {
 interface ShortlistItem {
   id: number;
   user_id: string;
-  item_type: 'course' | 'scholarship';
+  item_type: "course" | "scholarship";
   course_id: number | null;
   scholarship_id: number | null;
   notes: string | null;
@@ -65,19 +65,21 @@ interface ShortlistItem {
   scholarship?: Scholarship;
 }
 
-const accentColor = '#A51C30';
-const primaryBg = '#FFFFFF';
-const borderColor = '#FECDD3';
+const accentColor = "#A51C30";
+const primaryBg = "#FFFFFF";
+const borderColor = "#FECDD3";
 
 const ShortlistBuilder: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'courses' | 'scholarships'>('courses');
+  const [activeTab, setActiveTab] = useState<"courses" | "scholarships">(
+    "courses",
+  );
   const [shortlistItems, setShortlistItems] = useState<ShortlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<number | null>(null);
-  const [noteText, setNoteText] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [noteText, setNoteText] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     if (user) {
@@ -95,115 +97,130 @@ const ShortlistBuilder: React.FC = () => {
       setError(null);
 
       const { data: shortlistData, error: shortlistError } = await supabase
-        .from('shortlist_builder')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .from("shortlist_builder")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
       if (shortlistError) throw shortlistError;
 
       const itemsWithDetails = await Promise.all(
         (shortlistData || []).map(async (item) => {
-          if (item.item_type === 'course' && item.course_id) {
+          if (item.item_type === "course" && item.course_id) {
             const { data: courseData } = await supabase
-              .from('courses')
-              .select('*')
-              .eq('id', item.course_id)
+              .from("courses")
+              .select("*")
+              .eq("id", item.course_id)
               .single();
-            
+
             return { ...item, course: courseData };
-          } else if (item.item_type === 'scholarship' && item.scholarship_id) {
+          } else if (item.item_type === "scholarship" && item.scholarship_id) {
             const { data: scholarshipData } = await supabase
-              .from('scholarship')
-              .select('*')
-              .eq('id', item.scholarship_id)
+              .from("scholarship")
+              .select("*")
+              .eq("id", item.scholarship_id)
               .single();
-            
+
             return { ...item, scholarship: scholarshipData };
           }
           return item;
-        })
+        }),
       );
 
       setShortlistItems(itemsWithDetails);
     } catch (err) {
-      console.error('Error fetching shortlist:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch shortlist');
+      console.error("Error fetching shortlist:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch shortlist",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const removeFromShortlist = async (itemId: number) => {
-    if (!confirm('Are you sure you want to remove this item from your shortlist?')) return;
+    if (
+      !confirm("Are you sure you want to remove this item from your shortlist?")
+    )
+      return;
 
     try {
       const { error } = await supabase
-        .from('shortlist_builder')
+        .from("shortlist_builder")
         .delete()
-        .eq('id', itemId)
-        .eq('user_id', user?.id);
+        .eq("id", itemId)
+        .eq("user_id", user?.id);
 
       if (error) throw error;
 
-      setShortlistItems(prev => prev.filter(item => item.id !== itemId));
+      setShortlistItems((prev) => prev.filter((item) => item.id !== itemId));
     } catch (err) {
-      console.error('Error removing item:', err);
-      alert('Failed to remove item. Please try again.');
+      console.error("Error removing item:", err);
+      alert("Failed to remove item. Please try again.");
     }
   };
 
   const updateStatus = async (itemId: number, newStatus: string) => {
     try {
       const { error } = await supabase
-        .from('shortlist_builder')
+        .from("shortlist_builder")
         .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', itemId)
-        .eq('user_id', user?.id);
+        .eq("id", itemId)
+        .eq("user_id", user?.id);
 
       if (error) throw error;
 
-      setShortlistItems(prev =>
-        prev.map(item =>
-          item.id === itemId ? { ...item, status: newStatus, updated_at: new Date().toISOString() } : item
-        )
+      setShortlistItems((prev) =>
+        prev.map((item) =>
+          item.id === itemId
+            ? {
+                ...item,
+                status: newStatus,
+                updated_at: new Date().toISOString(),
+              }
+            : item,
+        ),
       );
     } catch (err) {
-      console.error('Error updating status:', err);
-      alert('Failed to update status. Please try again.');
+      console.error("Error updating status:", err);
+      alert("Failed to update status. Please try again.");
     }
   };
 
   const updateNotes = async (itemId: number) => {
     try {
       const { error } = await supabase
-        .from('shortlist_builder')
+        .from("shortlist_builder")
         .update({ notes: noteText, updated_at: new Date().toISOString() })
-        .eq('id', itemId)
-        .eq('user_id', user?.id);
+        .eq("id", itemId)
+        .eq("user_id", user?.id);
 
       if (error) throw error;
 
-      setShortlistItems(prev =>
-        prev.map(item =>
-          item.id === itemId ? { ...item, notes: noteText, updated_at: new Date().toISOString() } : item
-        )
+      setShortlistItems((prev) =>
+        prev.map((item) =>
+          item.id === itemId
+            ? { ...item, notes: noteText, updated_at: new Date().toISOString() }
+            : item,
+        ),
       );
-      
+
       setEditingNotes(null);
-      setNoteText('');
+      setNoteText("");
     } catch (err) {
-      console.error('Error updating notes:', err);
-      alert('Failed to update notes. Please try again.');
+      console.error("Error updating notes:", err);
+      alert("Failed to update notes. Please try again.");
     }
   };
 
   const formatDeadline = (dateString: string) => {
     if (!dateString || dateString === "") return "Check website";
-    
-    if (dateString.toLowerCase().includes("varies") || 
-        dateString.toLowerCase().includes("rolling") ||
-        dateString.toLowerCase().includes("typically")) {
+
+    if (
+      dateString.toLowerCase().includes("varies") ||
+      dateString.toLowerCase().includes("rolling") ||
+      dateString.toLowerCase().includes("typically")
+    ) {
       return dateString;
     }
 
@@ -223,20 +240,52 @@ const ShortlistBuilder: React.FC = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { bg: string; color: string; icon: React.ReactNode; label: string }> = {
-      interested: { bg: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', icon: <Heart size={14} />, label: 'Interested' },
-      applied: { bg: 'rgba(168, 85, 247, 0.1)', color: '#9333ea', icon: <CheckCircle size={14} />, label: 'Applied' },
-      accepted: { bg: 'rgba(34, 197, 94, 0.1)', color: '#16a34a', icon: <CheckCircle size={14} />, label: 'Accepted' },
-      rejected: { bg: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', icon: <X size={14} />, label: 'Rejected' },
-      pending: { bg: 'rgba(250, 204, 21, 0.1)', color: '#ca8a04', icon: <Clock size={14} />, label: 'Pending' },
+    const statusConfig: Record<
+      string,
+      { bg: string; color: string; icon: React.ReactNode; label: string }
+    > = {
+      interested: {
+        bg: "rgba(59, 130, 246, 0.1)",
+        color: "#2563eb",
+        icon: <Heart size={14} />,
+        label: "Interested",
+      },
+      applied: {
+        bg: "rgba(168, 85, 247, 0.1)",
+        color: "#9333ea",
+        icon: <CheckCircle size={14} />,
+        label: "Applied",
+      },
+      accepted: {
+        bg: "rgba(34, 197, 94, 0.1)",
+        color: "#16a34a",
+        icon: <CheckCircle size={14} />,
+        label: "Accepted",
+      },
+      rejected: {
+        bg: "rgba(239, 68, 68, 0.1)",
+        color: "#dc2626",
+        icon: <X size={14} />,
+        label: "Rejected",
+      },
+      pending: {
+        bg: "rgba(250, 204, 21, 0.1)",
+        color: "#ca8a04",
+        icon: <Clock size={14} />,
+        label: "Pending",
+      },
     };
 
     const config = statusConfig[status] || statusConfig.interested;
-    
+
     return (
-      <span 
+      <span
         className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold"
-        style={{ backgroundColor: config.bg, color: config.color, border: `1px solid ${config.color}30` }}
+        style={{
+          backgroundColor: config.bg,
+          color: config.color,
+          border: `1px solid ${config.color}30`,
+        }}
       >
         {config.icon}
         {config.label}
@@ -244,25 +293,44 @@ const ShortlistBuilder: React.FC = () => {
     );
   };
 
-  const filteredItems = shortlistItems.filter(item => {
-    if (activeTab === 'courses' && item.item_type !== 'course') return false;
-    if (activeTab === 'scholarships' && item.item_type !== 'scholarship') return false;
-    if (statusFilter !== 'all' && item.status !== statusFilter) return false;
+  const filteredItems = shortlistItems.filter((item) => {
+    if (activeTab === "courses" && item.item_type !== "course") return false;
+    if (activeTab === "scholarships" && item.item_type !== "scholarship")
+      return false;
+    if (statusFilter !== "all" && item.status !== statusFilter) return false;
     return true;
   });
 
-  const courseCount = shortlistItems.filter(item => item.item_type === 'course').length;
-  const scholarshipCount = shortlistItems.filter(item => item.item_type === 'scholarship').length;
+  const courseCount = shortlistItems.filter(
+    (item) => item.item_type === "course",
+  ).length;
+  const scholarshipCount = shortlistItems.filter(
+    (item) => item.item_type === "scholarship",
+  ).length;
 
   if (!user) {
     return (
       <DefaultLayout>
-        <div className="flex-1 min-h-screen p-3 sm:p-4 md:p-6 mt-[72px] sm:mt-0" style={{ backgroundColor: primaryBg }}>
+        <div
+          className="flex-1 min-h-screen p-3 sm:p-4 md:p-6 mt-[72px] sm:mt-0"
+          style={{ backgroundColor: primaryBg }}
+        >
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-xl shadow-sm p-8 sm:p-12 text-center" style={{ border: `1px solid ${borderColor}` }}>
-              <AlertCircle className="mx-auto mb-4" style={{ color: accentColor }} size={48} />
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Login Required</h2>
-              <p className="text-sm sm:text-base text-gray-600">Please login to view your shortlist</p>
+            <div
+              className="bg-white rounded-xl shadow-sm p-8 sm:p-12 text-center"
+              style={{ border: `1px solid ${borderColor}` }}
+            >
+              <AlertCircle
+                className="mx-auto mb-4"
+                style={{ color: accentColor }}
+                size={48}
+              />
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+                Login Required
+              </h2>
+              <p className="text-sm sm:text-base text-gray-600">
+                Please login to view your shortlist
+              </p>
             </div>
           </div>
         </div>
@@ -272,11 +340,17 @@ const ShortlistBuilder: React.FC = () => {
 
   return (
     <DefaultLayout>
-      <div className="flex-1 min-h-screen p-3 sm:p-4 md:p-6 mt-[72px] sm:mt-0" style={{ backgroundColor: primaryBg }}>
+      <div
+        className="flex-1 min-h-screen p-3 sm:p-4 md:p-6 mt-[72px] sm:mt-0"
+        style={{ backgroundColor: primaryBg }}
+      >
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-4 sm:mb-6 md:mb-8">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 flex items-center gap-2 sm:gap-3" style={{ color: accentColor }}>
+            <h1
+              className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 flex items-center gap-2 sm:gap-3"
+              style={{ color: accentColor }}
+            >
               <Heart size={28} className="sm:w-9 sm:h-9" />
               My Shortlist
             </h1>
@@ -286,45 +360,68 @@ const ShortlistBuilder: React.FC = () => {
           </div>
 
           {/* Main Content Card */}
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6" style={{ border: `1px solid ${borderColor}` }}>
+          <div
+            className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6"
+            style={{ border: `1px solid ${borderColor}` }}
+          >
             {/* Tabs and Filter */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full lg:w-auto">
                 <button
-                  onClick={() => setActiveTab('courses')}
+                  onClick={() => setActiveTab("courses")}
                   className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all"
-                  style={activeTab === 'courses'
-                    ? { backgroundColor: accentColor, color: 'white', boxShadow: '0 4px 6px -1px rgba(165, 28, 48, 0.1)' }
-                    : { backgroundColor: 'white', color: '#6b7280', border: `1px solid ${borderColor}` }
+                  style={
+                    activeTab === "courses"
+                      ? {
+                          backgroundColor: accentColor,
+                          color: "white",
+                          boxShadow: "0 4px 6px -1px rgba(165, 28, 48, 0.1)",
+                        }
+                      : {
+                          backgroundColor: "white",
+                          color: "#6b7280",
+                          border: `1px solid ${borderColor}`,
+                        }
                   }
                 >
                   <GraduationCap size={18} className="sm:w-5 sm:h-5" />
                   Courses
-                  <span 
+                  <span
                     className="ml-1 px-2 py-0.5 rounded-full text-xs font-bold"
-                    style={activeTab === 'courses' 
-                      ? { backgroundColor: 'white', color: accentColor } 
-                      : { backgroundColor: '#f3f4f6', color: '#6b7280' }
+                    style={
+                      activeTab === "courses"
+                        ? { backgroundColor: "white", color: accentColor }
+                        : { backgroundColor: "#f3f4f6", color: "#6b7280" }
                     }
                   >
                     {courseCount}
                   </span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('scholarships')}
+                  onClick={() => setActiveTab("scholarships")}
                   className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all"
-                  style={activeTab === 'scholarships'
-                    ? { backgroundColor: accentColor, color: 'white', boxShadow: '0 4px 6px -1px rgba(165, 28, 48, 0.1)' }
-                    : { backgroundColor: 'white', color: '#6b7280', border: `1px solid ${borderColor}` }
+                  style={
+                    activeTab === "scholarships"
+                      ? {
+                          backgroundColor: accentColor,
+                          color: "white",
+                          boxShadow: "0 4px 6px -1px rgba(165, 28, 48, 0.1)",
+                        }
+                      : {
+                          backgroundColor: "white",
+                          color: "#6b7280",
+                          border: `1px solid ${borderColor}`,
+                        }
                   }
                 >
                   <Award size={18} className="sm:w-5 sm:h-5" />
                   Scholarships
-                  <span 
+                  <span
                     className="ml-1 px-2 py-0.5 rounded-full text-xs font-bold"
-                    style={activeTab === 'scholarships' 
-                      ? { backgroundColor: 'white', color: accentColor } 
-                      : { backgroundColor: '#f3f4f6', color: '#6b7280' }
+                    style={
+                      activeTab === "scholarships"
+                        ? { backgroundColor: "white", color: accentColor }
+                        : { backgroundColor: "#f3f4f6", color: "#6b7280" }
                     }
                   >
                     {scholarshipCount}
@@ -333,12 +430,17 @@ const ShortlistBuilder: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Status:</label>
+                <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">
+                  Status:
+                </label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg focus:outline-none focus:ring-2 text-xs sm:text-sm text-gray-900"
-                  style={{ border: `1px solid ${borderColor}`, backgroundColor: 'white' }}
+                  style={{
+                    border: `1px solid ${borderColor}`,
+                    backgroundColor: "white",
+                  }}
                 >
                   <option value="all">All</option>
                   <option value="interested">Interested</option>
@@ -352,10 +454,25 @@ const ShortlistBuilder: React.FC = () => {
 
             {/* Error Message */}
             {error && (
-              <div className="rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 flex items-start gap-2 sm:gap-3" style={{ backgroundColor: 'rgba(165, 28, 48, 0.05)', border: `1px solid ${borderColor}` }}>
-                <AlertCircle className="flex-shrink-0 mt-0.5" style={{ color: accentColor }} size={20} />
+              <div
+                className="rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 flex items-start gap-2 sm:gap-3"
+                style={{
+                  backgroundColor: "rgba(165, 28, 48, 0.05)",
+                  border: `1px solid ${borderColor}`,
+                }}
+              >
+                <AlertCircle
+                  className="flex-shrink-0 mt-0.5"
+                  style={{ color: accentColor }}
+                  size={20}
+                />
                 <div>
-                  <h3 className="font-semibold text-sm sm:text-base" style={{ color: accentColor }}>Error</h3>
+                  <h3
+                    className="font-semibold text-sm sm:text-base"
+                    style={{ color: accentColor }}
+                  >
+                    Error
+                  </h3>
                   <p className="text-xs sm:text-sm text-gray-700">{error}</p>
                 </div>
               </div>
@@ -365,13 +482,21 @@ const ShortlistBuilder: React.FC = () => {
             {loading ? (
               <div className="flex justify-center items-center h-64">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2" style={{ borderColor: accentColor }}></div>
-                  <p className="text-sm sm:text-base text-gray-600">Loading your shortlist...</p>
+                  <div
+                    className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2"
+                    style={{ borderColor: accentColor }}
+                  ></div>
+                  <p className="text-sm sm:text-base text-gray-600">
+                    Loading your shortlist...
+                  </p>
                 </div>
               </div>
             ) : filteredItems.length === 0 ? (
               <div className="text-center py-12 sm:py-16">
-                <Heart size={40} className="sm:w-12 sm:h-12 mx-auto text-gray-300 mb-4" />
+                <Heart
+                  size={40}
+                  className="sm:w-12 sm:h-12 mx-auto text-gray-300 mb-4"
+                />
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                   No {activeTab} in your shortlist yet
                 </h3>
@@ -405,44 +530,63 @@ const ShortlistBuilder: React.FC = () => {
                     className="rounded-xl p-4 sm:p-6 hover:shadow-lg transition-shadow bg-white"
                     style={{ border: `1px solid ${borderColor}` }}
                   >
-                    {item.item_type === 'course' && item.course ? (
+                    {item.item_type === "course" && item.course ? (
                       <>
                         {/* Course Header */}
                         <div className="flex items-start justify-between mb-4 gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start gap-2 sm:gap-3 mb-3">
-                              <GraduationCap className="flex-shrink-0 mt-1" style={{ color: accentColor }} size={20} />
+                              <GraduationCap
+                                className="flex-shrink-0 mt-1"
+                                style={{ color: accentColor }}
+                                size={20}
+                              />
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 break-words">
-                                  {item.course['Program Name'] || 'Unknown Program'}
+                                  {item.course["Program Name"] ||
+                                    "Unknown Program"}
                                 </h3>
                                 <p className="text-gray-600 text-xs sm:text-sm font-medium break-words">
                                   {item.course.University}
                                 </p>
                                 {item.course.Concentration && (
                                   <p className="text-xs text-gray-500 mt-1 break-words">
-                                    <span className="font-medium">Concentration:</span> {item.course.Concentration}
+                                    <span className="font-medium">
+                                      Concentration:
+                                    </span>{" "}
+                                    {item.course.Concentration}
                                   </p>
                                 )}
                               </div>
                             </div>
                             <div className="flex flex-wrap gap-2 mb-3">
                               {getStatusBadge(item.status)}
-                              {item.course['Study Level'] && (
-                                <span 
+                              {item.course["Study Level"] && (
+                                <span
                                   className="text-xs px-3 py-1 rounded-full font-medium"
-                                  style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#16a34a', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                                  style={{
+                                    backgroundColor: "rgba(34, 197, 94, 0.1)",
+                                    color: "#16a34a",
+                                    border: "1px solid rgba(34, 197, 94, 0.3)",
+                                  }}
                                 >
-                                  {item.course['Study Level']}
+                                  {item.course["Study Level"]}
                                 </span>
                               )}
-                              {item.course['Scholarship Available'] === 'Yes' && (
-                                <span 
+                              {item.course["Scholarship Available"] ===
+                                "Yes" && (
+                                <span
                                   className="text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1"
-                                  style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)', color: '#9333ea', border: '1px solid rgba(168, 85, 247, 0.3)' }}
+                                  style={{
+                                    backgroundColor: "rgba(168, 85, 247, 0.1)",
+                                    color: "#9333ea",
+                                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                                  }}
                                 >
                                   <Sparkles size={12} />
-                                  <span className="hidden sm:inline">Scholarship Available</span>
+                                  <span className="hidden sm:inline">
+                                    Scholarship Available
+                                  </span>
                                   <span className="sm:hidden">Scholarship</span>
                                 </span>
                               )}
@@ -458,27 +602,36 @@ const ShortlistBuilder: React.FC = () => {
                         </div>
 
                         {/* Course Details Grid */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 pb-4" style={{ borderBottom: `1px solid ${borderColor}` }}>
+                        <div
+                          className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 pb-4"
+                          style={{ borderBottom: `1px solid ${borderColor}` }}
+                        >
                           <div>
                             <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
                               <MapPin size={12} />
                               <span>Campus</span>
                             </div>
-                            <p className="font-medium text-gray-800 text-xs sm:text-sm truncate">{item.course.Campus || 'N/A'}</p>
+                            <p className="font-medium text-gray-800 text-xs sm:text-sm truncate">
+                              {item.course.Campus || "N/A"}
+                            </p>
                           </div>
                           <div>
                             <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
                               <Globe size={12} />
                               <span>Country</span>
                             </div>
-                            <p className="font-medium text-gray-800 text-xs sm:text-sm truncate">{item.course.Country || 'N/A'}</p>
+                            <p className="font-medium text-gray-800 text-xs sm:text-sm truncate">
+                              {item.course.Country || "N/A"}
+                            </p>
                           </div>
                           <div>
                             <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
                               <Calendar size={12} />
                               <span>Duration</span>
                             </div>
-                            <p className="font-medium text-gray-800 text-xs sm:text-sm truncate">{item.course.Duration || 'N/A'}</p>
+                            <p className="font-medium text-gray-800 text-xs sm:text-sm truncate">
+                              {item.course.Duration || "N/A"}
+                            </p>
                           </div>
                           <div>
                             <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
@@ -486,7 +639,7 @@ const ShortlistBuilder: React.FC = () => {
                               <span>Tuition</span>
                             </div>
                             <p className="font-medium text-gray-800 text-xs sm:text-sm truncate">
-                              {item.course['Yearly Tuition Fees'] || 'N/A'}
+                              {item.course["Yearly Tuition Fees"] || "N/A"}
                             </p>
                           </div>
                         </div>
@@ -498,9 +651,14 @@ const ShortlistBuilder: React.FC = () => {
                           </label>
                           <select
                             value={item.status}
-                            onChange={(e) => updateStatus(item.id, e.target.value)}
+                            onChange={(e) =>
+                              updateStatus(item.id, e.target.value)
+                            }
                             className="w-full sm:w-auto px-3 sm:px-4 py-2 rounded-lg focus:outline-none focus:ring-2 text-xs sm:text-sm text-gray-900"
-                            style={{ border: `1px solid ${borderColor}`, backgroundColor: 'white' }}
+                            style={{
+                              border: `1px solid ${borderColor}`,
+                              backgroundColor: "white",
+                            }}
                           >
                             <option value="interested">Interested</option>
                             <option value="applied">Applied</option>
@@ -521,12 +679,12 @@ const ShortlistBuilder: React.FC = () => {
                               <button
                                 onClick={() => {
                                   setEditingNotes(item.id);
-                                  setNoteText(item.notes || '');
+                                  setNoteText(item.notes || "");
                                 }}
                                 className="text-xs sm:text-sm font-medium hover:opacity-70"
                                 style={{ color: accentColor }}
                               >
-                                {item.notes ? 'Edit' : 'Add Note'}
+                                {item.notes ? "Edit" : "Add Note"}
                               </button>
                             )}
                           </div>
@@ -537,7 +695,10 @@ const ShortlistBuilder: React.FC = () => {
                                 onChange={(e) => setNoteText(e.target.value)}
                                 placeholder="Add your notes here..."
                                 className="w-full px-3 sm:px-4 py-2 rounded-lg focus:outline-none focus:ring-2 text-xs sm:text-sm text-gray-900"
-                                style={{ border: `1px solid ${borderColor}`, backgroundColor: 'white' }}
+                                style={{
+                                  border: `1px solid ${borderColor}`,
+                                  backgroundColor: "white",
+                                }}
                                 rows={3}
                               />
                               <div className="flex gap-2">
@@ -551,7 +712,7 @@ const ShortlistBuilder: React.FC = () => {
                                 <button
                                   onClick={() => {
                                     setEditingNotes(null);
-                                    setNoteText('');
+                                    setNoteText("");
                                   }}
                                   className="px-3 sm:px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-300 transition"
                                 >
@@ -561,18 +722,20 @@ const ShortlistBuilder: React.FC = () => {
                             </div>
                           ) : (
                             <p className="text-xs sm:text-sm text-gray-600 bg-gray-50 rounded-lg p-3 break-words">
-                              {item.notes || 'No notes added yet'}
+                              {item.notes || "No notes added yet"}
                             </p>
                           )}
                         </div>
 
                         {/* Action Buttons */}
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                          {item.course['Website URL'] && (
+                          {item.course["Website URL"] && (
                             <a
-                              href={item.course['Website URL'].startsWith('http') 
-                                ? item.course['Website URL'] 
-                                : `https://${item.course['Website URL']}`}
+                              href={
+                                item.course["Website URL"].startsWith("http")
+                                  ? item.course["Website URL"]
+                                  : `https://${item.course["Website URL"]}`
+                              }
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-white transition hover:opacity-90 w-full sm:w-auto"
@@ -582,18 +745,33 @@ const ShortlistBuilder: React.FC = () => {
                               View Details
                             </a>
                           )}
+                          <a
+                            href="/application-builder"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium bg-[#A51C30] text-white transition hover:bg-[#8A1828] w-full sm:w-auto"
+                            style={{ backgroundColor: accentColor }}
+                          >
+                            <Sparkles size={14} className="sm:w-4 sm:h-4" />
+                            Apply Now
+                          </a>
                           <span className="text-xs text-gray-500">
-                            Added {new Date(item.created_at).toLocaleDateString()}
+                            Added{" "}
+                            {new Date(item.created_at).toLocaleDateString()}
                           </span>
                         </div>
                       </>
-                    ) : item.item_type === 'scholarship' && item.scholarship ? (
+                    ) : item.item_type === "scholarship" && item.scholarship ? (
                       <>
                         {/* Scholarship Header */}
                         <div className="flex items-start justify-between mb-4 gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start gap-2 sm:gap-3 mb-3">
-                              <Award className="flex-shrink-0 mt-1" style={{ color: accentColor }} size={20} />
+                              <Award
+                                className="flex-shrink-0 mt-1"
+                                style={{ color: accentColor }}
+                                size={20}
+                              />
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 break-words">
                                   {item.scholarship.scholarship_name}
@@ -606,9 +784,13 @@ const ShortlistBuilder: React.FC = () => {
                             <div className="flex flex-wrap gap-2 mb-3">
                               {getStatusBadge(item.status)}
                               {item.scholarship.degree_level && (
-                                <span 
+                                <span
                                   className="text-xs px-3 py-1 rounded-full font-medium"
-                                  style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#16a34a', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                                  style={{
+                                    backgroundColor: "rgba(34, 197, 94, 0.1)",
+                                    color: "#16a34a",
+                                    border: "1px solid rgba(34, 197, 94, 0.3)",
+                                  }}
                                 >
                                   {item.scholarship.degree_level}
                                 </span>
@@ -625,7 +807,10 @@ const ShortlistBuilder: React.FC = () => {
                         </div>
 
                         {/* Scholarship Details */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 pb-4" style={{ borderBottom: `1px solid ${borderColor}` }}>
+                        <div
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 pb-4"
+                          style={{ borderBottom: `1px solid ${borderColor}` }}
+                        >
                           <div>
                             <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
                               <MapPin size={12} />
@@ -649,8 +834,12 @@ const ShortlistBuilder: React.FC = () => {
                         {/* Eligibility */}
                         {item.scholarship.detailed_eligibility && (
                           <div className="mb-4 bg-gray-50 rounded-lg p-3">
-                            <p className="text-xs font-medium text-gray-700 mb-1">Eligibility</p>
-                            <p className="text-xs sm:text-sm text-gray-600 break-words">{item.scholarship.detailed_eligibility}</p>
+                            <p className="text-xs font-medium text-gray-700 mb-1">
+                              Eligibility
+                            </p>
+                            <p className="text-xs sm:text-sm text-gray-600 break-words">
+                              {item.scholarship.detailed_eligibility}
+                            </p>
                           </div>
                         )}
 
@@ -661,9 +850,14 @@ const ShortlistBuilder: React.FC = () => {
                           </label>
                           <select
                             value={item.status}
-                            onChange={(e) => updateStatus(item.id, e.target.value)}
+                            onChange={(e) =>
+                              updateStatus(item.id, e.target.value)
+                            }
                             className="w-full sm:w-auto px-3 sm:px-4 py-2 rounded-lg focus:outline-none focus:ring-2 text-xs sm:text-sm text-gray-900"
-                            style={{ border: `1px solid ${borderColor}`, backgroundColor: 'white' }}
+                            style={{
+                              border: `1px solid ${borderColor}`,
+                              backgroundColor: "white",
+                            }}
                           >
                             <option value="interested">Interested</option>
                             <option value="applied">Applied</option>
@@ -684,12 +878,12 @@ const ShortlistBuilder: React.FC = () => {
                               <button
                                 onClick={() => {
                                   setEditingNotes(item.id);
-                                  setNoteText(item.notes || '');
+                                  setNoteText(item.notes || "");
                                 }}
                                 className="text-xs sm:text-sm font-medium hover:opacity-70"
                                 style={{ color: accentColor }}
                               >
-                                {item.notes ? 'Edit' : 'Add Note'}
+                                {item.notes ? "Edit" : "Add Note"}
                               </button>
                             )}
                           </div>
@@ -700,7 +894,10 @@ const ShortlistBuilder: React.FC = () => {
                                 onChange={(e) => setNoteText(e.target.value)}
                                 placeholder="Add your notes here..."
                                 className="w-full px-3 sm:px-4 py-2 rounded-lg focus:outline-none focus:ring-2 text-xs sm:text-sm text-gray-900"
-                                style={{ border: `1px solid ${borderColor}`, backgroundColor: 'white' }}
+                                style={{
+                                  border: `1px solid ${borderColor}`,
+                                  backgroundColor: "white",
+                                }}
                                 rows={3}
                               />
                               <div className="flex gap-2">
@@ -714,7 +911,7 @@ const ShortlistBuilder: React.FC = () => {
                                 <button
                                   onClick={() => {
                                     setEditingNotes(null);
-                                    setNoteText('');
+                                    setNoteText("");
                                   }}
                                   className="px-3 sm:px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-300 transition"
                                 >
@@ -724,7 +921,7 @@ const ShortlistBuilder: React.FC = () => {
                             </div>
                           ) : (
                             <p className="text-xs sm:text-sm text-gray-600 bg-gray-50 rounded-lg p-3 break-words">
-                              {item.notes || 'No notes added yet'}
+                              {item.notes || "No notes added yet"}
                             </p>
                           )}
                         </div>
@@ -739,12 +936,16 @@ const ShortlistBuilder: React.FC = () => {
                               className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-white transition hover:opacity-90 w-full sm:w-auto"
                               style={{ backgroundColor: accentColor }}
                             >
-                              <ExternalLink size={14} className="sm:w-4 sm:h-4" />
+                              <ExternalLink
+                                size={14}
+                                className="sm:w-4 sm:h-4"
+                              />
                               Apply Now
                             </a>
                           )}
                           <span className="text-xs text-gray-500">
-                            Added {new Date(item.created_at).toLocaleDateString()}
+                            Added{" "}
+                            {new Date(item.created_at).toLocaleDateString()}
                           </span>
                         </div>
                       </>
