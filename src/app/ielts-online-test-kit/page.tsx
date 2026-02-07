@@ -8,6 +8,7 @@ import { ResourceContent } from '../../../components/Ielts-kit/ResourceContent';
 import { ResourceTab } from '../../../types';
 // import Navbar from '../components/navbar';
 import { Navbar } from '../../../components/Navbar';
+import ContactButton from '../../../components/ContactButton';
 // import NewFooter from '../components/newFooter';
 
 const App: React.FC = () => {
@@ -75,6 +76,7 @@ const App: React.FC = () => {
             <div className="mt-6 sm:mt-8">
               <ResourceContent activeTab={activeTab} />
             </div>
+            <ContactButton />
           </div>
         </main>
       </div>

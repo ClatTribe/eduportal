@@ -34,7 +34,7 @@ const FlyAndSettleServices: React.FC = () => {
       borderColor: "border-blue-200",
       textColor: "text-blue-700",
       hoverColor: "group-hover:border-blue-400",
-      link: "#"
+      link: "/fly-&-settle-services/accommodation"
     },
     {
       id: 3,
@@ -45,7 +45,7 @@ const FlyAndSettleServices: React.FC = () => {
       borderColor: "border-purple-200",
       textColor: "text-purple-700",
       hoverColor: "group-hover:border-purple-400",
-      link: "#"
+      link: "/fly-&-settle-services/visa-assistance"
     },
     {
       id: 4,

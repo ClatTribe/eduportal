@@ -142,7 +142,7 @@ const PlaneRoadmap: React.FC = () => {
             Your Dream Study Abroad Journey
           </h1>
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-600">
-            Start With EduAbroad
+            Starts With EduAbroad
           </h2>
         </div>
 
