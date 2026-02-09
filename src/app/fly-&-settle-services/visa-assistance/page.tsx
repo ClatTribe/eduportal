@@ -6,7 +6,6 @@ import {
   Shield,
   CheckCircle,
   Globe,
-  ArrowRight,
   Zap,
   Clock,
   Award,
@@ -19,9 +18,6 @@ import {
   MessageCircle,
   Calendar,
   MapPin,
-  ThumbsUp,
-  Briefcase,
-  GraduationCap,
   ChevronRight,
 } from "lucide-react"
 import DefaultLayout from "../../defaultLayout"
@@ -408,7 +404,7 @@ const VisaAssistancePage: React.FC = () => {
             </div>
           </div>
         </div>
-
+              
         {/* Testimonials Section */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="text-center mb-12">
@@ -481,17 +477,7 @@ const VisaAssistancePage: React.FC = () => {
               Join thousands of students who trusted Eduabroad with their visa applications. 
               Let our experts guide you from application to approval.
             </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button className="group bg-white text-[#A51C30] px-10 py-5 rounded-xl font-bold text-lg shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300 flex items-center gap-2">
-                Get Free Assessment
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button className="bg-white/10 backdrop-blur-md border-2 border-white/30 text-white px-10 py-5 rounded-xl font-bold text-lg hover:bg-white/20 transition-all duration-300">
-                Book Consultation
-              </button>
-            </div>
-
+            
             {/* Trust Indicators */}
             <div className="mt-12 pt-12 border-t border-white/20">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">

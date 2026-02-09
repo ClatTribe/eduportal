@@ -117,7 +117,7 @@ const AccommodationPage: React.FC = () => {
 
   return (
     <DefaultLayout>
-      <div className="flex-1 bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen mt-[72px] sm:mt-0">
+      <div className="flex-1 bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen mt-[70px] sm:mt-0 ">
         {/* Hero Section */}
         <div className="relative overflow-hidden bg-gradient-to-br from-[#A51C30] via-[#8A1828] to-[#6B1420]">
           {/* Animated Background Pattern */}
@@ -153,15 +153,6 @@ const AccommodationPage: React.FC = () => {
               </p>
 
               {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <button className="group bg-white text-[#A51C30] px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2">
-                  Explore Properties
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button className="bg-white/10 backdrop-blur-md border-2 border-white/30 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-white/20 transition-all duration-300">
-                  Contact Us
-                </button>
-              </div>
             </div>
           </div>
 
@@ -351,16 +342,6 @@ const AccommodationPage: React.FC = () => {
             <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto">
               Let us help you secure safe, comfortable, and convenient accommodation near your dream university. Your journey begins here.
             </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button className="group bg-white text-[#A51C30] px-10 py-5 rounded-xl font-bold text-lg shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300 flex items-center gap-2">
-                Browse Accommodations
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button className="bg-white/10 backdrop-blur-md border-2 border-white/30 text-white px-10 py-5 rounded-xl font-bold text-lg hover:bg-white/20 transition-all duration-300">
-                Schedule a Consultation
-              </button>
-            </div>
 
             {/* Trust Indicators */}
             <div className="mt-12 pt-12 border-t border-white/20">

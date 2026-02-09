@@ -9,6 +9,8 @@ import {
   Plane,
   ArrowRight,
   Sparkles,
+  Badge,
+  Handshake,
 } from "lucide-react"
 import DefaultLayout from "../defaultLayout"
 
@@ -56,7 +58,7 @@ const FlyAndSettleServices: React.FC = () => {
       borderColor: "border-amber-200",
       textColor: "text-amber-700",
       hoverColor: "group-hover:border-amber-400",
-      link: "#"
+      link: "/fly-&-settle-services/forex"
     },
     {
       id: 5,
@@ -67,7 +69,7 @@ const FlyAndSettleServices: React.FC = () => {
       borderColor: "border-rose-200",
       textColor: "text-rose-700",
       hoverColor: "group-hover:border-rose-400",
-      link: "#"
+      link: "/fly-&-settle-services/insurance"
     },
     {
       id: 6,
@@ -78,7 +80,18 @@ const FlyAndSettleServices: React.FC = () => {
       borderColor: "border-cyan-200",
       textColor: "text-cyan-700",
       hoverColor: "group-hover:border-cyan-400",
-      link: "#"
+      link: "/fly-&-settle-services/pick-up"
+    },
+    {
+      id: 7,
+      title: "Job Assistance",
+      description: "Get career guidance, resume help, and job placement support tailored for international students.",
+      icon: Handshake,
+      bgColor: "bg-green-50",
+      borderColor: "border-green-200",
+      textColor: "text-green-700",
+      hoverColor: "group-hover:border-green-400",
+      link: "/fly-&-settle-services/job-assistance"
     }
   ]
 
