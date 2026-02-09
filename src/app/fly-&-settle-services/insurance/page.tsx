@@ -290,7 +290,7 @@ const InsuranceSupportPage: React.FC = () => {
       <div className="flex-1 bg-white min-h-screen mt-[50px] sm:mt-0">
 
         {/* Hero Section - Different Design */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#A51C30] via-[#8A1828] to-[#A51C30]">
           {/* Animated Background Elements */}
           <div className="absolute inset-0">
             <div className="absolute top-20 left-10 w-72 h-72 bg-[#A51C30] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
