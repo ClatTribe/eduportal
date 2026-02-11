@@ -52,7 +52,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               </h1>
               <p className="text-sm sm:text-base text-gray-600 truncate">
                 {hasProfile
-                  ? "Complete profile to unlock all features and get personalized recommendations Long term me - we can add Eduscore - give a line about how it is calculated and talk to experts for a 1-1 consultation on improving it "
+                  ? "Complete profile to unlock all features and get personalized recommendations"
                   : "Tell us about yourself"}
               </p>
             </div>

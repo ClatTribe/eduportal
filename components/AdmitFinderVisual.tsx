@@ -6,7 +6,7 @@ export const AdmitFinderVisual: React.FC = () => {
     <div className="flex flex-col h-full bg-[#FFFFFF] rounded-xl border border-[#FECDD3] shadow-2xl overflow-hidden">
       <div className="p-8 border-b border-[#FECDD3] bg-[#FEF2F3]">
         <h3 className="text-3xl font-bold text-[#A51C30] mb-2 tracking-tight">
-          Access 1000K+ Admits & Rejects!
+          Access 1000+ Admits & Rejects!
         </h3>
         <p className="text-[#A51C30] mb-8 text-lg">
           Find folks at your dream school with the same background as you
