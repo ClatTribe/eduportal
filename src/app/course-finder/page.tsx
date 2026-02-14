@@ -715,8 +715,6 @@ const CourseFinder: React.FC = () => {
     </DefaultLayout>
   );
 };
-
-<<<<<<< HEAD
 export default CourseFinder
 
 /*"use client"
@@ -1033,6 +1031,3 @@ const CourseFinder: React.FC = () => {
 }
 
 export default CourseFinder*/ 
-=======
-export default CourseFinder;
->>>>>>> 236f9af1df350c439a4bc1a3ae580ffdc354f8cf
