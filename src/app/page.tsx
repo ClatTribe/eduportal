@@ -31,7 +31,7 @@ const features = [
   },
   {
     id: "admits",
-    title: "Previous Year Students",
+    title: "Find Admits",
     description: "See real profiles of students who got into your dream colleges.",
     icon: Target,
     component: () => <CourseFeatures activeTab="admits" />,

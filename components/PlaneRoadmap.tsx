@@ -23,7 +23,7 @@ const PlaneRoadmap: React.FC = () => {
       id: 1,
       title: "Research",
       emoji: "✨",
-      description: "Explore 15000+ Dream MBA Colleges",
+      description: "Explore 15000+ Dream Colleges",
       buttonText: "Try Course Finder",
       buttonLink: "/course-finder",
       position: "right",
@@ -35,7 +35,7 @@ const PlaneRoadmap: React.FC = () => {
       emoji: "✨",
       description: "Get 1-on-1 Counselling from our experts",
       buttonText: "Book Free Counselling",
-      buttonLink: "/counselling",
+      buttonLink: "/register",
       position: "left",
       icon: Users,
     },
@@ -65,7 +65,7 @@ const PlaneRoadmap: React.FC = () => {
       emoji: "✨",
       description: "Secure your Education loan",
       buttonText: "Apply for Loan",
-      buttonLink: "#",
+      buttonLink: "/fly-&-settle-services/loans",
       position: "right",
       icon: TrendingUp,
     },
@@ -75,7 +75,7 @@ const PlaneRoadmap: React.FC = () => {
       emoji: "✨",
       description: "Get complete Visa Assistance",
       buttonText: "Apply for Visa",
-      buttonLink: "#",
+      buttonLink: "/fly-&-settle-services/",
       position: "left",
       icon: TrendingUp,
     },
@@ -85,7 +85,7 @@ const PlaneRoadmap: React.FC = () => {
       emoji: "✨",
       description: "Find your ideal Home abroad",
       buttonText: "Enquire Now",
-      buttonLink: "#",
+      buttonLink: "/fly-&-settle-services/",
       position: "right",
       icon: TrendingUp,
     },
@@ -142,7 +142,7 @@ const PlaneRoadmap: React.FC = () => {
             Your Dream Study Abroad Journey
           </h1>
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-600">
-            Start With EduAbroad
+            Starts With EduAbroad
           </h2>
         </div>
 

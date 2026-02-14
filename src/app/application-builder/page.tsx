@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../contexts/AuthContext";
 import DefaultLayout from "../defaultLayout";
@@ -63,8 +63,10 @@ const ApplicationBuilderPage: React.FC = () => {
   
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [universityInput, setUniversityInput] = useState<string>("");
+  const [universitySearchQuery, setUniversitySearchQuery] = useState<string>("");
   const [showUniversityDropdown, setShowUniversityDropdown] = useState<boolean>(false);
   const [programInput, setProgramInput] = useState<string>("");
+  const [programSearchQuery, setProgramSearchQuery] = useState<string>("");
   const [showProgramDropdown, setShowProgramDropdown] = useState<boolean>(false);
   const [selectedDocs, setSelectedDocs] = useState<Record<DocumentCategory, string>>({
     tenth: "",
@@ -86,6 +88,8 @@ const ApplicationBuilderPage: React.FC = () => {
 
   const universityDropdownRef = useRef<HTMLDivElement>(null);
   const programDropdownRef = useRef<HTMLDivElement>(null);
+  const universityDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const programDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -117,6 +121,18 @@ const ApplicationBuilderPage: React.FC = () => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Cleanup debounce timers
+  useEffect(() => {
+    return () => {
+      if (universityDebounceRef.current) {
+        clearTimeout(universityDebounceRef.current);
+      }
+      if (programDebounceRef.current) {
+        clearTimeout(programDebounceRef.current);
+      }
+    };
   }, []);
 
   // ---------- Data fetching ----------
@@ -227,8 +243,8 @@ const ApplicationBuilderPage: React.FC = () => {
   }, [courses]);
 
   const getFilteredUniversities = (): string[] => {
-    if (!universityInput) return universities;
-    const query = universityInput.toLowerCase();
+    if (!universitySearchQuery.trim()) return universities;
+    const query = universitySearchQuery.toLowerCase();
     return universities.filter(uni => uni.toLowerCase().includes(query));
   };
 
@@ -250,10 +266,39 @@ const ApplicationBuilderPage: React.FC = () => {
   }, [courses, universityInput]);
 
   const getFilteredPrograms = (): string[] => {
-    if (!programInput) return programsForSelectedUniversity;
-    const query = programInput.toLowerCase();
+    if (!programSearchQuery.trim()) return programsForSelectedUniversity;
+    const query = programSearchQuery.toLowerCase();
     return programsForSelectedUniversity.filter(prog => prog.toLowerCase().includes(query));
   };
+
+  // ---------- Debounced search handlers ----------
+  const handleUniversityInputChange = useCallback((value: string) => {
+    setUniversityInput(value);
+    
+    // Clear existing timeout
+    if (universityDebounceRef.current) {
+      clearTimeout(universityDebounceRef.current);
+    }
+    
+    // Set new timeout for search query
+    universityDebounceRef.current = setTimeout(() => {
+      setUniversitySearchQuery(value);
+    }, 300); // 300ms debounce delay
+  }, []);
+
+  const handleProgramInputChange = useCallback((value: string) => {
+    setProgramInput(value);
+    
+    // Clear existing timeout
+    if (programDebounceRef.current) {
+      clearTimeout(programDebounceRef.current);
+    }
+    
+    // Set new timeout for search query
+    programDebounceRef.current = setTimeout(() => {
+      setProgramSearchQuery(value);
+    }, 300); // 300ms debounce delay
+  }, []);
 
   // ---------- Handlers ----------
   const handleDocSelect = (category: DocumentCategory, url: string) => {
@@ -263,7 +308,9 @@ const ApplicationBuilderPage: React.FC = () => {
   const handleNewApplication = () => {
     setEditingIndex(null);
     setUniversityInput("");
+    setUniversitySearchQuery("");
     setProgramInput("");
+    setProgramSearchQuery("");
     setSelectedDocs({
       tenth: "",
       twelfth: "",
@@ -282,7 +329,9 @@ const ApplicationBuilderPage: React.FC = () => {
   const handleEditApplication = (app: ApplicationBuilderRow, index: number) => {
     setEditingIndex(index);
     setUniversityInput(app.university || "");
+    setUniversitySearchQuery("");
     setProgramInput(app.program || "");
+    setProgramSearchQuery("");
     
     const docMap = app.documents || {};
     setSelectedDocs({
@@ -385,13 +434,16 @@ const ApplicationBuilderPage: React.FC = () => {
 
   const handleUniversitySelect = (university: string) => {
     setUniversityInput(university);
+    setUniversitySearchQuery("");
     setShowUniversityDropdown(false);
     // Reset program when university changes
     setProgramInput("");
+    setProgramSearchQuery("");
   };
 
   const handleProgramSelect = (program: string) => {
     setProgramInput(program);
+    setProgramSearchQuery("");
     setShowProgramDropdown(false);
   };
 
@@ -509,17 +561,24 @@ const ApplicationBuilderPage: React.FC = () => {
                     className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-red-500"
                     value={universityInput}
                     onChange={(e) => {
-                      setUniversityInput(e.target.value);
+                      handleUniversityInputChange(e.target.value);
                       setShowUniversityDropdown(true);
                       // Reset program when university changes
                       setProgramInput("");
+                      setProgramSearchQuery("");
                     }}
-                    onFocus={() => setShowUniversityDropdown(true)}
+                    onFocus={() => {
+                      setShowUniversityDropdown(true);
+                      setUniversitySearchQuery("");
+                    }}
                   />
                   <button
                     onClick={(e) => {
                       e.preventDefault();
                       setShowUniversityDropdown(!showUniversityDropdown);
+                      if (!showUniversityDropdown) {
+                        setUniversitySearchQuery("");
+                      }
                     }}
                     className="absolute right-2 top-3 cursor-pointer"
                     type="button"
@@ -543,6 +602,12 @@ const ApplicationBuilderPage: React.FC = () => {
                       ))}
                     </div>
                   )}
+                  
+                  {showUniversityDropdown && filteredUniversities.length === 0 && universitySearchQuery && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4">
+                      <p className="text-sm text-gray-500">No universities found matching "{universitySearchQuery}"</p>
+                    </div>
+                  )}
                 </div>
                 {universities.length === 0 && (
                   <p className="text-xs text-amber-600 mt-1">
@@ -563,10 +628,13 @@ const ApplicationBuilderPage: React.FC = () => {
                     className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-red-500"
                     value={programInput}
                     onChange={(e) => {
-                      setProgramInput(e.target.value);
+                      handleProgramInputChange(e.target.value);
                       setShowProgramDropdown(true);
                     }}
-                    onFocus={() => setShowProgramDropdown(true)}
+                    onFocus={() => {
+                      setShowProgramDropdown(true);
+                      setProgramSearchQuery("");
+                    }}
                     disabled={!universityInput}
                   />
                   <button
@@ -574,6 +642,9 @@ const ApplicationBuilderPage: React.FC = () => {
                       e.preventDefault();
                       if (universityInput) {
                         setShowProgramDropdown(!showProgramDropdown);
+                        if (!showProgramDropdown) {
+                          setProgramSearchQuery("");
+                        }
                       }
                     }}
                     className="absolute right-2 top-3 cursor-pointer"
@@ -597,6 +668,12 @@ const ApplicationBuilderPage: React.FC = () => {
                           {program}
                         </div>
                       ))}
+                    </div>
+                  )}
+                  
+                  {showProgramDropdown && filteredPrograms.length === 0 && programSearchQuery && universityInput && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4">
+                      <p className="text-sm text-gray-500">No programs found matching "{programSearchQuery}"</p>
                     </div>
                   )}
                 </div>

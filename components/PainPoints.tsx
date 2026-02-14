@@ -63,7 +63,7 @@ export const PainPoints: React.FC = () => {
                 </li>
                 <li className="flex gap-4">
                   <Check className="shrink-0" style={{ color: '#FFFFFF' }} />
-                  <span>Verified student reviews only via LinkedIn/College email.</span>
+                  <span>Verified student admits only. No fake data.</span>
                 </li>
                 <li className="flex gap-4">
                   <Check className="shrink-0" style={{ color: '#FFFFFF' }} />

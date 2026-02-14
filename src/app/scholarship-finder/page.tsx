@@ -419,7 +419,7 @@ const ScholarshipFinder: React.FC = () => {
             <div className="flex items-center gap-2">
               <Award style={{ color: accentColor }} size={20} className="sm:w-6 sm:h-6 flex-shrink-0" />
               <span className="font-semibold text-sm sm:text-base text-gray-900">
-                {filteredScholarships.length.toLocaleString()} {viewMode === "recommended" ? "recommended " : ""}scholarship{filteredScholarships.length !== 1 ? 's' : ''} found,  Stay Tuned for More !
+                {filteredScholarships.length.toLocaleString()} {viewMode === "recommended" ? "recommended " : ""}scholarship{filteredScholarships.length !== 1 ? 's' : ''} found,  stay tuned for more !
               </span>
             </div>
             <div className="flex items-center gap-2">
