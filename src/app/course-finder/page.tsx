@@ -599,3 +599,318 @@ const CourseFinder: React.FC = () => {
 }
 
 export default CourseFinder
+
+/*"use client"
+import React, { useState, useEffect } from "react"
+import {
+  Heart,
+  BookOpen,
+  DollarSign,
+  MapPin,
+  GraduationCap,
+  AlertCircle,
+  Calendar,
+  Globe,
+  Award,
+  Sparkles,
+  Trophy,
+  Target,
+  GitCompare,
+} from "lucide-react"
+import { supabase } from "../../../lib/supabase"
+import { useAuth } from "../../../contexts/AuthContext"
+import DefaultLayout from "../defaultLayout"
+import Pagination from "../../../components/CourseFinder/Pagination"
+import FilterComponent from "../../../components/CourseFinder/Filtering"
+import useSavedCourses from "../../../components/CourseFinder/SavedCourses"
+import CoursesRecommend from "../../../components/CourseFinder/CoursesRecommend"
+import CollegeComparison, { CompareBadge, CompareFloatingButton } from "../../../components/CourseFinder/CollegeComparison"
+
+interface Course {
+  id: number
+  University: string | null
+  "University Ranking": string | null
+  "Program Name": string | null
+  Concentration: string | null
+  "Website URL": string | null
+  Campus: string | null
+  Country: string | null
+  "Study Level": string | null
+  Duration: string | null
+  "Open Intakes": string | null
+  "Intake Year": string | null
+  "Entry Requirements": string | null
+  "IELTS Score": string | null
+  "IELTS No Band Less Than": string | null
+  "TOEFL Score": string | null
+  "PTE Score": string | null
+  "DET Score": string | null
+  "Application Deadline": string | null
+  "Application Fee": string | null
+  "Yearly Tuition Fees": string | null
+  "Scholarship Available": string | null
+  "Backlog Range": string | null
+  Remarks: string | null
+  ApplicationMode: string | null
+  "English Proficiency Exam Waiver": string | null
+  matchScore?: number
+}
+
+const extractQSRanking = (rankingString: string | null): number | null => {
+  if (!rankingString) return null
+  const qsMatch = rankingString.match(/QS Ranking\s*-\s*(\d+|NA)/i)
+  if (!qsMatch) return null
+  const rankValue = qsMatch[1]
+  if (rankValue.toUpperCase() === 'NA' || isNaN(Number(rankValue))) return null
+  return Number(rankValue)
+}
+
+const sortCoursesByQSRanking = (courses: Course[]): Course[] => {
+  return [...courses].sort((a, b) => {
+    const qsA = extractQSRanking(a["University Ranking"])
+    const qsB = extractQSRanking(b["University Ranking"])
+    if (qsA !== null && qsB !== null) return qsA - qsB
+    if (qsA !== null && qsB === null) return -1
+    if (qsA === null && qsB !== null) return 1
+    return 0
+  })
+}
+
+const CourseFinder: React.FC = () => {
+  const { user } = useAuth()
+  const [courses, setCourses] = useState<Course[]>([])
+  const [filteredCourses, setFilteredCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [totalItems, setTotalItems] = useState(0) // Tracks total rows (21k)
+  const [viewMode, setViewMode] = useState<"all" | "recommended">("all")
+
+  const { savedCourses, toggleSaved } = useSavedCourses(user)
+  const perPage = 15
+
+  // Trigger fetch when page or view mode changes
+  useEffect(() => {
+    if (viewMode === "all") {
+      fetchCourses(currentPage)
+    }
+  }, [viewMode, currentPage])
+
+  const {
+    compareColleges,
+    toggleCompare,
+    isInCompare,
+    goToComparison,
+  } = CollegeComparison({ user, courses })
+
+  const fetchCourses = async (page: number) => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Calculate exact range for this section (page)
+      const from = page * perPage
+      const to = from + perPage - 1
+
+      // Fetch ONLY the specific 15 rows for the current page
+      const { data, count, error: supabaseError } = await supabase
+        .from("courses")
+        .select("*", { count: 'exact' }) // Get the 21k total count for pagination UI
+        .order("id", { ascending: true })
+        .range(from, to)
+
+      if (supabaseError) throw supabaseError
+
+      const validCourses = (data || []).filter((course) => course.University !== null)
+      
+      // Since validCourses is only 15 items, this sort is now instantaneous
+      const sortedCourses = sortCoursesByQSRanking(validCourses)
+      
+      setCourses(sortedCourses)
+      setFilteredCourses(sortedCourses)
+      if (count !== null) setTotalItems(count)
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch courses")
+      console.error("Error fetching courses:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleRecommendedCoursesChange = (recommendedCourses: Course[]) => {
+    const sorted = sortCoursesByQSRanking(recommendedCourses)
+    setFilteredCourses(sorted)
+    setTotalItems(sorted.length)
+    setCurrentPage(0)
+  }
+
+  const handleFilterChange = (filtered: Course[]) => {
+    const sortedFiltered = sortCoursesByQSRanking(filtered)
+    setFilteredCourses(sortedFiltered)
+    // Note: If using client-side FilterComponent, totalItems would be updated to filtered.length
+    setTotalItems(filtered.length) 
+    setCurrentPage(0)
+  }
+
+  const getMatchBadge = (course: Course) => {
+    if (viewMode !== "recommended" || !course.matchScore) return null
+    const score = course.matchScore
+    if (score >= 90) return <span className="text-xs bg-green-50 text-green-700 px-2 sm:px-3 py-1 rounded-full font-semibold border border-green-200">Perfect Match ({score}%)</span>
+    if (score >= 75) return <span className="text-xs bg-blue-50 text-blue-700 px-2 sm:px-3 py-1 rounded-full font-semibold border border-blue-200">Excellent Match ({score}%)</span>
+    return <span className="text-xs bg-purple-50 text-purple-700 px-2 sm:px-3 py-1 rounded-full font-semibold border border-purple-200">Match ({score}%)</span>
+  }
+
+  // Because we fetch only 15 rows at a time, we no longer need to .slice() the array here
+  const displayCourses = filteredCourses
+
+  return (
+    <DefaultLayout>
+      <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen p-3 sm:p-4 md:p-6 mt-18 sm:mt-0">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-4 sm:mb-6 md:mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#A51C30] mb-1 sm:mb-2">Find Your Perfect Course</h1>
+            <p className="text-sm sm:text-base text-gray-600">Explore programs and universities worldwide</p>
+          </div>
+
+          <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button
+              onClick={() => { setViewMode("all"); setCurrentPage(0); }}
+              className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all ${viewMode === "all" ? "bg-[#A51C30] text-white shadow-lg" : "bg-white text-gray-700 border border-gray-300"}`}
+            >
+              <GraduationCap size={18} /> All Courses
+            </button>
+            <button
+              onClick={() => { setViewMode("recommended"); setCurrentPage(0); }}
+              className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all ${viewMode === "recommended" ? "bg-[#A51C30] text-white shadow-lg" : "bg-white text-gray-700 border border-gray-300"}`}
+            >
+              <Sparkles size={18} /> Recommended For You
+            </button>
+          </div>
+
+          <CoursesRecommend
+            user={user}
+            viewMode={viewMode}
+            onRecommendedCoursesChange={handleRecommendedCoursesChange}
+            onLoadingChange={setLoading}
+            onErrorChange={setError}
+          />
+
+          <FilterComponent courses={courses} viewMode={viewMode} onFilterChange={handleFilterChange} />
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 flex items-start gap-2 sm:gap-3">
+              <AlertCircle className="text-[#A51C30] flex-shrink-0 mt-0.5" size={20} />
+              <div>
+                <h3 className="font-semibold text-[#A51C30] text-sm sm:text-base">Notice</h3>
+                <p className="text-red-700 text-xs sm:text-sm">{error}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4 sm:mb-6 bg-white rounded-lg shadow-sm p-3 sm:p-4 border border-gray-200">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="text-[#A51C30] flex-shrink-0" size={20} />
+              <span className="font-semibold text-base sm:text-lg text-gray-800">
+                {totalItems.toLocaleString()} {viewMode === "recommended" ? "recommended " : ""} courses found
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Heart className="text-[#A51C30] flex-shrink-0" size={16} />
+                <span className="text-xs sm:text-sm text-gray-600">{savedCourses.size} saved</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <GitCompare className="text-purple-600 flex-shrink-0" size={16} />
+                <span className="text-xs sm:text-sm text-gray-600 font-medium">{compareColleges.length}/3 to compare</span>
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#A51C30]"></div>
+            </div>
+          ) : displayCourses.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
+               <h3 className="text-lg font-semibold text-gray-700">No courses found</h3>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                {displayCourses.map((course, index) => {
+                  const isBlurred = viewMode === "recommended" && index >= 2
+                  const inCompare = isInCompare(course.id)
+                  return (
+                    <div key={course.id} className={`bg-white rounded-xl p-4 sm:p-6 transition-all relative ${inCompare ? 'border-2 border-purple-500 shadow-md' : 'border border-gray-200 hover:shadow-xl'}`}>
+                      {isBlurred && (
+                        <div className="absolute inset-0 bg-white/70 backdrop-blur-md z-10 flex flex-col items-center justify-center p-6 rounded-xl text-center">
+                          <h3 className="font-bold mb-2">Unlock More Recommendations</h3>
+                          <button className="bg-[#A51C30] text-white px-4 py-2 rounded-lg text-sm font-semibold">Contact Our Experts</button>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between items-start gap-3 mb-4">
+                        <div className="flex-1">
+                          <div className="font-bold text-xl text-gray-900 mb-1">{course.University}</div>
+                          <div className="text-gray-600 font-medium">{course["Program Name"]}</div>
+                          {viewMode === "recommended" && <div className="mt-2">{getMatchBadge(course)}</div>}
+                        </div>
+                        <div className="flex items-center gap-3">
+                           <input type="checkbox" checked={inCompare} onChange={() => toggleCompare(course)} className="w-4 h-4 accent-purple-600" />
+                           <button onClick={() => toggleSaved(course)} className={savedCourses.has(course.id) ? "text-[#A51C30]" : "text-gray-400"}>
+                              <Heart size={20} fill={savedCourses.has(course.id) ? "currentColor" : "none"} />
+                           </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                        <div>
+                          <div className="text-xs text-gray-500">Campus</div>
+                          <p className="font-semibold text-sm">{course.Campus || "N/A"}</p>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500">Country</div>
+                          <p className="font-semibold text-sm">{course.Country || "N/A"}</p>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500">Duration</div>
+                          <p className="font-semibold text-sm">{course.Duration || "N/A"}</p>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500">Fees</div>
+                          <p className="font-semibold text-sm">{course["Yearly Tuition Fees"] || "N/A"}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <a href={course["Website URL"] || "#"} target="_blank" className="w-full bg-[#A51C30] text-white rounded-lg py-2.5 flex items-center justify-center gap-2 text-sm font-semibold hover:bg-[#8A1828]">
+                          <BookOpen size={14} /> View Details
+                        </a>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <Pagination
+                totalItems={totalItems}
+                currentPage={currentPage}
+                perPage={perPage}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
+        </div>
+        <CompareFloatingButton compareCount={compareColleges.length} onCompareClick={goToComparison} />
+      </div>
+    </DefaultLayout>
+  )
+}
+
+export default CourseFinder*/ 
