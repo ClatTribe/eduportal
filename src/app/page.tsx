@@ -38,10 +38,11 @@ const features = [
   },
 ];
 
-const HERO_HEADINGS = [
-  { text: "Your Dream University", isCustom: false },
+// 3 sub-headings that animate below the frozen main heading
+const SUB_HEADINGS = [
+  { text: "Without the Noise", isCustom: false },
   { text: "3 Click Promise", isCustom: false },
-  { isCustom: true }
+  { isCustom: true },
 ];
 
 export default function Hero() {
@@ -60,7 +61,7 @@ export default function Hero() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_HEADINGS.length);
+      setCurrentSlide((prev) => (prev + 1) % SUB_HEADINGS.length);
     }, 6000);
     return () => clearInterval(timer);
   }, []);
@@ -105,34 +106,52 @@ export default function Hero() {
                 <ArrowRight size={12} className="text-slate-400 group-hover:translate-x-1 transition-transform" />
               </motion.div>
 
-              {/* Heading Container: Prevent wrap and allow horizontal overflow if screen is extremely small */}
-              <div className="relative mb-6 sm:mb-8 flex items-center justify-center w-full min-h-[120px] sm:min-h-[150px] md:min-h-[200px] overflow-visible">
-                <AnimatePresence mode="wait">
-                  <motion.h1
-                    key={`heading-${currentSlide}`}
-                    initial={{ opacity: 0, y: 30, filter: "blur(10px)" }} 
-                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} 
-                    exit={{ opacity: 0, y: -30, filter: "blur(10px)" }}
-                    transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                    className="text-5xl sm:text-6xl md:text-8xl font-bold tracking-tight leading-[1.1] py-2 px-4 whitespace-nowrap"
-                  >
-                    {HERO_HEADINGS[currentSlide].isCustom ? (
-                      <span className="flex flex-row items-center justify-center gap-2 md:gap-[0.3ch]">
-                        <span className="bg-gradient-to-t from-slate-300 via-slate-700 to-slate-900 bg-clip-text text-transparent">
-                          EduAbroad
+              {/* ── HEADING BLOCK ── */}
+              <div className="flex flex-col items-center mb-6 sm:mb-8 px-4">
+
+                {/* FROZEN main heading — always visible, never animates out */}
+                <motion.h1
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                  className="text-3xl sm:text-5xl md:text-8xl font-bold tracking-tight leading-[1.1] py-1 whitespace-nowrap"
+                >
+                  <span className="bg-gradient-to-t from-slate-900 via-slate-900 to-slate-900 bg-clip-text text-transparent">
+                    Your Dream University
+                  </span>
+                </motion.h1>
+
+                {/* ANIMATED sub-heading carousel — one size smaller */}
+                <div className="relative flex items-center justify-center w-full min-h-[56px] sm:min-h-[72px] md:min-h-[88px] mt-1 overflow-visible">
+                  <AnimatePresence mode="wait">
+                    <motion.h2
+                      key={`sub-heading-${currentSlide}`}
+                      initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
+                      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                      exit={{ opacity: 0, y: -30, filter: "blur(10px)" }}
+                      transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                      className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight leading-[1.1] py-1 px-2 whitespace-nowrap"
+                    >
+                      {SUB_HEADINGS[currentSlide].isCustom ? (
+                        <span className="flex flex-row items-center justify-center gap-2 md:gap-[0.3ch]">
+                          <span className="bg-gradient-to-t from-slate-900 via-slate-900 to-slate-900 bg-clip-text text-transparent">
+                            EduAbroad
+                          </span>
+                          <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#E0314B] to-[#7A1524] font-black [text-shadow:_0_0_1px_#A51C30,0_0_1px_#A51C30]">
+                            है न !
+                          </span>
                         </span>
-                        <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#E0314B] to-[#7A1524] font-black [text-shadow:_0_0_1px_#A51C30,0_0_1px_#A51C30]">
-                          है ना !
+                      ) : (
+                        <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#E0314B] to-[#7A1524] block">
+                          {SUB_HEADINGS[currentSlide].text}
                         </span>
-                      </span>
-                    ) : (
-                      <span className="bg-gradient-to-t from-slate-300 via-slate-700 to-slate-900 bg-clip-text text-transparent block">
-                        {HERO_HEADINGS[currentSlide].text}
-                      </span>
-                    )}
-                  </motion.h1>
-                </AnimatePresence>
+                      )}
+                    </motion.h2>
+                  </AnimatePresence>
+                </div>
+
               </div>
+              {/* ── END HEADING BLOCK ── */}
 
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
