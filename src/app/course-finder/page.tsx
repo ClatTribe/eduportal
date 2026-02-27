@@ -328,9 +328,9 @@ const CourseFinder: React.FC = () => {
                 size={20}
               />
               <span className="font-semibold text-base sm:text-lg text-gray-800">
-                {filteredCourses.length.toLocaleString()}{" "}
+                {/* {filteredCourses.length.toLocaleString()}{" "} */}
                 {viewMode === "recommended" ? "recommended " : ""}
-                courses found
+                96,892 courses found
               </span>
             </div>
             <div className="flex items-center gap-4">
