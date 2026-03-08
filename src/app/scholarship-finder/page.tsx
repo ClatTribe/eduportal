@@ -20,6 +20,7 @@ import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import DefaultLayout from '../defaultLayout';
 import { useSavedItems } from '../../../components/Scholarship/SavedItemsManager';
+import Pagination from "../../../components/CourseFinder/Pagination";
 import { FilterPanel } from '../../../components/Scholarship//FilterPanel';
 import { BlurOverlay } from '../../../components/Scholarship//BlurOverlay';
 import { calculateMatchScore } from '../../../components/Scholarship//MatchScoreCalculator';
@@ -80,6 +81,8 @@ const ScholarshipFinder: React.FC = () => {
   const [selectedLevel, setSelectedLevel] = useState("")
   const [viewMode, setViewMode] = useState<"all" | "recommended">("all")
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [currentPage, setCurrentPage] = useState(0)
+  const perPage = 100
 
   useEffect(() => {
     fetchUserProfile()
@@ -163,13 +166,12 @@ const ScholarshipFinder: React.FC = () => {
       const relevantScholarships = scoredScholarships.filter((s) => (s.matchScore || 0) > 10)
       const topRecommendations = relevantScholarships
         .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
-        .slice(0, 9)
 
       if (topRecommendations.length < 9) {
         const remaining = scoredScholarships
           .filter((s) => !topRecommendations.find((t) => t.id === s.id))
           .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
-          .slice(0, 9 - topRecommendations.length)
+          
         topRecommendations.push(...remaining)
       }
 
@@ -183,30 +185,41 @@ const ScholarshipFinder: React.FC = () => {
     }
   }
 
-  const fetchScholarships = async () => {
-    try {
-      setLoading(true)
-      setError(null)
+const fetchScholarships = async () => {
+  try {
+    setLoading(true)
+    setError(null)
 
+    let allData: Scholarship[] = []
+    let page = 0
+    const pageSize = 1000
+
+    while (true) {
       const { data, error: supabaseError } = await supabase
         .from("scholarship_new")
         .select("*")
         .order("deadline", { ascending: true })
+        .range(page * pageSize, (page + 1) * pageSize - 1)
 
       if (supabaseError) throw supabaseError
+      if (!data || data.length === 0) break
 
-      const validScholarships = (data || []).filter((s) => s.scholarship_name !== null)
-      setScholarships([FEATURED_SCHOLARSHIP, ...validScholarships])
-      setFilteredScholarships([FEATURED_SCHOLARSHIP, ...validScholarships])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch scholarships")
-      console.error("Error fetching scholarships:", err)
-      setScholarships([FEATURED_SCHOLARSHIP])
-      setFilteredScholarships([FEATURED_SCHOLARSHIP])
-    } finally {
-      setLoading(false)
+      allData = [...allData, ...(data as Scholarship[])]
+      page++
     }
+
+    const validScholarships = allData.filter((s) => s.scholarship_name !== null)
+    setScholarships([FEATURED_SCHOLARSHIP, ...validScholarships])
+    setFilteredScholarships([FEATURED_SCHOLARSHIP, ...validScholarships])
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Failed to fetch scholarships")
+    console.error("Error fetching scholarships:", err)
+    setScholarships([FEATURED_SCHOLARSHIP])
+    setFilteredScholarships([FEATURED_SCHOLARSHIP])
+  } finally {
+    setLoading(false)
   }
+}
 
   const applyFilters = () => {
     const dbScholarships = scholarships.filter((s) => s.id !== -1)
@@ -314,7 +327,10 @@ const ScholarshipFinder: React.FC = () => {
   const activeFiltersCount = [searchQuery, selectedCountry, selectedLevel].filter(Boolean).length
   const hasProfileData = userProfile && userProfile.target_countries?.length > 0 && userProfile.degree && userProfile.program
   const canShowRecommendations = hasProfileData && !loadingProfile
-
+  const paginatedScholarships = filteredScholarships.slice(
+  currentPage * perPage,
+  (currentPage + 1) * perPage
+)
   return (
     <DefaultLayout>
       <div className="flex-1 min-h-screen p-3 sm:p-4 md:p-6 mt-[72px] sm:mt-0" style={{ backgroundColor: primaryBg }}>
@@ -447,7 +463,7 @@ const ScholarshipFinder: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {filteredScholarships.map((s, index) => {
+              {paginatedScholarships.map((s, index) => {
                 const isBlurred = viewMode === "recommended" && index >= 3
                 const isFeatured = s.isFeatured
 
@@ -523,6 +539,13 @@ const ScholarshipFinder: React.FC = () => {
           )}
         </div>
       </div>
+      {/* Pagination Component */}
+                    <Pagination
+                      totalItems={filteredScholarships.length}
+                      currentPage={currentPage}
+                      perPage={perPage}
+                      onPageChange={setCurrentPage}
+                    />
     </DefaultLayout>
   )
 }
