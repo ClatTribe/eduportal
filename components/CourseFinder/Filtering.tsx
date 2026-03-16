@@ -118,7 +118,7 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
         const { data } = await query
         if (data) {
           const unique = [...new Set(
-            data.map((d: Record<string, string | null>) => d['Program Name']).filter(Boolean)
+            (data as unknown as Record<string, string | null>[]).map((d) => d['Program Name']).filter(Boolean)
           )] as string[]
           setProgramOptions(unique.sort())
         }
