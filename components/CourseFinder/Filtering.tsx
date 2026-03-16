@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import {
   Search,
   ChevronDown,
@@ -9,12 +9,12 @@ import {
   Calendar,
   BookOpen,
 } from "lucide-react"
-import { Course } from "./types"
+import { FilterValues } from "./types"
+import { supabase } from "../../lib/supabase"
 
 interface FilterProps {
-  courses: Course[]
   viewMode: "all" | "recommended"
-  onFilterChange: (filtered: Course[]) => void
+  onFilterValuesChange: (filters: FilterValues) => void
 }
 
 const countries = ['Australia', 'Canada', 'China', 'Denmark', 'Finland', 'France', 'Georgia', 'Hungary', 'Indonesia', 'Ireland', 'Italy', 'Japan', 'Kazakhstan', 'Lithuania', 'Luxembourg', 'Malaysia', 'Monaco', 'Netherlands', 'New Zealand', 'Poland', 'Russia', 'Singapore', 'South Korea', 'Spain', 'Sri Lanka', 'Sweden', 'Switzerland', 'United Arab Emirates', 'United Kingdom', 'United States of America', 'Vietnam'];
@@ -27,7 +27,6 @@ const studyLevels = [
   'PG Diploma /Certificate'
 ]
 
-// ✅ FIXED: Changed to match actual Open Intakes field values
 const intakeOptions = [
   { value: 'Spring', label: 'Spring (Jan/Feb/Mar/Apr)' },
   { value: 'Summer', label: 'Summer (May/Jun/Jul)' },
@@ -35,7 +34,7 @@ const intakeOptions = [
   { value: 'Winter', label: 'Winter (Nov/Dec)' }
 ]
 
-const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterChange }) => {
+const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange }) => {
   const [searchQuery, setSearchQuery] = useState("")
   const [showFilters, setShowFilters] = useState(true)
   const [selectedCountry, setSelectedCountry] = useState("")
@@ -46,80 +45,89 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
   const [selectedProgramName, setSelectedProgramName] = useState("")
   const [showProgramDropdown, setShowProgramDropdown] = useState(false)
 
-  // ✅ FIXED: Helper function to check if course matches selected intake season
-  const matchesIntake = (course: Course, intakeValue: string): boolean => {
-    const openIntakes = (course as any)["Open Intakes"] || ''
-    
-    if (!openIntakes) return false
-    
-    const intakeLower = openIntakes.toLowerCase()
-    const seasonLower = intakeValue.toLowerCase()
-    
-    // Check if the Open Intakes field contains the season
-    // For example: "Springjan", "Springmar", "Spring" all match "Spring"
-    return intakeLower.includes(seasonLower)
-  }
+  const [universityOptions, setUniversityOptions] = useState<string[]>([])
+  const [programOptions, setProgramOptions] = useState<string[]>([])
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const buildFilters = useCallback((overrides?: Partial<FilterValues>): FilterValues => {
+    return {
+      search: searchQuery,
+      country: selectedCountry,
+      studyLevel: selectedStudyLevel,
+      university: selectedUniversity,
+      intake: selectedIntake,
+      programName: selectedProgramName || programNameInput,
+      ...overrides,
+    }
+  }, [searchQuery, selectedCountry, selectedStudyLevel, selectedUniversity, selectedIntake, selectedProgramName, programNameInput])
 
   useEffect(() => {
     if (viewMode === "all") {
-      applyFilters()
+      onFilterValuesChange(buildFilters())
     }
-  }, [
-    searchQuery,
-    selectedCountry,
-    selectedStudyLevel,
-    selectedUniversity,
-    selectedIntake,
-    programNameInput,
-    selectedProgramName,
-    courses,
-    viewMode,
-  ])
+  }, [selectedCountry, selectedStudyLevel, selectedUniversity, selectedIntake, selectedProgramName, viewMode])
 
-  const applyFilters = () => {
-    let filtered = [...courses]
-
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (course) =>
-          course["Program Name"]?.toLowerCase().includes(query) ||
-          course.University?.toLowerCase().includes(query) ||
-          course.Campus?.toLowerCase().includes(query)
-      )
+  useEffect(() => {
+    if (viewMode !== "all") return
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      onFilterValuesChange(buildFilters())
+    }, 400)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
     }
+  }, [searchQuery, programNameInput])
 
-    if (selectedCountry) {
-      filtered = filtered.filter((course) => course.Country === selectedCountry)
+  useEffect(() => {
+    const fetchUniversities = async () => {
+      try {
+        let query = supabase
+          .from('courses')
+          .select('University')
+          .not('University', 'is', null)
+        if (selectedCountry) query = query.eq('Country', selectedCountry)
+        if (selectedStudyLevel) query = query.eq('Study Level', selectedStudyLevel)
+        query = query.limit(10000)
+        const { data } = await query
+        if (data) {
+          const unique = [...new Set(
+            data.map((d: { University: string | null }) => d.University).filter(Boolean)
+          )] as string[]
+          setUniversityOptions(unique.sort())
+        }
+      } catch (err) {
+        console.error('Error fetching university options:', err)
+      }
     }
+    fetchUniversities()
+  }, [selectedCountry, selectedStudyLevel])
 
-    if (selectedStudyLevel) {
-      filtered = filtered.filter((course) => course["Study Level"] === selectedStudyLevel)
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        let query = supabase
+          .from('courses')
+          .select('Program Name')
+          .not('Program Name', 'is', null)
+        if (selectedCountry) query = query.eq('Country', selectedCountry)
+        if (selectedStudyLevel) query = query.eq('Study Level', selectedStudyLevel)
+        if (selectedUniversity) query = query.eq('University', selectedUniversity)
+        if (programNameInput) query = query.ilike('Program Name', `%${programNameInput}%`)
+        query = query.limit(5000)
+        const { data } = await query
+        if (data) {
+          const unique = [...new Set(
+            data.map((d: Record<string, string | null>) => d['Program Name']).filter(Boolean)
+          )] as string[]
+          setProgramOptions(unique.sort())
+        }
+      } catch (err) {
+        console.error('Error fetching program options:', err)
+      }
     }
-
-    if (selectedUniversity) {
-      filtered = filtered.filter((course) => course.University === selectedUniversity)
-    }
-
-    // ✅ FIXED: Filter by intake season
-    if (selectedIntake) {
-      filtered = filtered.filter((course) => matchesIntake(course, selectedIntake))
-    }
-
-    // Program Name filter - works with both input and dropdown
-    if (programNameInput) {
-      const query = programNameInput.toLowerCase()
-      filtered = filtered.filter((course) => 
-        course["Program Name"]?.toLowerCase().includes(query)
-      )
-    }
-
-    if (selectedProgramName) {
-      filtered = filtered.filter((course) => course["Program Name"] === selectedProgramName)
-    }
-
-    onFilterChange(filtered)
-  }
+    fetchPrograms()
+  }, [selectedCountry, selectedStudyLevel, selectedUniversity, programNameInput])
 
   const handleFilterChange = (
     filterSetter: React.Dispatch<React.SetStateAction<string>>,
@@ -138,6 +146,9 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
     setSelectedIntake("")
     setProgramNameInput("")
     setSelectedProgramName("")
+    onFilterValuesChange({
+      search: '', country: '', studyLevel: '', university: '', intake: '', programName: '',
+    })
   }
 
   const clearFilter = (filterName: string) => {
@@ -163,28 +174,6 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
         break
     }
   }
-
-  const getFilteredUniversities = () => {
-    let filtered = courses
-    if (selectedCountry) filtered = filtered.filter((c) => c.Country === selectedCountry)
-    if (selectedStudyLevel) filtered = filtered.filter((c) => c["Study Level"] === selectedStudyLevel)
-    return Array.from(new Set(filtered.map((c) => c.University).filter((u): u is string => Boolean(u))))
-  }
-
-  const getFilteredProgramNames = () => {
-    let filtered = courses
-    if (selectedCountry) filtered = filtered.filter((c) => c.Country === selectedCountry)
-    if (selectedStudyLevel) filtered = filtered.filter((c) => c["Study Level"] === selectedStudyLevel)
-    if (selectedUniversity) filtered = filtered.filter((c) => c.University === selectedUniversity)
-    if (programNameInput) {
-      const query = programNameInput.toLowerCase()
-      filtered = filtered.filter((c) => c["Program Name"]?.toLowerCase().includes(query))
-    }
-    return Array.from(new Set(filtered.map((c) => c["Program Name"]).filter((p): p is string => Boolean(p)))).sort()
-  }
-
-  const uniqueUniversities = getFilteredUniversities()
-  const uniqueProgramNames = getFilteredProgramNames()
 
   const activeFiltersCount = [
     searchQuery,
@@ -363,7 +352,7 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
                   onChange={(e) => setSelectedUniversity(e.target.value)}
                 >
                   <option value="">All Universities</option>
-                  {uniqueUniversities.map((uni) => (
+                  {universityOptions.map((uni) => (
                     <option key={uni} value={uni}>
                       {uni}
                     </option>
@@ -373,7 +362,6 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
               </div>
             </div>
 
-            {/* ✅ FIXED: Intake filter now matches actual data structure */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <Calendar size={16} className="text-[#A51C30]" />
@@ -421,10 +409,10 @@ const FilterComponent: React.FC<FilterProps> = ({ courses, viewMode, onFilterCha
                 >
                   <ChevronDown className="h-4 w-4 text-gray-500" />
                 </button>
-                
-                {showProgramDropdown && uniqueProgramNames.length > 0 && (
+
+                {showProgramDropdown && programOptions.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {uniqueProgramNames.map((program) => (
+                    {programOptions.map((program) => (
                       <div
                         key={program}
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
