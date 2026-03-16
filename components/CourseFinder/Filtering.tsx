@@ -80,57 +80,58 @@ const countryAliases: Record<string, string> = {
   'monaco': 'Monaco',
 }
 
-const studyLevelAliases: Record<string, string> = {
-  'ug': 'Undergraduate',
-  'undergraduate': 'Undergraduate',
-  'bachelors': 'Undergraduate',
-  'bachelor': 'Undergraduate',
-  'btech': 'Undergraduate',
-  'b.tech': 'Undergraduate',
-  'bba': 'Undergraduate',
-  'b.b.a': 'Undergraduate',
-  'bsc': 'Undergraduate',
-  'b.sc': 'Undergraduate',
-  'bcom': 'Undergraduate',
-  'b.com': 'Undergraduate',
-  'ba': 'Undergraduate',
-  'b.a': 'Undergraduate',
-  'beng': 'Undergraduate',
-  'b.eng': 'Undergraduate',
-  'pg': 'Postgraduate',
-  'postgraduate': 'Postgraduate',
-  'masters': 'Postgraduate',
-  'master': 'Postgraduate',
-  'mba': 'Postgraduate',
-  'm.b.a': 'Postgraduate',
-  'mtech': 'Postgraduate',
-  'm.tech': 'Postgraduate',
-  'msc': 'Postgraduate',
-  'm.sc': 'Postgraduate',
-  'mcom': 'Postgraduate',
-  'm.com': 'Postgraduate',
-  'ma': 'Postgraduate',
-  'm.a': 'Postgraduate',
-  'ms': 'Postgraduate',
-  'm.s': 'Postgraduate',
-  'meng': 'Postgraduate',
-  'm.eng': 'Postgraduate',
-  'mca': 'Postgraduate',
-  'llm': 'Postgraduate',
-  'phd': 'PhD',
-  'ph.d': 'PhD',
-  'doctorate': 'PhD',
-  'doctoral': 'PhD',
-  'diploma': 'UG Diploma /Certificate /Associate Degree',
-  'certificate': 'UG Diploma /Certificate /Associate Degree',
-  'pg diploma': 'PG Diploma /Certificate',
-  'pg certificate': 'PG Diploma /Certificate',
+const studyLevelAliases: Record<string, { level: string; programKeyword?: string }> = {
+  'ug': { level: 'Undergraduate' },
+  'undergraduate': { level: 'Undergraduate' },
+  'bachelors': { level: 'Undergraduate' },
+  'bachelor': { level: 'Undergraduate' },
+  'btech': { level: 'Undergraduate', programKeyword: 'BTech' },
+  'b.tech': { level: 'Undergraduate', programKeyword: 'BTech' },
+  'bba': { level: 'Undergraduate', programKeyword: 'BBA' },
+  'b.b.a': { level: 'Undergraduate', programKeyword: 'BBA' },
+  'bsc': { level: 'Undergraduate', programKeyword: 'BSc' },
+  'b.sc': { level: 'Undergraduate', programKeyword: 'BSc' },
+  'bcom': { level: 'Undergraduate', programKeyword: 'BCom' },
+  'b.com': { level: 'Undergraduate', programKeyword: 'BCom' },
+  'ba': { level: 'Undergraduate', programKeyword: 'BA' },
+  'b.a': { level: 'Undergraduate', programKeyword: 'BA' },
+  'beng': { level: 'Undergraduate', programKeyword: 'BEng' },
+  'b.eng': { level: 'Undergraduate', programKeyword: 'BEng' },
+  'pg': { level: 'Postgraduate' },
+  'postgraduate': { level: 'Postgraduate' },
+  'masters': { level: 'Postgraduate' },
+  'master': { level: 'Postgraduate' },
+  'mba': { level: 'Postgraduate', programKeyword: 'MBA' },
+  'm.b.a': { level: 'Postgraduate', programKeyword: 'MBA' },
+  'mtech': { level: 'Postgraduate', programKeyword: 'MTech' },
+  'm.tech': { level: 'Postgraduate', programKeyword: 'MTech' },
+  'msc': { level: 'Postgraduate', programKeyword: 'MSc' },
+  'm.sc': { level: 'Postgraduate', programKeyword: 'MSc' },
+  'mcom': { level: 'Postgraduate', programKeyword: 'MCom' },
+  'm.com': { level: 'Postgraduate', programKeyword: 'MCom' },
+  'ma': { level: 'Postgraduate', programKeyword: 'MA' },
+  'm.a': { level: 'Postgraduate', programKeyword: 'MA' },
+  'ms': { level: 'Postgraduate', programKeyword: 'MS' },
+  'm.s': { level: 'Postgraduate', programKeyword: 'MS' },
+  'meng': { level: 'Postgraduate', programKeyword: 'MEng' },
+  'm.eng': { level: 'Postgraduate', programKeyword: 'MEng' },
+  'mca': { level: 'Postgraduate', programKeyword: 'MCA' },
+  'llm': { level: 'Postgraduate', programKeyword: 'LLM' },
+  'phd': { level: 'PhD' },
+  'ph.d': { level: 'PhD' },
+  'doctorate': { level: 'PhD' },
+  'doctoral': { level: 'PhD' },
+  'diploma': { level: 'UG Diploma /Certificate /Associate Degree' },
+  'certificate': { level: 'UG Diploma /Certificate /Associate Degree' },
+  'pg diploma': { level: 'PG Diploma /Certificate' },
+  'pg certificate': { level: 'PG Diploma /Certificate' },
 }
 
-const parseSmartSearch = (query: string): { country: string; studyLevel: string; remainingSearch: string } => {
+const parseSmartSearch = (query: string): { country: string; studyLevel: string; programKeyword: string; remainingSearch: string } => {
   let remaining = query.trim()
   let detectedCountry = ''
   let detectedStudyLevel = ''
+  let detectedProgramKeyword = ''
 
   // Normalize for matching
   const lower = remaining.toLowerCase()
@@ -140,7 +141,11 @@ const parseSmartSearch = (query: string): { country: string; studyLevel: string;
   for (const alias of sortedStudyAliases) {
     const regex = new RegExp('\\b' + alias.replace(/\./g, '\\\\.') + '\\b', 'i')
     if (regex.test(remaining)) {
-      detectedStudyLevel = studyLevelAliases[alias]
+      const match = studyLevelAliases[alias]
+      detectedStudyLevel = match.level
+      if (match.programKeyword) {
+        detectedProgramKeyword = match.programKeyword
+      }
       remaining = remaining.replace(regex, ' ')
       break
     }
@@ -163,7 +168,7 @@ const parseSmartSearch = (query: string): { country: string; studyLevel: string;
     .replace(/\s+/g, ' ')
     .trim()
 
-  return { country: detectedCountry, studyLevel: detectedStudyLevel, remainingSearch: remaining }
+  return { country: detectedCountry, studyLevel: detectedStudyLevel, programKeyword: detectedProgramKeyword, remainingSearch: remaining }
 }
 
 const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange }) => {
@@ -269,7 +274,7 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
   const handleSmartSearch = () => {
     if (!searchQuery || searchQuery.length < 2) return
 
-    const { country, studyLevel, remainingSearch } = parseSmartSearch(searchQuery)
+    const { country, studyLevel, programKeyword, remainingSearch } = parseSmartSearch(searchQuery)
 
     if (country || studyLevel) {
       if (country) {
@@ -281,6 +286,9 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
         setSelectedUniversity("")
         setSelectedProgramName("")
         setProgramNameInput("")
+      }
+      if (programKeyword) {
+        setProgramNameInput(programKeyword)
       }
       setSearchQuery(remainingSearch)
       // Open filters panel to show applied filters
