@@ -34,6 +34,138 @@ const intakeOptions = [
   { value: 'Winter', label: 'Winter (Nov/Dec)' }
 ]
 
+// Smart search: map common abbreviations/keywords to filter values
+const countryAliases: Record<string, string> = {
+  'usa': 'United States of America',
+  'us': 'United States of America',
+  'america': 'United States of America',
+  'united states': 'United States of America',
+  'uk': 'United Kingdom',
+  'britain': 'United Kingdom',
+  'england': 'United Kingdom',
+  'canada': 'Canada',
+  'australia': 'Australia',
+  'aus': 'Australia',
+  'new zealand': 'New Zealand',
+  'nz': 'New Zealand',
+  'ireland': 'Ireland',
+  'france': 'France',
+  'germany': 'Germany',
+  'italy': 'Italy',
+  'spain': 'Spain',
+  'netherlands': 'Netherlands',
+  'holland': 'Netherlands',
+  'switzerland': 'Switzerland',
+  'sweden': 'Sweden',
+  'denmark': 'Denmark',
+  'finland': 'Finland',
+  'japan': 'Japan',
+  'south korea': 'South Korea',
+  'korea': 'South Korea',
+  'singapore': 'Singapore',
+  'malaysia': 'Malaysia',
+  'china': 'China',
+  'russia': 'Russia',
+  'poland': 'Poland',
+  'hungary': 'Hungary',
+  'indonesia': 'Indonesia',
+  'vietnam': 'Vietnam',
+  'uae': 'United Arab Emirates',
+  'dubai': 'United Arab Emirates',
+  'sri lanka': 'Sri Lanka',
+  'luxembourg': 'Luxembourg',
+  'lithuania': 'Lithuania',
+  'georgia': 'Georgia',
+  'kazakhstan': 'Kazakhstan',
+  'monaco': 'Monaco',
+}
+
+const studyLevelAliases: Record<string, string> = {
+  'ug': 'Undergraduate',
+  'undergraduate': 'Undergraduate',
+  'bachelors': 'Undergraduate',
+  'bachelor': 'Undergraduate',
+  'btech': 'Undergraduate',
+  'b.tech': 'Undergraduate',
+  'bba': 'Undergraduate',
+  'b.b.a': 'Undergraduate',
+  'bsc': 'Undergraduate',
+  'b.sc': 'Undergraduate',
+  'bcom': 'Undergraduate',
+  'b.com': 'Undergraduate',
+  'ba': 'Undergraduate',
+  'b.a': 'Undergraduate',
+  'beng': 'Undergraduate',
+  'b.eng': 'Undergraduate',
+  'pg': 'Postgraduate',
+  'postgraduate': 'Postgraduate',
+  'masters': 'Postgraduate',
+  'master': 'Postgraduate',
+  'mba': 'Postgraduate',
+  'm.b.a': 'Postgraduate',
+  'mtech': 'Postgraduate',
+  'm.tech': 'Postgraduate',
+  'msc': 'Postgraduate',
+  'm.sc': 'Postgraduate',
+  'mcom': 'Postgraduate',
+  'm.com': 'Postgraduate',
+  'ma': 'Postgraduate',
+  'm.a': 'Postgraduate',
+  'ms': 'Postgraduate',
+  'm.s': 'Postgraduate',
+  'meng': 'Postgraduate',
+  'm.eng': 'Postgraduate',
+  'mca': 'Postgraduate',
+  'llm': 'Postgraduate',
+  'phd': 'PhD',
+  'ph.d': 'PhD',
+  'doctorate': 'PhD',
+  'doctoral': 'PhD',
+  'diploma': 'UG Diploma /Certificate /Associate Degree',
+  'certificate': 'UG Diploma /Certificate /Associate Degree',
+  'pg diploma': 'PG Diploma /Certificate',
+  'pg certificate': 'PG Diploma /Certificate',
+}
+
+const parseSmartSearch = (query: string): { country: string; studyLevel: string; remainingSearch: string } => {
+  let remaining = query.trim()
+  let detectedCountry = ''
+  let detectedStudyLevel = ''
+
+  // Normalize for matching
+  const lower = remaining.toLowerCase()
+
+  // Detect study level (check multi-word aliases first, then single-word)
+  const sortedStudyAliases = Object.keys(studyLevelAliases).sort((a, b) => b.length - a.length)
+  for (const alias of sortedStudyAliases) {
+    const regex = new RegExp('\\b' + alias.replace(/\./g, '\\\\.') + '\\b', 'i')
+    if (regex.test(remaining)) {
+      detectedStudyLevel = studyLevelAliases[alias]
+      remaining = remaining.replace(regex, ' ')
+      break
+    }
+  }
+
+  // Detect country (check multi-word aliases first, then single-word)
+  const sortedCountryAliases = Object.keys(countryAliases).sort((a, b) => b.length - a.length)
+  for (const alias of sortedCountryAliases) {
+    const regex = new RegExp('\\b' + alias.replace(/\./g, '\\\\.') + '\\b', 'i')
+    if (regex.test(remaining)) {
+      detectedCountry = countryAliases[alias]
+      remaining = remaining.replace(regex, ' ')
+      break
+    }
+  }
+
+  // Clean up: remove filler words and extra spaces
+  remaining = remaining
+    .replace(/\b(in|at|for|from|the|of|colleges?|universities?|university|courses?|programs?|schools?|institutes?)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return { country: detectedCountry, studyLevel: detectedStudyLevel, remainingSearch: remaining }
+}
+
 const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange }) => {
   const [searchQuery, setSearchQuery] = useState("")
   const [showFilters, setShowFilters] = useState(false)
@@ -78,6 +210,36 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [searchQuery, programNameInput])
+
+  // Smart search: parse search query and auto-apply detected filters
+  const smartSearchRef = useRef(false)
+  useEffect(() => {
+    if (viewMode !== "all") return
+    if (smartSearchRef.current) {
+      smartSearchRef.current = false
+      return
+    }
+    if (!searchQuery || searchQuery.length < 2) return
+
+    const { country, studyLevel, remainingSearch } = parseSmartSearch(searchQuery)
+    
+    if (country || studyLevel) {
+      smartSearchRef.current = true
+      if (country && country !== selectedCountry) {
+        setSelectedCountry(country)
+        setSelectedUniversity("")
+      }
+      if (studyLevel && studyLevel !== selectedStudyLevel) {
+        setSelectedStudyLevel(studyLevel)
+        setSelectedUniversity("")
+        setSelectedProgramName("")
+        setProgramNameInput("")
+      }
+      if (remainingSearch !== searchQuery) {
+        setSearchQuery(remainingSearch)
+      }
+    }
+  }, [searchQuery])
 
   useEffect(() => {
     if (!showFilters) return
