@@ -27,3 +27,21 @@ export interface Course {
   "English Proficiency Exam Waiver": string | null
   matchScore?: number
 }
+
+export interface FilterValues {
+    search: string
+    country: string
+    studyLevel: string
+    university: string
+    intake: string
+    programName: string
+}
+
+export const emptyFilters: FilterValues = {
+    search: '',
+    country: '',
+    studyLevel: '',
+    university: '',
+    intake: '',
+    programName: '',
+}
