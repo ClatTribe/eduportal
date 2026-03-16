@@ -36,7 +36,7 @@ const intakeOptions = [
 
 const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange }) => {
   const [searchQuery, setSearchQuery] = useState("")
-  const [showFilters, setShowFilters] = useState(true)
+  const [showFilters, setShowFilters] = useState(false)
   const [selectedCountry, setSelectedCountry] = useState("")
   const [selectedStudyLevel, setSelectedStudyLevel] = useState("")
   const [selectedUniversity, setSelectedUniversity] = useState("")
@@ -80,6 +80,7 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
   }, [searchQuery, programNameInput])
 
   useEffect(() => {
+    if (!showFilters) return
     const fetchUniversities = async () => {
       try {
         let query = supabase
@@ -101,9 +102,10 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
       }
     }
     fetchUniversities()
-  }, [selectedCountry, selectedStudyLevel])
+  }, [showFilters, selectedCountry, selectedStudyLevel])
 
   useEffect(() => {
+    if (!showFilters) return
     const fetchPrograms = async () => {
       try {
         let query = supabase
@@ -127,7 +129,7 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
       }
     }
     fetchPrograms()
-  }, [selectedCountry, selectedStudyLevel, selectedUniversity, programNameInput])
+  }, [showFilters, selectedCountry, selectedStudyLevel, selectedUniversity, programNameInput])
 
   const handleFilterChange = (
     filterSetter: React.Dispatch<React.SetStateAction<string>>,
