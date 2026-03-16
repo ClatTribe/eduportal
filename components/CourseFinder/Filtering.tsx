@@ -211,35 +211,7 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
     }
   }, [searchQuery, programNameInput])
 
-  // Smart search: parse search query and auto-apply detected filters
-  const smartSearchRef = useRef(false)
-  useEffect(() => {
-    if (viewMode !== "all") return
-    if (smartSearchRef.current) {
-      smartSearchRef.current = false
-      return
-    }
-    if (!searchQuery || searchQuery.length < 2) return
 
-    const { country, studyLevel, remainingSearch } = parseSmartSearch(searchQuery)
-    
-    if (country || studyLevel) {
-      smartSearchRef.current = true
-      if (country && country !== selectedCountry) {
-        setSelectedCountry(country)
-        setSelectedUniversity("")
-      }
-      if (studyLevel && studyLevel !== selectedStudyLevel) {
-        setSelectedStudyLevel(studyLevel)
-        setSelectedUniversity("")
-        setSelectedProgramName("")
-        setProgramNameInput("")
-      }
-      if (remainingSearch !== searchQuery) {
-        setSearchQuery(remainingSearch)
-      }
-    }
-  }, [searchQuery])
 
   useEffect(() => {
     if (!showFilters) return
@@ -292,6 +264,29 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
     }
     fetchPrograms()
   }, [showFilters, selectedCountry, selectedStudyLevel, selectedUniversity, programNameInput])
+
+  // Smart search: triggered when user presses Enter in search bar
+  const handleSmartSearch = () => {
+    if (!searchQuery || searchQuery.length < 2) return
+
+    const { country, studyLevel, remainingSearch } = parseSmartSearch(searchQuery)
+
+    if (country || studyLevel) {
+      if (country) {
+        setSelectedCountry(country)
+        setSelectedUniversity("")
+      }
+      if (studyLevel) {
+        setSelectedStudyLevel(studyLevel)
+        setSelectedUniversity("")
+        setSelectedProgramName("")
+        setProgramNameInput("")
+      }
+      setSearchQuery(remainingSearch)
+      // Open filters panel to show applied filters
+      setShowFilters(true)
+    }
+  }
 
   const handleFilterChange = (
     filterSetter: React.Dispatch<React.SetStateAction<string>>,
@@ -359,12 +354,13 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
           <div className="flex-1 relative">
             <input
               type="text"
-              placeholder="Search for programs, universities, or campus..."
+              placeholder='Try "MBA colleges in USA", "BBA in UK", "MSc in Canada"...'
               className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A51C30]"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSmartSearch(); } }}
             />
-            <Search className="absolute right-3 top-3.5 h-5 w-5 text-gray-400" />
+            <Search className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 cursor-pointer hover:text-[#A51C30] transition-colors" onClick={handleSmartSearch} />
           </div>
 
           <button
