@@ -82,7 +82,9 @@ const ScholarshipFinder: React.FC = () => {
   const [viewMode, setViewMode] = useState<"all" | "recommended">("all")
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [currentPage, setCurrentPage] = useState(0)
-  const perPage = 100
+  const [totalCount, setTotalCount] = useState(0)
+  const [allCountries, setAllCountries] = useState<string[]>([])
+  const perPage = 15
 
   useEffect(() => {
     fetchUserProfile()
@@ -91,7 +93,8 @@ const ScholarshipFinder: React.FC = () => {
   useEffect(() => {
     if (!loadingProfile) {
       if (viewMode === "all") {
-        fetchScholarships()
+        fetchScholarships(0, "", "", "")
+        fetchCountries()
       } else {
         fetchRecommendedScholarships()
       }
@@ -100,9 +103,10 @@ const ScholarshipFinder: React.FC = () => {
 
   useEffect(() => {
     if (viewMode === "all") {
-      applyFilters()
+      setCurrentPage(0)
+      fetchScholarships(0, searchQuery, selectedCountry, selectedLevel)
     }
-  }, [searchQuery, selectedCountry, selectedLevel, scholarships, viewMode])
+  }, [searchQuery, selectedCountry, selectedLevel, viewMode])
 
   const fetchUserProfile = async () => {
     try {
@@ -185,66 +189,57 @@ const ScholarshipFinder: React.FC = () => {
     }
   }
 
-const fetchScholarships = async () => {
-  try {
-    setLoading(true)
-    setError(null)
+const fetchScholarships = async (page: number, search: string, country: string, level: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const from = page * perPage
+      const to = from + perPage - 1
 
-    let allData: Scholarship[] = []
-    let page = 0
-    const pageSize = 1000
-
-    while (true) {
-      const { data, error: supabaseError } = await supabase
+      let query = supabase
         .from("scholarship_new")
-        .select("*")
+        .select("*", { count: "exact" })
+        .not("scholarship_name", "is", null)
         .order("deadline", { ascending: true })
-        .range(page * pageSize, (page + 1) * pageSize - 1)
 
+      if (country) query = query.eq("country_region", country)
+      if (level) query = query.ilike("degree_level", `%${level}%`)
+      if (search) {
+        query = query.or(
+          `scholarship_name.ilike.%${search}%,provider.ilike.%${search}%,country_region.ilike.%${search}%`
+        )
+      }
+
+      query = query.range(from, to)
+      const { data, count, error: supabaseError } = await query
       if (supabaseError) throw supabaseError
-      if (!data || data.length === 0) break
 
-      allData = [...allData, ...(data as Scholarship[])]
-      page++
+      setScholarships([FEATURED_SCHOLARSHIP, ...(data as Scholarship[] || [])])
+      if (count !== null) setTotalCount(count)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch scholarships")
+      console.error("Error fetching scholarships:", err)
+    } finally {
+      setLoading(false)
     }
-
-    const validScholarships = allData.filter((s) => s.scholarship_name !== null)
-    setScholarships([FEATURED_SCHOLARSHIP, ...validScholarships])
-    setFilteredScholarships([FEATURED_SCHOLARSHIP, ...validScholarships])
-  } catch (err) {
-    setError(err instanceof Error ? err.message : "Failed to fetch scholarships")
-    console.error("Error fetching scholarships:", err)
-    setScholarships([FEATURED_SCHOLARSHIP])
-    setFilteredScholarships([FEATURED_SCHOLARSHIP])
-  } finally {
-    setLoading(false)
   }
-}
 
-  const applyFilters = () => {
-    const dbScholarships = scholarships.filter((s) => s.id !== -1)
-    let filtered = [...dbScholarships]
-
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (scholarship) =>
-          scholarship.scholarship_name?.toLowerCase().includes(query) ||
-          scholarship.provider?.toLowerCase().includes(query) ||
-          scholarship.country_region?.toLowerCase().includes(query),
-      )
+  const fetchCountries = async () => {
+    try {
+      const { data } = await supabase
+        .from("scholarship_new")
+        .select("country_region")
+        .not("scholarship_name", "is", null)
+      if (data) {
+        const unique = [...new Set((data as unknown as Record<string, string | null>[]).map(d => d.country_region).filter(Boolean))].sort() as string[]
+        setAllCountries(unique)
+      }
+    } catch (err) {
+      console.error("Error fetching countries:", err)
     }
-
-    if (selectedCountry) {
-      filtered = filtered.filter((s) => s.country_region === selectedCountry)
-    }
-
-    if (selectedLevel) {
-      filtered = filtered.filter((s) => s.degree_level?.includes(selectedLevel))
-    }
-
-    setFilteredScholarships([FEATURED_SCHOLARSHIP, ...filtered])
   }
+
+  
 
   const resetFilters = () => {
     setSearchQuery("")
@@ -313,10 +308,7 @@ const fetchScholarships = async () => {
     }
   }
 
-  const getUniqueCountries = () => {
-    const countries = scholarships.filter((s) => s.id !== -1).map((s) => s.country_region)
-    return [...new Set(countries)].filter(Boolean).sort()
-  }
+  const getUniqueCountries = () => allCountries
 
   const truncateText = (text: string, maxLength: number) => {
     if (!text) return ""
@@ -327,10 +319,7 @@ const fetchScholarships = async () => {
   const activeFiltersCount = [searchQuery, selectedCountry, selectedLevel].filter(Boolean).length
   const hasProfileData = userProfile && userProfile.target_countries?.length > 0 && userProfile.degree && userProfile.program
   const canShowRecommendations = hasProfileData && !loadingProfile
-  const paginatedScholarships = filteredScholarships.slice(
-  currentPage * perPage,
-  (currentPage + 1) * perPage
-)
+  const paginatedScholarships = viewMode === "all" ? scholarships : filteredScholarships.slice(currentPage * perPage, (currentPage + 1) * perPage)
   return (
     <DefaultLayout>
       <div className="flex-1 min-h-screen p-3 sm:p-4 md:p-6 mt-[72px] sm:mt-0" style={{ backgroundColor: primaryBg }}>
@@ -435,7 +424,7 @@ const fetchScholarships = async () => {
             <div className="flex items-center gap-2">
               <Award style={{ color: accentColor }} size={20} className="sm:w-6 sm:h-6 flex-shrink-0" />
               <span className="font-semibold text-sm sm:text-base text-gray-900">
-                {filteredScholarships.length.toLocaleString()} {viewMode === "recommended" ? "recommended " : ""}scholarship{filteredScholarships.length !== 1 ? 's' : ''} found,  stay tuned for more !
+                {viewMode === "all" ? (totalCount + 1).toLocaleString() : filteredScholarships.length.toLocaleString()} {viewMode === "recommended" ? "recommended " : ""}scholarship{filteredScholarships.length !== 1 ? 's' : ''} found,  stay tuned for more !
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -451,7 +440,7 @@ const fetchScholarships = async () => {
                 <p className="text-sm sm:text-base text-gray-600">Loading scholarships...</p>
               </div>
             </div>
-          ) : filteredScholarships.length === 0 ? (
+          ) : (viewMode === "all" ? scholarships.length === 0 : filteredScholarships.length === 0) ? (
             <div className="text-center py-12 sm:py-16 rounded-lg shadow-sm" style={{ backgroundColor: 'white', border: `1px solid ${borderColor}` }}>
               <Award size={40} className="sm:w-12 sm:h-12 mx-auto text-gray-300 mb-4" />
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
@@ -541,10 +530,10 @@ const fetchScholarships = async () => {
       </div>
       {/* Pagination Component */}
                     <Pagination
-                      totalItems={filteredScholarships.length}
+                      totalItems={viewMode === "all" ? totalCount + 1 : filteredScholarships.length}
                       currentPage={currentPage}
                       perPage={perPage}
-                      onPageChange={setCurrentPage}
+                      onPageChange={(page: number) => { setCurrentPage(page); if (viewMode === "all") { fetchScholarships(page, searchQuery, selectedCountry, selectedLevel) } }}
                     />
     </DefaultLayout>
   )
