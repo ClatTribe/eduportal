@@ -81,6 +81,29 @@ const sortCoursesByQSRanking = (courses: Course[]): Course[] => {
   });
 };
 
+// Helper: check if application deadline is still in the future (form is live)
+const isDeadlineLive = (deadline: string | null): boolean => {
+  if (!deadline) return false;
+  try {
+    const deadlineDate = new Date(deadline);
+    if (isNaN(deadlineDate.getTime())) return false;
+    return deadlineDate > new Date();
+  } catch {
+    return false;
+  }
+};
+
+// Helper: format deadline date for display
+const formatDeadline = (deadline: string | null): string => {
+  if (!deadline) return "";
+  try {
+    const d = new Date(deadline);
+    if (isNaN(d.getTime())) return deadline;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return deadline;
+  }
+};
 const CourseFinder: React.FC = () => {
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -554,14 +577,37 @@ const CourseFinder: React.FC = () => {
                               {(course["Open Intakes"] ||
                                 course["University Ranking"]) && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  {course["Open Intakes"] && (
+                                  {(course["Open Intakes"] || course["Application Deadline"]) && (
                                     <div className="bg-[#A51C30]/5 rounded-lg p-2 sm:p-3 border border-[#A51C30]/20">
-                                      <div className="text-xs text-[#A51C30] font-medium mb-1">
-                                        Open Intakes
+                                      <div className="flex items-center justify-between mb-1">
+                                        <div className="text-xs text-[#A51C30] font-medium">
+                                          Open Intakes
+                                        </div>
+                                        {isDeadlineLive(course["Application Deadline"]) && (
+                                          <div className="flex items-center gap-1">
+                                            <span className="relative flex h-2.5 w-2.5">
+                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                                            </span>
+                                            <span className="text-[10px] text-green-600 font-semibold">LIVE</span>
+                                          </div>
+                                        )}
                                       </div>
-                                      <p className="font-semibold text-xs sm:text-sm text-[#A51C30] break-words">
-                                        {course["Open Intakes"]}
-                                      </p>
+                                      {course["Open Intakes"] && (
+                                        <p className="font-semibold text-xs sm:text-sm text-[#A51C30] break-words">
+                                          {course["Open Intakes"]}
+                                        </p>
+                                      )}
+                                      {course["Application Deadline"] && (
+                                        <div className="mt-1.5 pt-1.5 border-t border-[#A51C30]/10">
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[10px] text-[#A51C30]/70">Deadline</span>
+                                            <span className="text-xs font-semibold text-[#A51C30]">
+                                              {formatDeadline(course["Application Deadline"])}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                   {course["University Ranking"] && (
