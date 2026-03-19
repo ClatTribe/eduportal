@@ -108,24 +108,6 @@ const ApplicationBuilderPage: React.FC = () => {
     init();
   }, [user?.id]);
 
-  // Pre-fill university from URL query parameter (e.g. from Apply Now button)
-  useEffect(() => {
-    if (typeof window === "undefined" || universities.length === 0) return;
-    const params = new URLSearchParams(window.location.search);
-    const urlUni = params.get("university");
-    if (urlUni && !universityInput) {
-      const decoded = decodeURIComponent(urlUni);
-      const match = universities.find(u => u.toLowerCase() === decoded.toLowerCase());
-      if (match) {
-        handleUniversitySelect(match);
-      } else {
-        setUniversityInput(decoded);
-        setUniversitySearchQuery(decoded);
-      }
-    }
-  }, [universities]);
-
-
   // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -259,6 +241,25 @@ const ApplicationBuilderPage: React.FC = () => {
     console.log("Available universities:", sorted);
     return sorted;
   }, [courses]);
+
+  // Pre-fill university from URL query parameter (e.g. from Apply Now button)
+  useEffect(() => {
+    if (typeof window === "undefined" || universities.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const urlUni = params.get("university");
+    if (urlUni && !universityInput) {
+      const decoded = decodeURIComponent(urlUni);
+      const match = universities.find(u => u.toLowerCase() === decoded.toLowerCase());
+      if (match) {
+        handleUniversitySelect(match);
+      } else {
+        setUniversityInput(decoded);
+        setUniversitySearchQuery(decoded);
+      }
+    }
+  }, [universities]);
+
+
 
   const getFilteredUniversities = (): string[] => {
     if (!universitySearchQuery.trim()) return universities;
