@@ -1,21 +1,4 @@
 "use client"
-                {/* Apply Now Row */}
-                <div className="mt-4">
-                  <p className="text-xs text-gray-500 mb-2 font-medium">Apply Now</p>
-                  <div className={`grid ${selectedCourses.length === 2 ? "grid-cols-2" : "grid-cols-3"} gap-2`}>
-                    {selectedCourses.map((c) => (
-                      <div key={c.id} className="p-3 text-center bg-white rounded-lg border border-gray-100">
-                        <a
-                          href={`/application-builder?university=${encodeURIComponent(c.University || "")}`}
-                          className="inline-flex items-center gap-1 bg-[#A51C30] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#8A1828] transition-colors"
-                        >
-                          <Sparkles size={12} />
-                          Apply
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 import React, { useState, useEffect } from 'react';
 import {
   GraduationCap,
@@ -338,7 +321,7 @@ const CourseComparePage: React.FC = () => {
                   </tr>
                 <tr className="border-t border-gray-100">
                   <td className="p-4 text-sm font-semibold text-gray-600 bg-gray-50/50 whitespace-nowrap">Apply Now</td>
-                  {selectedCourses.map((c) => (
+                  {courses.map((c) => (
                     <td key={c.id} className="p-4 text-center">
                       <a
                         href={`/application-builder?university=${encodeURIComponent(c.University || "")}`}
@@ -400,6 +383,23 @@ const CourseComparePage: React.FC = () => {
                     })}
                   </div>
                 ))}
+                {/* Apply Now Row - Mobile */}
+                <div className="mt-4">
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Apply Now</p>
+                  <div className={`grid ${courses.length === 2 ? 'grid-cols-2' : 'grid-cols-3'} gap-2`}>
+                    {courses.map((c: Course) => (
+                      <div key={c.id} className="p-3 text-center bg-white rounded-lg border border-gray-100">
+                        <a
+                          href={`/application-builder?university=${encodeURIComponent(c.University || "")}`}
+                          className="inline-flex items-center gap-1 bg-[#A51C30] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#8A1828] transition-colors"
+                        >
+                          <Sparkles size={12} />
+                          Apply
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
