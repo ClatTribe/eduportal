@@ -236,22 +236,44 @@ const ApplicationBuilderPage: React.FC = () => {
 
   // Pre-fill course from URL query parameter (e.g. from Apply Now button)
   useEffect(() => {
-    if (typeof window === "undefined" || courses.length === 0) return;
+    if (typeof window === "undefined" || !user) return;
     const params = new URLSearchParams(window.location.search);
     const courseId = params.get("course_id");
-    if (courseId) {
-      const id = parseInt(courseId, 10);
-      const match = courses.find((c) => c.id === id);
-      if (match) {
-        // Set state directly to avoid stale closure issues
-        setSelectedCourse(match);
-        setCourseSearchInput(`${match.University || ""} \u2014 ${match["Program Name"] || ""}`);
-        setCourseSearchQuery("");
-        setShowCourseDropdown(false);
-        setShowForm(true);
-      }
+    if (!courseId) return;
+
+    const id = parseInt(courseId, 10);
+    if (isNaN(id)) return;
+
+    // First try to find in already-loaded courses
+    const localMatch = courses.find((c) => c.id === id);
+    if (localMatch) {
+      setSelectedCourse(localMatch);
+      setCourseSearchInput(`${localMatch.University || ""} \u2014 ${localMatch["Program Name"] || ""}`);
+      setCourseSearchQuery("");
+      setShowCourseDropdown(false);
+      setShowForm(true);
+      return;
     }
-  }, [courses]);
+
+    // If not found locally (Supabase default limit is 1000), fetch directly by ID
+    if (courses.length > 0) {
+      supabase
+        .from("courses")
+        .select("*")
+        .eq("id", id)
+        .single()
+        .then(({ data, error }) => {
+          if (!error && data && typeof data.id === "number") {
+            const course: CourseRow = data as CourseRow;
+            setSelectedCourse(course);
+            setCourseSearchInput(`${course.University || ""} \u2014 ${course["Program Name"] || ""}`);
+            setCourseSearchQuery("");
+            setShowCourseDropdown(false);
+            setShowForm(true);
+          }
+        });
+    }
+  }, [courses, user]);
 
   // ---------- Debounced search handler ----------
   const handleCourseInputChange = useCallback((value: string) => {
