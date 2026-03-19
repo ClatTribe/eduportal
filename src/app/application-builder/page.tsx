@@ -239,11 +239,15 @@ const ApplicationBuilderPage: React.FC = () => {
     if (typeof window === "undefined" || courses.length === 0) return;
     const params = new URLSearchParams(window.location.search);
     const courseId = params.get("course_id");
-    if (courseId && !selectedCourse) {
+    if (courseId) {
       const id = parseInt(courseId, 10);
       const match = courses.find((c) => c.id === id);
       if (match) {
-        handleCourseSelect(match);
+        // Set state directly to avoid stale closure issues
+        setSelectedCourse(match);
+        setCourseSearchInput(`${match.University || ""} \u2014 ${match["Program Name"] || ""}`);
+        setCourseSearchQuery("");
+        setShowCourseDropdown(false);
         setShowForm(true);
       }
     }
