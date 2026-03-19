@@ -746,7 +746,7 @@ const ShortlistBuilder: React.FC = () => {
                             </a>
                           )}
                           <a
-                            href={`/application-builder?university=${encodeURIComponent(item.course.University || "")}`}
+                            href={`/application-builder?course_id=${item.course.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium bg-[#A51C30] text-white transition hover:bg-[#8A1828] w-full sm:w-auto"
