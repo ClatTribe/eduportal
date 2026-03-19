@@ -5,7 +5,6 @@ import { useAuth } from "../../../contexts/AuthContext";
 import DefaultLayout from "../defaultLayout";
 import ApplicationCard from "../../../components/ApplicationCard";
 import { AlertCircle, CheckCircle, Trash2, Plus, Edit2, ChevronDown } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 
 // ---------- Types ----------
 type DocumentCategory =
@@ -86,9 +85,6 @@ const ApplicationBuilderPage: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [showForm, setShowForm] = useState<boolean>(false);
-  const searchParams = useSearchParams();
-  const urlUniversity = searchParams.get("university");
-
 
   const universityDropdownRef = useRef<HTMLDivElement>(null);
   const programDropdownRef = useRef<HTMLDivElement>(null);
@@ -114,8 +110,11 @@ const ApplicationBuilderPage: React.FC = () => {
 
   // Pre-fill university from URL query parameter (e.g. from Apply Now button)
   useEffect(() => {
-    if (urlUniversity && universities.length > 0 && !universityInput) {
-      const decoded = decodeURIComponent(urlUniversity);
+    if (typeof window === "undefined" || universities.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const urlUni = params.get("university");
+    if (urlUni && !universityInput) {
+      const decoded = decodeURIComponent(urlUni);
       const match = universities.find(u => u.toLowerCase() === decoded.toLowerCase());
       if (match) {
         handleUniversitySelect(match);
@@ -124,7 +123,7 @@ const ApplicationBuilderPage: React.FC = () => {
         setUniversitySearchQuery(decoded);
       }
     }
-  }, [urlUniversity, universities]);
+  }, [universities]);
 
 
   // Click outside handler
