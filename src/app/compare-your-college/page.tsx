@@ -1,4 +1,21 @@
 "use client"
+                {/* Apply Now Row */}
+                <div className="mt-4">
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Apply Now</p>
+                  <div className={`grid ${selectedCourses.length === 2 ? "grid-cols-2" : "grid-cols-3"} gap-2`}>
+                    {selectedCourses.map((c) => (
+                      <div key={c.id} className="p-3 text-center bg-white rounded-lg border border-gray-100">
+                        <a
+                          href={`/application-builder?university=${encodeURIComponent(c.University || "")}`}
+                          className="inline-flex items-center gap-1 bg-[#A51C30] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#8A1828] transition-colors"
+                        >
+                          <Sparkles size={12} />
+                          Apply
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 import React, { useState, useEffect } from 'react';
 import {
   GraduationCap,
@@ -377,23 +394,6 @@ const CourseComparePage: React.FC = () => {
                               <span className="text-gray-400 text-xs">N/A</span>
                               <p className="text-gray-500 text-[9px] mt-1">({label})</p>
                             </div>
-                  {/* Apply Now Row */}
-                  <div>
-                    <p className="text-xs text-gray-500 mb-2 font-medium">Apply Now</p>
-                    <div className={`grid ${selectedCourses.length === 2 ? "grid-cols-2" : "grid-cols-3"} gap-2`}>
-                      {selectedCourses.map((c) => (
-                        <div key={c.id} className="p-3 text-center bg-white">
-                          <a
-                            href={`/application-builder?university=${encodeURIComponent(c.University || "")}`}
-                            className="inline-flex items-center gap-1 bg-[#A51C30] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#8A1828] transition-colors"
-                          >
-                            <Sparkles size={12} />
-                            Apply
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                           )}
                         </div>
                       );
