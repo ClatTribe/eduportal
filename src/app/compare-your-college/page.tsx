@@ -324,7 +324,7 @@ const CourseComparePage: React.FC = () => {
                   {courses.map((c) => (
                     <td key={c.id} className="p-4 text-center">
                       <a
-                        href={`/application-builder?university=${encodeURIComponent(c.University || "")}`}
+                        href={`/application-builder?course_id=${c.id}`}
                         className="inline-flex items-center gap-2 bg-[#A51C30] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#8A1828] transition-colors"
                       >
                         <Sparkles size={14} />
@@ -390,7 +390,7 @@ const CourseComparePage: React.FC = () => {
                     {courses.map((c: Course) => (
                       <div key={c.id} className="p-3 text-center bg-white rounded-lg border border-gray-100">
                         <a
-                          href={`/application-builder?university=${encodeURIComponent(c.University || "")}`}
+                          href={`/application-builder?course_id=${c.id}`}
                           className="inline-flex items-center gap-1 bg-[#A51C30] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#8A1828] transition-colors"
                         >
                           <Sparkles size={12} />
