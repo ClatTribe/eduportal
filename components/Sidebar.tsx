@@ -15,9 +15,12 @@ import {
   Menu,
   X,
   TicketsPlane,
+  Sun,
+  Moon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface SidebarProps {
   userName: string;
@@ -28,6 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
   const [isLogoutHovered, setIsLogoutHovered] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -121,7 +125,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
       `}</style>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-[#FEF2F3] to-[#FEF2F3] border-b border-[#FECDD3] shadow-md z-40">
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-[#FEF2F3] to-[#FEF2F3] dark:from-gray-900 dark:to-gray-900 border-b border-[#FECDD3] dark:border-gray-700 shadow-md z-40">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2 mb-2">
@@ -164,8 +168,8 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
       <div
         className={`
           fixed md:sticky top-0 h-screen
-          w-64 bg-gradient-to-b from-[#FEF2F3] to-[#FEF2F3] 
-          p-4 border-r border-[#FECDD3] flex flex-col shadow-lg 
+          w-64 bg-gradient-to-b from-[#FEF2F3] to-[#FEF2F3] dark:from-gray-900 dark:to-gray-900
+          p-4 border-r border-[#FECDD3] dark:border-gray-700 flex flex-col shadow-lg 
           transition-transform duration-300 ease-in-out z-50
           ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0
@@ -204,9 +208,9 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
         </button>
 
         {/* Welcome Message - No Dropdown */}
-        <div className="bg-white rounded-lg p-3 mb-6 shadow-sm border border-[#FECDD3]">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 mb-6 shadow-sm border border-[#FECDD3] dark:border-gray-700">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="text-sm text-gray-600 flex-shrink-0">Welcome,</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 flex-shrink-0">Welcome,</div>
             <div className="text-[#A51C30] font-semibold truncate">{userName}</div>
           </div>
         </div>
@@ -400,8 +404,24 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
           </div> */}
         </nav>
 
+        {/* Dark Mode Toggle */}
+        <div className="pt-4 mt-4 border-t border-[#FECDD3] dark:border-gray-700">
+          <button
+            onClick={toggleTheme}
+            className="flex items-center justify-between gap-3 p-3 w-full text-left bg-white dark:bg-gray-800 hover:bg-[#FEF2F3] dark:hover:bg-gray-700 rounded-lg text-gray-700 dark:text-gray-200 transition-all duration-200 shadow-sm hover:shadow-md group cursor-pointer mb-2"
+          >
+            <div className="flex items-center gap-3">
+              {isDark ? <Sun size={18} className="text-yellow-500" /> : <Moon size={18} className="text-gray-500" />}
+              <span className="text-sm font-medium">{isDark ? "Light Mode" : "Dark Mode"}</span>
+            </div>
+            <div className={`relative w-10 h-5 rounded-full transition-colors ${isDark ? "bg-[#A51C30]" : "bg-gray-300"}`}>
+              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isDark ? "translate-x-5" : "translate-x-0.5"}`} />
+            </div>
+          </button>
+        </div>
+
         {/* Logout Button */}
-        <div className="pt-4 mt-4 border-t border-[#FECDD3]">
+        <div className="pt-2 border-t border-[#FECDD3] dark:border-gray-700">
           <button
             onClick={async (e) => {
               e.preventDefault();
