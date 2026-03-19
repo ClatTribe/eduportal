@@ -380,7 +380,7 @@ const CourseComparePage: React.FC = () => {
                   {/* Apply Now Row */}
                   <div>
                     <p className="text-xs text-gray-500 mb-2 font-medium">Apply Now</p>
-                    <div className={`grid grid-cols-${selectedCourses.length} gap-2`}>
+                    <div className={`grid ${selectedCourses.length === 2 ? "grid-cols-2" : "grid-cols-3"} gap-2`}>
                       {selectedCourses.map((c) => (
                         <div key={c.id} className="p-3 text-center bg-white">
                           <a
