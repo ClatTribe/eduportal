@@ -83,7 +83,13 @@ const ApplicationBuilderPage: React.FC = () => {
   const [saving, setSaving] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState<boolean>(false);
+  // Auto-open form if course_id is in URL (from Apply Now button)
+  const [showForm, setShowForm] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).has("course_id");
+    }
+    return false;
+  });
 
   const courseDropdownRef = useRef<HTMLDivElement>(null);
   const courseDebounceRef = useRef<NodeJS.Timeout | null>(null);
