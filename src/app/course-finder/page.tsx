@@ -723,6 +723,13 @@ const CourseFinder: React.FC = () => {
                               View Details
                             </a>
                           )}
+                          <a
+                            href={`/application-builder?university=${encodeURIComponent(course.University || "")}`}
+                            className="flex-1 bg-green-600 text-white rounded-lg py-2 sm:py-2.5 px-3 sm:px-4 hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold shadow-sm"
+                          >
+                            <Sparkles size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+                            Apply Now
+                          </a>
                         </div>
                       </div>
                     </div>
