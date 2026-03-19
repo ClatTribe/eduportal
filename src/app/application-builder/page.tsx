@@ -4,7 +4,7 @@ import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../contexts/AuthContext";
 import DefaultLayout from "../defaultLayout";
 import ApplicationCard from "../../../components/ApplicationCard";
-import { AlertCircle, CheckCircle, Trash2, Plus, Edit2, ChevronDown } from "lucide-react";
+import { AlertCircle, CheckCircle, Trash2, Plus, Edit2, ChevronDown, Search } from "lucide-react";
 
 // ---------- Types ----------
 type DocumentCategory =
@@ -60,14 +60,13 @@ const ApplicationBuilderPage: React.FC = () => {
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [documents, setDocuments] = useState<StudentDocuments | null>(null);
   const [applications, setApplications] = useState<ApplicationBuilderRow[]>([]);
-  
+
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [universityInput, setUniversityInput] = useState<string>("");
-  const [universitySearchQuery, setUniversitySearchQuery] = useState<string>("");
-  const [showUniversityDropdown, setShowUniversityDropdown] = useState<boolean>(false);
-  const [programInput, setProgramInput] = useState<string>("");
-  const [programSearchQuery, setProgramSearchQuery] = useState<string>("");
-  const [showProgramDropdown, setShowProgramDropdown] = useState<boolean>(false);
+  // Course search bar state (replaces separate university + program dropdowns)
+  const [courseSearchInput, setCourseSearchInput] = useState<string>("");
+  const [courseSearchQuery, setCourseSearchQuery] = useState<string>("");
+  const [showCourseDropdown, setShowCourseDropdown] = useState<boolean>(false);
+  const [selectedCourse, setSelectedCourse] = useState<CourseRow | null>(null);
   const [selectedDocs, setSelectedDocs] = useState<Record<DocumentCategory, string>>({
     tenth: "",
     twelfth: "",
@@ -86,13 +85,14 @@ const ApplicationBuilderPage: React.FC = () => {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [showForm, setShowForm] = useState<boolean>(false);
 
-  const universityDropdownRef = useRef<HTMLDivElement>(null);
-  const programDropdownRef = useRef<HTMLDivElement>(null);
-  const universityDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const programDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const courseDropdownRef = useRef<HTMLDivElement>(null);
+  const courseDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     const init = async () => {
       setLoading(true);
       setLoadError(null);
@@ -108,14 +108,11 @@ const ApplicationBuilderPage: React.FC = () => {
     init();
   }, [user?.id]);
 
-  // Click outside handler
+  // Click outside handler for course dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (universityDropdownRef.current && !universityDropdownRef.current.contains(event.target as Node)) {
-        setShowUniversityDropdown(false);
-      }
-      if (programDropdownRef.current && !programDropdownRef.current.contains(event.target as Node)) {
-        setShowProgramDropdown(false);
+      if (courseDropdownRef.current && !courseDropdownRef.current.contains(event.target as Node)) {
+        setShowCourseDropdown(false);
       }
     };
 
@@ -123,14 +120,11 @@ const ApplicationBuilderPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Cleanup debounce timers
+  // Cleanup debounce timer
   useEffect(() => {
     return () => {
-      if (universityDebounceRef.current) {
-        clearTimeout(universityDebounceRef.current);
-      }
-      if (programDebounceRef.current) {
-        clearTimeout(programDebounceRef.current);
+      if (courseDebounceRef.current) {
+        clearTimeout(courseDebounceRef.current);
       }
     };
   }, []);
@@ -143,9 +137,6 @@ const ApplicationBuilderPage: React.FC = () => {
       throw error;
     }
 
-    console.log("Raw courses data:", data);
-    console.log("Total courses fetched:", data?.length || 0);
-
     const valid: CourseRow[] = (data || []).filter(
       (c: unknown): c is CourseRow => {
         if (c && typeof c === "object") {
@@ -156,7 +147,6 @@ const ApplicationBuilderPage: React.FC = () => {
       }
     );
 
-    console.log("Valid courses after filtering:", valid.length);
     setCourses(valid);
   };
 
@@ -172,15 +162,13 @@ const ApplicationBuilderPage: React.FC = () => {
     }
 
     if (!data && error?.code === "PGRST116") {
-      console.log('Creating new document record for user:', user?.id);
-      
       const { error: insertError } = await supabase
         .from("student_documents")
-        .insert([{ 
+        .insert([{
           user_id: user!.id,
           username: user?.email || user?.user_metadata?.email || 'Unknown User'
         }]);
-        
+
       if (insertError) {
         console.error('Error creating document record:', insertError);
         throw insertError;
@@ -229,94 +217,44 @@ const ApplicationBuilderPage: React.FC = () => {
     }
   };
 
-  // ---------- Derived lists ----------
-  const universities: string[] = useMemo(() => {
-    const set = new Set<string>();
-    courses.forEach((c) => {
-      if (c.University && typeof c.University === 'string' && c.University.trim()) {
-        set.add(c.University.trim());
+  // ---------- Course search (like Course Finder) ----------
+  const filteredCourses = useMemo(() => {
+    if (!courseSearchQuery.trim()) return [];
+    const query = courseSearchQuery.toLowerCase();
+    return courses.filter((c) => {
+      const uni = (c.University || "").toLowerCase();
+      const prog = (c["Program Name"] || "").toLowerCase();
+      return uni.includes(query) || prog.includes(query);
+    }).slice(0, 50); // Limit to 50 results for performance
+  }, [courses, courseSearchQuery]);
+
+  // Pre-fill course from URL query parameter (e.g. from Apply Now button)
+  useEffect(() => {
+    if (typeof window === "undefined" || courses.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const courseId = params.get("course_id");
+    if (courseId && !selectedCourse) {
+      const id = parseInt(courseId, 10);
+      const match = courses.find((c) => c.id === id);
+      if (match) {
+        handleCourseSelect(match);
+        setShowForm(true);
       }
-    });
-    const sorted = Array.from(set).sort();
-    console.log("Available universities:", sorted);
-    return sorted;
+    }
   }, [courses]);
 
-  // Pre-fill university from URL query parameter (e.g. from Apply Now button)
-  useEffect(() => {
-    if (typeof window === "undefined" || universities.length === 0) return;
-    const params = new URLSearchParams(window.location.search);
-    const urlUni = params.get("university");
-    if (urlUni && !universityInput) {
-      const decoded = decodeURIComponent(urlUni);
-      const match = universities.find(u => u.toLowerCase() === decoded.toLowerCase());
-      if (match) {
-        handleUniversitySelect(match);
-      } else {
-        setUniversityInput(decoded);
-        setUniversitySearchQuery(decoded);
-      }
+  // ---------- Debounced search handler ----------
+  const handleCourseInputChange = useCallback((value: string) => {
+    setCourseSearchInput(value);
+    setSelectedCourse(null); // Clear selection when typing
+
+    if (courseDebounceRef.current) {
+      clearTimeout(courseDebounceRef.current);
     }
-  }, [universities]);
 
-
-
-  const getFilteredUniversities = (): string[] => {
-    if (!universitySearchQuery.trim()) return universities;
-    const query = universitySearchQuery.toLowerCase();
-    return universities.filter(uni => uni.toLowerCase().includes(query));
-  };
-
-  const programsForSelectedUniversity: string[] = useMemo(() => {
-    if (!universityInput) return [];
-    
-    const programs = courses
-      .filter((c) => c.University === universityInput)
-      .map((c) => (c["Program Name"] || "").trim())
-      .filter(Boolean)
-      .reduce<string[]>((acc, p) => {
-        if (!acc.includes(p)) acc.push(p);
-        return acc;
-      }, [])
-      .sort();
-    
-    console.log(`Programs for ${universityInput}:`, programs);
-    return programs;
-  }, [courses, universityInput]);
-
-  const getFilteredPrograms = (): string[] => {
-    if (!programSearchQuery.trim()) return programsForSelectedUniversity;
-    const query = programSearchQuery.toLowerCase();
-    return programsForSelectedUniversity.filter(prog => prog.toLowerCase().includes(query));
-  };
-
-  // ---------- Debounced search handlers ----------
-  const handleUniversityInputChange = useCallback((value: string) => {
-    setUniversityInput(value);
-    
-    // Clear existing timeout
-    if (universityDebounceRef.current) {
-      clearTimeout(universityDebounceRef.current);
-    }
-    
-    // Set new timeout for search query
-    universityDebounceRef.current = setTimeout(() => {
-      setUniversitySearchQuery(value);
-    }, 300); // 300ms debounce delay
-  }, []);
-
-  const handleProgramInputChange = useCallback((value: string) => {
-    setProgramInput(value);
-    
-    // Clear existing timeout
-    if (programDebounceRef.current) {
-      clearTimeout(programDebounceRef.current);
-    }
-    
-    // Set new timeout for search query
-    programDebounceRef.current = setTimeout(() => {
-      setProgramSearchQuery(value);
-    }, 300); // 300ms debounce delay
+    courseDebounceRef.current = setTimeout(() => {
+      setCourseSearchQuery(value);
+    }, 300);
   }, []);
 
   // ---------- Handlers ----------
@@ -326,10 +264,9 @@ const ApplicationBuilderPage: React.FC = () => {
 
   const handleNewApplication = () => {
     setEditingIndex(null);
-    setUniversityInput("");
-    setUniversitySearchQuery("");
-    setProgramInput("");
-    setProgramSearchQuery("");
+    setCourseSearchInput("");
+    setCourseSearchQuery("");
+    setSelectedCourse(null);
     setSelectedDocs({
       tenth: "",
       twelfth: "",
@@ -347,11 +284,15 @@ const ApplicationBuilderPage: React.FC = () => {
 
   const handleEditApplication = (app: ApplicationBuilderRow, index: number) => {
     setEditingIndex(index);
-    setUniversityInput(app.university || "");
-    setUniversitySearchQuery("");
-    setProgramInput(app.program || "");
-    setProgramSearchQuery("");
-    
+    const displayText = [app.university, app.program].filter(Boolean).join(" — ");
+    setCourseSearchInput(displayText);
+    setCourseSearchQuery("");
+    // Try to find the matching course
+    const match = courses.find(
+      (c) => c.University === app.university && c["Program Name"] === app.program
+    );
+    setSelectedCourse(match || null);
+
     const docMap = app.documents || {};
     setSelectedDocs({
       tenth: (docMap.tenth || "") as string,
@@ -392,12 +333,17 @@ const ApplicationBuilderPage: React.FC = () => {
   const handleSaveApplication = async () => {
     setSaveMessage(null);
     if (!user) return;
-    
-    const finalUniversity = universityInput.trim();
-    const finalProgram = programInput.trim();
-    
+
+    if (!selectedCourse) {
+      setSaveMessage("Please select a course from the search results.");
+      return;
+    }
+
+    const finalUniversity = (selectedCourse.University || "").trim();
+    const finalProgram = (selectedCourse["Program Name"] || "").trim();
+
     if (!finalUniversity || !finalProgram) {
-      setSaveMessage("Please provide both university and program.");
+      setSaveMessage("Selected course is missing university or program information.");
       return;
     }
 
@@ -424,7 +370,7 @@ const ApplicationBuilderPage: React.FC = () => {
 
         if (error) throw error;
       } else {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from("application_builder")
           .insert([payload])
           .select();
@@ -435,7 +381,7 @@ const ApplicationBuilderPage: React.FC = () => {
       await fetchExistingApplications();
       setSaveMessage("Application saved successfully.");
       setShowForm(false);
-      
+
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (e) {
       console.error(e);
@@ -451,23 +397,12 @@ const ApplicationBuilderPage: React.FC = () => {
     setSaveMessage(null);
   };
 
-  const handleUniversitySelect = (university: string) => {
-    setUniversityInput(university);
-    setUniversitySearchQuery("");
-    setShowUniversityDropdown(false);
-    // Reset program when university changes
-    setProgramInput("");
-    setProgramSearchQuery("");
+  const handleCourseSelect = (course: CourseRow) => {
+    setSelectedCourse(course);
+    setCourseSearchInput(`${course.University || ""} — ${course["Program Name"] || ""}`);
+    setCourseSearchQuery("");
+    setShowCourseDropdown(false);
   };
-
-  const handleProgramSelect = (program: string) => {
-    setProgramInput(program);
-    setProgramSearchQuery("");
-    setShowProgramDropdown(false);
-  };
-
-  const filteredUniversities = getFilteredUniversities();
-  const filteredPrograms = getFilteredPrograms();
 
   // ---------- UI ----------
   if (loading) {
@@ -477,6 +412,20 @@ const ApplicationBuilderPage: React.FC = () => {
           <div className="text-xl text-red-600 flex items-center gap-2">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600"></div>
             Loading application builder...
+          </div>
+        </div>
+      </DefaultLayout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <DefaultLayout>
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-pink-50 to-red-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-md">
+            <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Sign in Required</h2>
+            <p className="text-gray-600">Please sign in to access the Application Builder.</p>
           </div>
         </div>
       </DefaultLayout>
@@ -568,142 +517,94 @@ const ApplicationBuilderPage: React.FC = () => {
                 {editingIndex !== null ? "Edit Application" : "New Application"}
               </h2>
 
-              {/* University Input with Dropdown */}
-              <div className="mb-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  University
-                </label>
-                <div className="relative" ref={universityDropdownRef}>
-                  <input
-                    type="text"
-                    placeholder="Type or select university..."
-                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    value={universityInput}
-                    onChange={(e) => {
-                      handleUniversityInputChange(e.target.value);
-                      setShowUniversityDropdown(true);
-                      // Reset program when university changes
-                      setProgramInput("");
-                      setProgramSearchQuery("");
-                    }}
-                    onFocus={() => {
-                      setShowUniversityDropdown(true);
-                      setUniversitySearchQuery("");
-                    }}
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setShowUniversityDropdown(!showUniversityDropdown);
-                      if (!showUniversityDropdown) {
-                        setUniversitySearchQuery("");
-                      }
-                    }}
-                    className="absolute right-2 top-3 cursor-pointer"
-                    type="button"
-                  >
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
-                  </button>
-                  
-                  {showUniversityDropdown && filteredUniversities.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filteredUniversities.map((university) => (
-                        <div
-                          key={university}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            handleUniversitySelect(university);
-                          }}
-                        >
-                          {university}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {showUniversityDropdown && filteredUniversities.length === 0 && universitySearchQuery && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4">
-                      <p className="text-sm text-gray-500">No universities found matching "{universitySearchQuery}"</p>
-                    </div>
-                  )}
-                </div>
-                {universities.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    No universities found in database. You can type any university name.
-                  </p>
-                )}
-              </div>
-
-              {/* Program Input with Dropdown */}
+              {/* Course Search Bar */}
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Program
+                  Search Course
                 </label>
-                <div className="relative" ref={programDropdownRef}>
-                  <input
-                    type="text"
-                    placeholder="Type or select program..."
-                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    value={programInput}
-                    onChange={(e) => {
-                      handleProgramInputChange(e.target.value);
-                      setShowProgramDropdown(true);
-                    }}
-                    onFocus={() => {
-                      setShowProgramDropdown(true);
-                      setProgramSearchQuery("");
-                    }}
-                    disabled={!universityInput}
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (universityInput) {
-                        setShowProgramDropdown(!showProgramDropdown);
-                        if (!showProgramDropdown) {
-                          setProgramSearchQuery("");
+                <div className="relative" ref={courseDropdownRef}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search by university name or program..."
+                      className="w-full bg-gray-50 border border-gray-300 rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                      value={courseSearchInput}
+                      onChange={(e) => {
+                        handleCourseInputChange(e.target.value);
+                        setShowCourseDropdown(true);
+                      }}
+                      onFocus={() => {
+                        if (courseSearchInput && !selectedCourse) {
+                          setShowCourseDropdown(true);
                         }
-                      }
-                    }}
-                    className="absolute right-2 top-3 cursor-pointer"
-                    type="button"
-                    disabled={!universityInput}
-                  >
-                    <ChevronDown className={`h-4 w-4 ${universityInput ? 'text-gray-500' : 'text-gray-300'}`} />
-                  </button>
-                  
-                  {showProgramDropdown && filteredPrograms.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filteredPrograms.map((program) => (
+                      }}
+                    />
+                  </div>
+
+                  {showCourseDropdown && filteredCourses.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-72 overflow-y-auto">
+                      {filteredCourses.map((course) => (
                         <div
-                          key={program}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                          key={course.id}
+                          className="px-4 py-3 hover:bg-red-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                           onMouseDown={(e) => {
                             e.preventDefault();
-                            handleProgramSelect(program);
+                            handleCourseSelect(course);
                           }}
                         >
-                          {program}
+                          <p className="text-sm font-semibold text-gray-800">
+                            {course.University || "Unknown University"}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {course["Program Name"] || "Unknown Program"}
+                          </p>
                         </div>
                       ))}
+                      {filteredCourses.length === 50 && (
+                        <div className="px-4 py-2 text-xs text-gray-400 text-center bg-gray-50">
+                          Showing top 50 results. Type more to narrow down.
+                        </div>
+                      )}
                     </div>
                   )}
-                  
-                  {showProgramDropdown && filteredPrograms.length === 0 && programSearchQuery && universityInput && (
+
+                  {showCourseDropdown && filteredCourses.length === 0 && courseSearchQuery.trim().length > 0 && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4">
-                      <p className="text-sm text-gray-500">No programs found matching "{programSearchQuery}"</p>
+                      <p className="text-sm text-gray-500">No courses found matching &ldquo;{courseSearchQuery}&rdquo;</p>
                     </div>
                   )}
                 </div>
-                {!universityInput && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Please select a university first
-                  </p>
+
+                {/* Selected course display */}
+                {selectedCourse && (
+                  <div className="mt-3 flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <CheckCircle className="text-green-600 flex-shrink-0" size={18} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-green-800 truncate">
+                        {selectedCourse.University}
+                      </p>
+                      <p className="text-xs text-green-600 truncate">
+                        {selectedCourse["Program Name"]}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedCourse(null);
+                        setCourseSearchInput("");
+                        setCourseSearchQuery("");
+                      }}
+                      className="text-green-600 hover:text-green-800 text-xs font-medium"
+                      type="button"
+                    >
+                      Change
+                    </button>
+                  </div>
                 )}
-                {universityInput && programsForSelectedUniversity.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    No programs found for this university. You can type any program name.
+
+                {!selectedCourse && courseSearchInput.length === 0 && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Start typing a university name or program to search from {courses.length.toLocaleString()} available courses
                   </p>
                 )}
               </div>
@@ -726,10 +627,10 @@ const ApplicationBuilderPage: React.FC = () => {
                         </label>
                         <select
                           className={`w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                            selectedDocs[category] 
-                              ? 'bg-gray-50' 
-                              : files.length > 0 
-                                ? 'bg-gray-100' 
+                            selectedDocs[category]
+                              ? 'bg-gray-50'
+                              : files.length > 0
+                                ? 'bg-gray-100'
                                 : 'bg-red-100'
                           }`}
                           value={selectedDocs[category] || ""}
