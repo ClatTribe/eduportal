@@ -319,6 +319,20 @@ const CourseComparePage: React.FC = () => {
                       </td>
                     ))}
                   </tr>
+                <tr className="border-t border-gray-100">
+                  <td className="p-4 text-sm font-semibold text-gray-600 bg-gray-50/50 whitespace-nowrap">Apply Now</td>
+                  {selectedCourses.map((c) => (
+                    <td key={c.id} className="p-4 text-center">
+                      <a
+                        href={`/application-builder?university=${encodeURIComponent(c.University || "")}`}
+                        className="inline-flex items-center gap-2 bg-[#A51C30] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#8A1828] transition-colors"
+                      >
+                        <Sparkles size={14} />
+                        Apply Now
+                      </a>
+                    </td>
+                  ))}
+                </tr>
                 </tbody>
               </table>
             </div>
@@ -363,6 +377,23 @@ const CourseComparePage: React.FC = () => {
                               <span className="text-gray-400 text-xs">N/A</span>
                               <p className="text-gray-500 text-[9px] mt-1">({label})</p>
                             </div>
+                  {/* Apply Now Row */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2 font-medium">Apply Now</p>
+                    <div className={`grid grid-cols-${selectedCourses.length} gap-2`}>
+                      {selectedCourses.map((c) => (
+                        <div key={c.id} className="p-3 text-center bg-white">
+                          <a
+                            href={`/application-builder?university=${encodeURIComponent(c.University || "")}`}
+                            className="inline-flex items-center gap-1 bg-[#A51C30] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#8A1828] transition-colors"
+                          >
+                            <Sparkles size={12} />
+                            Apply
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                           )}
                         </div>
                       );
