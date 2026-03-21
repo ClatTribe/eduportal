@@ -434,14 +434,16 @@ const CourseFinder: React.FC = () => {
                       {/* Course Card Content */}
                       <div className="flex justify-between items-start gap-3 mb-3 sm:mb-4">
                         <div className="flex-1 min-w-0">
-                          <div className="font-bold text-xl sm:text-2xl text-gray-900 mb-2 leading-tight break-words">
-                            <span className="font-Bold">
-                              {course.University}
-                            </span>
-                          </div>
-                          <h3 className="font-medium text-base sm:text-lg text-gray-600 mb-2 leading-tight break-words">
-                            {course["Program Name"] || "Unknown Program"}
-                          </h3>
+                          <Link href={`/course-finder/${course.id}`} className="block group">
+                            <div className="font-bold text-xl sm:text-2xl text-gray-900 mb-2 leading-tight break-words group-hover:text-[#A51C30] transition-colors">
+                              <span className="font-Bold">
+                                {course.University}
+                              </span>
+                            </div>
+                            <h3 className="font-medium text-base sm:text-lg text-gray-600 mb-2 leading-tight break-words group-hover:text-[#A51C30]/80 transition-colors">
+                              {course["Program Name"] || "Unknown Program"}
+                            </h3>
+                          </Link>
                           {course.Concentration && (
                             <div className="text-xs text-gray-600 mb-2 bg-gray-50 inline-block px-2 py-1 rounded break-words">
                               <span className="font-medium">
