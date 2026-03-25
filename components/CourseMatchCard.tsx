@@ -733,7 +733,7 @@ function LikeButton({
 function LoginButton() {
   return (
     <Link
-      href="/login"
+      href="/register"
       className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-[9px] sm:text-xs font-bold uppercase tracking-widest shrink-0"
     >
       <LogIn className="w-3 h-3" />
@@ -1359,7 +1359,7 @@ export default function CourseMatchCard({
                       recommendations
                     </p>
                     <Link
-                      href="/login"
+                      href="/register"
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg hover:scale-[1.02] active:scale-[0.98] transition-all font-black text-[9px] uppercase tracking-widest shrink-0 text-white"
                       style={{ backgroundColor: "#A51C30" }}
                     >
