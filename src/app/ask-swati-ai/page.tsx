@@ -193,7 +193,6 @@ export default function AskSwatiAIDashboard() {
               university_name: uniName,
               program_name: c['Program Name'] || '',
               country: c.Country || '',
-                country: c.Country || '',
               campus: c.Campus || '',
               tuition_fees: c['Yearly Tuition Fees'] || '',
             });
