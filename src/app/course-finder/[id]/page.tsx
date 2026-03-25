@@ -1,7 +1,11 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
+
 import { useParams } from "next/navigation";
+
 import Link from "next/link";
+
 import {
   ArrowLeft,
   MapPin,
@@ -19,8 +23,10 @@ import {
   AlertCircle,
   Languages,
 } from "lucide-react";
+
 import { supabase } from "../../../../lib/supabase";
 import DefaultLayout from "../../defaultLayout";
+import CourseMatchCard from "../../../../components/CourseMatchCard";
 
 interface Course {
   id: number;
@@ -87,10 +93,40 @@ export default function CourseMicrosite() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState("overview");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
 
   useEffect(() => {
     if (courseId) fetchCourse();
   }, [courseId]);
+
+  // Check authentication and profile completion
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          setIsLoggedIn(true);
+          const { data: profile } = await supabase
+            .from("admit_profiles")
+            .select("name, degree, city")
+            .eq("user_id", user.id)
+            .single();
+          if (profile?.name && profile?.degree) {
+            setIsProfileComplete(true);
+          }
+        } else {
+          setIsLoggedIn(false);
+        }
+      } catch {
+        // Not logged in or error
+        setIsLoggedIn(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   const fetchCourse = async () => {
     try {
@@ -254,6 +290,17 @@ export default function CourseMicrosite() {
 
         {/* Content */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          {/* Course Match Card - After Hero, Before Main Content */}
+          {course && (
+            <div className="mb-6 sm:mb-8">
+              <CourseMatchCard
+                course={course}
+                isLoggedIn={isLoggedIn}
+                isProfileComplete={isProfileComplete}
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6 sm:space-y-8">
@@ -869,4 +916,3 @@ export default function CourseMicrosite() {
     </DefaultLayout>
   );
 }
-
