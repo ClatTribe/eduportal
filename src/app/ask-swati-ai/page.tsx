@@ -329,7 +329,7 @@ export default function AskSwatiAIDashboard() {
     if (q.includes('intake') || q.includes('when') || q.includes('start') || q.includes('join') || q.includes('semester')) {
       return ['Fall 2026 (Sep)', 'Spring 2027 (Jan)', 'Fall 2027 (Sep)', 'Not sure yet'];
     }
-    if (q.includes('work experience') || q.includes('years of experience'') || q.includes('working')) {
+    if (q.includes('work experience') || q.includes('years of experience') || q.includes('working')) {
       return ['Fresher', '1-2 years', '3-5 years', '5+ years'];
     }
     if (q.includes('degree') || q.includes('level') || q.includes('ug') || q.includes('pg') || q.includes('masters') || q.includes('bachelor')) {
