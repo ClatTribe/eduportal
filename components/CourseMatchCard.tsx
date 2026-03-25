@@ -807,7 +807,7 @@ export default function CourseMatchCard({
           // Checks more fields so it's less likely to incorrectly show as incomplete
           const { data: profile, error: profileError } = await supabase
             .from("admit_profiles")
-            .select("name, degree, city, target_countries, budget")
+            .select("*")
             .eq("user_id", user.id)
             .single();
 
@@ -864,9 +864,7 @@ export default function CourseMatchCard({
 
         const { data: profile, error: profileError } = await supabase
           .from("admit_profiles")
-          .select(
-            "name, degree, target_countries, budget, target_field, test_scores"
-          )
+          .select("*")
           .eq("user_id", user.id)
           .single();
 
@@ -1172,6 +1170,30 @@ export default function CourseMatchCard({
                       <span className="text-xs text-gray-600 font-medium">
                         Analyzing your match...
                       </span>
+                    </div>
+                  )}
+
+                  {/* Error / Fallback State */}
+                  {!matchResult && !loadingMatch && (
+                    <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+                      <AlertTriangle
+                        className="w-10 h-10 mb-3 opacity-80"
+                        style={{ color: "#A51C30" }}
+                      />
+                      <p className="text-sm font-bold text-gray-800 mb-1">
+                        Match Data Unavailable
+                      </p>
+                      <p className="text-xs text-gray-500 max-w-xs mx-auto mb-4">
+                        We need more details in your profile (like target degree, countries, or budget) to calculate your match score.
+                      </p>
+                      <Link
+                        href="/profile"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[9px] uppercase tracking-widest text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        style={{ backgroundColor: "#A51C30" }}
+                      >
+                        Update Profile
+                        <ArrowUpRight className="w-3 h-3" />
+                      </Link>
                     </div>
                   )}
 
