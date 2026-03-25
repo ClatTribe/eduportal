@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
       const errorData = await response.text();
       console.error("Gemini API error:", response.status, errorData);
       return NextResponse.json(
-        { error: "Failed to get response from AI" },
+        { error: "Failed to get response from AI", detail: errorData.substring(0, 500), geminiStatus: response.status },
         { status: 500 }
       );
     }
