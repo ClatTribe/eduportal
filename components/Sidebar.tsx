@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   TicketsPlane,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -35,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
     main: [
       { icon: Home, label: "Home", path: "/home" },
       { icon: User, label: "Profile", path: "/profile" },
+      { icon: Sparkles, label: "Ask Swati AI", path: "/ask-swati-ai" },
       // { icon: User, label: "Ask AI", path: "/ask-ai" },
       // { icon: User, label: "Profile Analyzer", path: "/profile-analyzer" },
     ],
