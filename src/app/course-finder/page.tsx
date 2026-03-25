@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Heart,
   BookOpen,
@@ -74,11 +74,22 @@ const sortCoursesByQSRanking = (courses: Course[]): Course[] => {
   return [...courses].sort((a, b) => {
     const qsA = extractQSRanking(a["University Ranking"]);
     const qsB = extractQSRanking(b["University Ranking"]);
+    // Both have QS ranking: lower number = higher rank = comes first
     if (qsA !== null && qsB !== null) return qsA - qsB;
+    // Ranked colleges always come before unranked
     if (qsA !== null && qsB === null) return -1;
     if (qsA === null && qsB !== null) return 1;
+    // Both unranked: keep original order (stable sort)
     return 0;
   });
+};
+
+// Map season names to their corresponding month keywords for flexible intake matching
+const intakeMonthMap: Record<string, string[]> = {
+  'Spring': ['Spring', 'January', 'February', 'March', 'April', 'Jan', 'Feb', 'Mar', 'Apr'],
+  'Summer': ['Summer', 'May', 'June', 'July', 'Jun', 'Jul'],
+  'Fall': ['Fall', 'Autumn', 'August', 'September', 'October', 'Aug', 'Sep', 'Sept', 'Oct'],
+  'Winter': ['Winter', 'November', 'December', 'Nov', 'Dec'],
 };
 
 // Helper: check if application deadline is still in the future (form is live)
@@ -118,6 +129,9 @@ const CourseFinder: React.FC = () => {
 
   const { savedCourses, toggleSaved } = useSavedCourses(user);
 
+  // Track the latest fetch to prevent stale responses from overwriting newer ones
+  const fetchIdRef = useRef(0);
+
   const perPage = 15;
 
   useEffect(() => {
@@ -135,6 +149,9 @@ const CourseFinder: React.FC = () => {
   } = CollegeComparison({ user, courses });
 
   const fetchCourses = async (page: number, filters: FilterValues) => {
+    // Increment fetch ID so we can ignore stale responses
+    const currentFetchId = ++fetchIdRef.current;
+
     try {
       setLoading(true);
       setError(null);
@@ -157,9 +174,17 @@ const CourseFinder: React.FC = () => {
       if (filters.university) {
         query = query.eq("University", filters.university);
       }
+
+      // FIX: Intake filter now searches for both season names AND month names
+      // e.g. "Fall" also matches "September", "Oct", "August" etc.
       if (filters.intake) {
-        query = query.ilike("Open Intakes", `%${filters.intake}%`);
+        const searchTerms = intakeMonthMap[filters.intake] || [filters.intake];
+        const orConditions = searchTerms
+          .map(term => `Open Intakes.ilike.%${term}%`)
+          .join(',');
+        query = query.or(orConditions);
       }
+
       if (filters.search) {
         query = query.or(
           `Program Name.ilike.%${filters.search}%,University.ilike.%${filters.search}%,Campus.ilike.%${filters.search}%`
@@ -173,24 +198,35 @@ const CourseFinder: React.FC = () => {
 
       const { data, count, error: supabaseError } = await query;
 
+      // If a newer fetch was started, ignore this stale response
+      if (currentFetchId !== fetchIdRef.current) return;
+
       if (supabaseError) throw supabaseError;
 
+      // Sort by QS ranking (ranked colleges first, by rank ascending)
       const sortedCourses = sortCoursesByQSRanking(data || []);
 
       setCourses(sortedCourses);
       if (count !== null) setTotalCount(count);
     } catch (err) {
+      // Ignore errors from stale fetches
+      if (currentFetchId !== fetchIdRef.current) return;
       setError(err instanceof Error ? err.message : "Failed to fetch courses");
       console.error("Error fetching courses:", err);
     } finally {
-      setLoading(false);
+      // Only clear loading for the latest fetch
+      if (currentFetchId === fetchIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   const handleRecommendedCoursesChange = (recCourses: Course[]) => {
-    setRecommendedCourses(recCourses);
-    setCourses(recCourses.slice(0, perPage));
-    setTotalCount(recCourses.length);
+    // Sort recommended courses by QS ranking too
+    const sorted = sortCoursesByQSRanking(recCourses);
+    setRecommendedCourses(sorted);
+    setCourses(sorted.slice(0, perPage));
+    setTotalCount(sorted.length);
     setCurrentPage(0);
   };
 

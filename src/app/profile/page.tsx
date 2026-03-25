@@ -447,15 +447,18 @@ const ProfilePage = () => {
     setExpandedSection((prev) => (prev === section ? "" : section));
   }, []);
 
+  // ✅ FIXED: Updated to match new degree options in TargetProgramSection
   const shouldShowUG = useMemo(
-    () => ["Masters", "MBA", "PhD"].includes(formData.target_degree),
+    () => ["Postgraduate", "PhD", "PG Diploma /Certificate"].includes(formData.target_degree),
     [formData.target_degree]
   );
 
+  // ✅ FIXED: PG only shows for PhD
   const shouldShowPG = useMemo(() => formData.target_degree === "PhD", [formData.target_degree]);
 
+  // ✅ FIXED: Work experience shows for Postgraduate and PhD
   const shouldShowWorkExp = useMemo(
-    () => ["Masters", "MBA", "PhD"].includes(formData.target_degree),
+    () => ["Postgraduate", "PhD", "PG Diploma /Certificate"].includes(formData.target_degree),
     [formData.target_degree]
   );
 
@@ -775,164 +778,164 @@ const ProfilePage = () => {
             </div>
           )}
           {/* Form Sections */}
-<div className="space-y-3 sm:space-y-4">
-  {/* Target Program */}
-  <TargetProgramSection
-    formData={formData}
-    isEditing={isEditing}
-    isExpanded={expandedSection === "target"}
-    isComplete={isSectionComplete("target")}
-    onToggle={toggleSection}
-    onInputChange={handleInputChange}
-    onMultiSelect={handleMultiSelect}
-    Section={Section}
-    SelectField={SelectField}
-    InputField={InputField}
-  />
-          {/* Personal Information */}
-        <PersonalInfoSection
-          formData={formData}
-          isEditing={isEditing}
-          isExpanded={expandedSection === "personal"}
-          isComplete={isSectionComplete("personal")}
-          onToggle={toggleSection}
-          onInputChange={handleInputChange}
-          onMultiSelectContactPreference={handleMultiSelectContactPreference}
-          Section={Section}
-          InputField={InputField}
-        />
+          <div className="space-y-3 sm:space-y-4">
+            {/* Target Program */}
+            <TargetProgramSection
+              formData={formData}
+              isEditing={isEditing}
+              isExpanded={expandedSection === "target"}
+              isComplete={isSectionComplete("target")}
+              onToggle={toggleSection}
+              onInputChange={handleInputChange}
+              onMultiSelect={handleMultiSelect}
+              Section={Section}
+              SelectField={SelectField}
+              InputField={InputField}
+            />
+            {/* Personal Information */}
+            <PersonalInfoSection
+              formData={formData}
+              isEditing={isEditing}
+              isExpanded={expandedSection === "personal"}
+              isComplete={isSectionComplete("personal")}
+              onToggle={toggleSection}
+              onInputChange={handleInputChange}
+              onMultiSelectContactPreference={handleMultiSelectContactPreference}
+              Section={Section}
+              InputField={InputField}
+            />
 
-        {/* 10th Grade */}
-        <AcademicSection
-          id="tenth"
-          title="10th Grade Details"
-          type="tenth"
-          formData={formData}
-          isEditing={isEditing}
-          isExpanded={expandedSection === "tenth"}
-          isComplete={isSectionComplete("tenth")}
-          onToggle={toggleSection}
-          onInputChange={handleInputChange}
-          Section={Section}
-          InputField={InputField}
-          SelectField={SelectField}
-        />
+            {/* 10th Grade */}
+            <AcademicSection
+              id="tenth"
+              title="10th Grade Details"
+              type="tenth"
+              formData={formData}
+              isEditing={isEditing}
+              isExpanded={expandedSection === "tenth"}
+              isComplete={isSectionComplete("tenth")}
+              onToggle={toggleSection}
+              onInputChange={handleInputChange}
+              Section={Section}
+              InputField={InputField}
+              SelectField={SelectField}
+            />
 
-        {/* 12th Grade */}
-        <AcademicSection
-          id="twelfth"
-          title="12th Grade Details"
-          type="twelfth"
-          formData={formData}
-          isEditing={isEditing}
-          isExpanded={expandedSection === "twelfth"}
-          isComplete={isSectionComplete("twelfth")}
-          onToggle={toggleSection}
-          onInputChange={handleInputChange}
-          Section={Section}
-          InputField={InputField}
-          SelectField={SelectField}
-        />
+            {/* 12th Grade */}
+            <AcademicSection
+              id="twelfth"
+              title="12th Grade Details"
+              type="twelfth"
+              formData={formData}
+              isEditing={isEditing}
+              isExpanded={expandedSection === "twelfth"}
+              isComplete={isSectionComplete("twelfth")}
+              onToggle={toggleSection}
+              onInputChange={handleInputChange}
+              Section={Section}
+              InputField={InputField}
+              SelectField={SelectField}
+            />
 
-        {/* Undergraduate */}
-        <AcademicSection
-          id="ug"
-          title="Undergraduate Details"
-          type="ug"
-          formData={formData}
-          isEditing={isEditing}
-          isExpanded={expandedSection === "ug"}
-          isComplete={isSectionComplete("ug")}
-          visible={shouldShowUG}
-          onToggle={toggleSection}
-          onInputChange={handleInputChange}
-          Section={Section}
-          InputField={InputField}
-          SelectField={SelectField}
-        />
+            {/* Undergraduate */}
+            <AcademicSection
+              id="ug"
+              title="Undergraduate Details"
+              type="ug"
+              formData={formData}
+              isEditing={isEditing}
+              isExpanded={expandedSection === "ug"}
+              isComplete={isSectionComplete("ug")}
+              visible={shouldShowUG}
+              onToggle={toggleSection}
+              onInputChange={handleInputChange}
+              Section={Section}
+              InputField={InputField}
+              SelectField={SelectField}
+            />
 
-        {/* Postgraduate */}
-        <AcademicSection
-          id="pg"
-          title="Postgraduate/Masters Details"
-          type="pg"
-          formData={formData}
-          isEditing={isEditing}
-          isExpanded={expandedSection === "pg"}
-          isComplete={isSectionComplete("pg")}
-          visible={shouldShowPG}
-          onToggle={toggleSection}
-          onInputChange={handleInputChange}
-          Section={Section}
-          InputField={InputField}
-          SelectField={SelectField}
-        />
+            {/* Postgraduate */}
+            <AcademicSection
+              id="pg"
+              title="Postgraduate/Masters Details"
+              type="pg"
+              formData={formData}
+              isEditing={isEditing}
+              isExpanded={expandedSection === "pg"}
+              isComplete={isSectionComplete("pg")}
+              visible={shouldShowPG}
+              onToggle={toggleSection}
+              onInputChange={handleInputChange}
+              Section={Section}
+              InputField={InputField}
+              SelectField={SelectField}
+            />
 
-        {/* Test Scores */}
-        <TestScoresSection
-          testScores={formData.testScores}
-          isEditing={isEditing}
-          isExpanded={expandedSection === "tests"}
-          isComplete={isSectionComplete("tests")}
-          onToggle={toggleSection}
-          onAdd={addTestScore}
-          onRemove={removeTestScore}
-          onChange={handleTestScoreChange}
-          Section={Section}
-        />
+            {/* Test Scores */}
+            <TestScoresSection
+              testScores={formData.testScores}
+              isEditing={isEditing}
+              isExpanded={expandedSection === "tests"}
+              isComplete={isSectionComplete("tests")}
+              onToggle={toggleSection}
+              onAdd={addTestScore}
+              onRemove={removeTestScore}
+              onChange={handleTestScoreChange}
+              Section={Section}
+            />
 
-        {/* Work Experience */}
-        <WorkExperienceSection
-          formData={formData}
-          isEditing={isEditing}
-          isExpanded={expandedSection === "experience"}
-          isComplete={isSectionComplete("experience")}
-          visible={shouldShowWorkExp}
-          onToggle={toggleSection}
-          onInputChange={handleInputChange}
-          Section={Section}
-          SelectField={SelectField}
-          InputField={InputField}
-        />
+            {/* Work Experience */}
+            <WorkExperienceSection
+              formData={formData}
+              isEditing={isEditing}
+              isExpanded={expandedSection === "experience"}
+              isComplete={isSectionComplete("experience")}
+              visible={shouldShowWorkExp}
+              onToggle={toggleSection}
+              onInputChange={handleInputChange}
+              Section={Section}
+              SelectField={SelectField}
+              InputField={InputField}
+            />
 
-        {/* Extracurricular Activities */}
-        <ExtracurricularSection
-          formData={formData}
-          isEditing={isEditing}
-          isExpanded={expandedSection === "extra"}
-          onToggle={toggleSection}
-          onInputChange={handleInputChange}
-          Section={Section}
-        />
+            {/* Extracurricular Activities */}
+            <ExtracurricularSection
+              formData={formData}
+              isEditing={isEditing}
+              isExpanded={expandedSection === "extra"}
+              onToggle={toggleSection}
+              onInputChange={handleInputChange}
+              Section={Section}
+            />
 
-        {/* Action Buttons - Centered at Bottom */}
-        {isEditing && (
-          <div className="flex items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8 pb-4">
-            <button
-              onClick={handleCancel}
-              className="flex items-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 text-gray-700 rounded-lg transition-all text-sm sm:text-base border-2"
-              style={{ borderColor: borderColor }}
-            >
-              <X size={16} className="sm:w-[18px] sm:h-[18px]" />
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className={`flex items-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 text-white rounded-lg transition-all text-sm sm:text-base ${
-                saving ? "opacity-70 cursor-not-allowed" : ""
-              }`}
-              style={{ background: `linear-gradient(135deg, ${accentColor} 0%, #8B1528 100%)` }}
-            >
-              <Save size={16} className="sm:w-[18px] sm:h-[18px]" />
-              {saving ? "Saving..." : "Save Profile"}
-            </button>
+            {/* Action Buttons - Centered at Bottom */}
+            {isEditing && (
+              <div className="flex items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8 pb-4">
+                <button
+                  onClick={handleCancel}
+                  className="flex items-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 text-gray-700 rounded-lg transition-all text-sm sm:text-base border-2"
+                  style={{ borderColor: borderColor }}
+                >
+                  <X size={16} className="sm:w-[18px] sm:h-[18px]" />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className={`flex items-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 text-white rounded-lg transition-all text-sm sm:text-base ${
+                    saving ? "opacity-70 cursor-not-allowed" : ""
+                  }`}
+                  style={{ background: `linear-gradient(135deg, ${accentColor} 0%, #8B1528 100%)` }}
+                >
+                  <Save size={16} className="sm:w-[18px] sm:h-[18px]" />
+                  {saving ? "Saving..." : "Save Profile"}
+                </button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
-    </div>
-  </div>
-</DefaultLayout>
-);
+    </DefaultLayout>
+  );
 };
 export default ProfilePage;

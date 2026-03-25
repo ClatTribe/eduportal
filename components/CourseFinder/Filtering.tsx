@@ -187,29 +187,40 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const buildFilters = useCallback((overrides?: Partial<FilterValues>): FilterValues => {
-    return {
-      search: searchQuery,
-      country: selectedCountry,
-      studyLevel: selectedStudyLevel,
-      university: selectedUniversity,
-      intake: selectedIntake,
-      programName: selectedProgramName || programNameInput,
-      ...overrides,
-    }
-  }, [searchQuery, selectedCountry, selectedStudyLevel, selectedUniversity, selectedIntake, selectedProgramName, programNameInput])
+  // Use refs for text inputs so dropdown useEffect always reads latest values
+  // without needing them in the dependency array (they have their own debounced effect)
+  const searchQueryRef = useRef(searchQuery)
+  searchQueryRef.current = searchQuery
+  const programNameInputRef = useRef(programNameInput)
+  programNameInputRef.current = programNameInput
 
+  // Immediate filter update when any dropdown changes
   useEffect(() => {
     if (viewMode === "all") {
-      onFilterValuesChange(buildFilters())
+      onFilterValuesChange({
+        search: searchQueryRef.current,
+        country: selectedCountry,
+        studyLevel: selectedStudyLevel,
+        university: selectedUniversity,
+        intake: selectedIntake,
+        programName: selectedProgramName || programNameInputRef.current,
+      })
     }
   }, [selectedCountry, selectedStudyLevel, selectedUniversity, selectedIntake, selectedProgramName, viewMode])
 
+  // Debounced filter update for text inputs (search bar + program name typing)
   useEffect(() => {
     if (viewMode !== "all") return
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      onFilterValuesChange(buildFilters())
+      onFilterValuesChange({
+        search: searchQuery,
+        country: selectedCountry,
+        studyLevel: selectedStudyLevel,
+        university: selectedUniversity,
+        intake: selectedIntake,
+        programName: selectedProgramName || programNameInput,
+      })
     }, 400)
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)

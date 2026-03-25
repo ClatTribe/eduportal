@@ -40,7 +40,7 @@ const ExpertContactButton = () => {
   };
 
   return (
-    <div ref={containerRef} className="fixed bottom-4 right-6 z-50">
+    <div ref={containerRef} className="fixed bottom-1 right-6 z-50">
       {/* Contact Options */}
       <div
         className={`absolute bottom-16 right-0 flex flex-col gap-2 mb-2 transition-all duration-300 ${
