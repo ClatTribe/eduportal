@@ -47,7 +47,7 @@ interface MatchedUniversity {
   tuition_fees: string;
 }
 
-// EduAbroad Brand Theme — Crimson Red + White
+// EduAbroad Brand Theme â Crimson Red + White
 const COLORS = {
   accent: '#A51C30',
   accentLight: '#d4243e',
@@ -273,7 +273,7 @@ export default function AskSwatiAIDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: newMessages,
-           pofileContext: profileData ? {
+           profileContext: profileData ? {
             degree: profileData.target_degree,
             field: profileData.target_field,
             country: profileData.target_state?.join(', '),
@@ -282,15 +282,20 @@ export default function AskSwatiAIDashboard() {
         }),
       });
 
+      if (!response.ok) {
+        console.error('API response not ok:', response.status, response.statusText);
+        setMessages([...newMessages, { role: 'assistant', content: 'Sorry, I encountered an error connecting to Swati AI. Please try again in a moment.' }]);
+        return;
+      }
       const data: AIResponse = await response.json();
       if (data.response) {
         setMessages([...newMessages, { role: 'assistant', content: data.response }]);
       } else {
-        setMessages([...newMessages, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
+        setMessages([...newMessages, { role: 'assistant', content: 'Sorry, I received an empty response. Please try again.' }]);
       }
     } catch (error) {
       console.error('API Error:', error);
-      setMessages([...newMessages, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
+      setMessages([...newMessages, { role: 'assistant', content: 'Sorry, I encountered a network error. Please check your connection and try again.' }]);
     } finally {
       setIsLoading(false);
     }
@@ -505,12 +510,16 @@ export default function AskSwatiAIDashboard() {
             {/* AI Response Card */}
             {showResponse && messages.length > 0 && (
               <div className="rounded-2xl p-6 space-y-4 mt-6" style={{ backgroundColor: COLORS.surface, border: `1px solid ${COLORS.border}` }}>
-                {/* User Message */}
-                <div className="flex justify-end">
-                  <div className="max-w-2xl rounded-xl px-4 py-3" style={{ backgroundColor: COLORS.accent, color: COLORS.white }}>
-                    <p className="text-sm">{messages[0]?.content}</p>
-                  </div>
-                </div>
+                {/* User Messages & Assistant Responses */}
+                {messages.map((msg, idx) => (
+                  msg.role === 'user' && (
+                    <div key={`user-${idx}`} className="flex justify-end">
+                      <div className="max-w-2xl rounded-xl px-4 py-3" style={{ backgroundColor: COLORS.accent, color: COLORS.white }}>
+                        <p className="text-sm">{msg.content}</p>
+                      </div>
+                    </div>
+                  )
+                )).filter(Boolean).slice(-1)}
 
                 {/* AI Response */}
                 {isLoading ? (
