@@ -589,7 +589,7 @@ function RecommendedCard({
 }) {
   const color = course.matchScore >= 70 ? "#10b981" : "#A51C30";
   return (
-    <Link href={`/course/${course.id}`} className="group block">
+    <Link href={`/course-finder/${course.id}`} className="group block">
       <div
         className="flex items-center gap-3 p-3 rounded-xl border hover:border-opacity-50 transition-all"
         style={{ borderColor: "#FECDD3" }}
@@ -1355,7 +1355,7 @@ export default function CourseMatchCard({
                   </div>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <p className="text-[10px] text-gray-600 font-medium">
-                      Login and complete your profile to see personalized
+                      Register and complete your profile to see personalized
                       recommendations
                     </p>
                     <Link
@@ -1364,7 +1364,7 @@ export default function CourseMatchCard({
                       style={{ backgroundColor: "#A51C30" }}
                     >
                       <LogIn className="w-3 h-3" />
-                      Login
+                      Register
                     </Link>
                   </div>
                 </div>
