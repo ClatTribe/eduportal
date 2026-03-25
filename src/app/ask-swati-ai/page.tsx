@@ -10,14 +10,10 @@ import {
   Search,
   Send,
   Sparkles,
-  Zap,
-  GraduationCap,
   ChevronRight,
   AlertCircle,
   CheckCircle,
   Globe,
-  BookOpen,
-  Plane,
 } from 'lucide-react';
 
 interface Message {
