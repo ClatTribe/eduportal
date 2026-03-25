@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure alternating roles (Gemini requirement)
-    const cleanedMessages = [];
+    const cleanedMessages: { role: string; parts: { text: string }[] }[] = [];
     let lastRole = "";
     for (const msg of geminiMessages) {
       if (msg.role !== lastRole) {
