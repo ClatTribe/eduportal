@@ -276,8 +276,8 @@ export default function AskSwatiAIDashboard() {
           profileContext: profileData ? {
             degree: profileData.target_degree,
             field: profileData.target_field,
-            country: profileData.target_state?.join(', '),
-            budget: profileData.budget?.join(', '),
+            country: Array.isArray(profileData.target_state) ? profileData.target_state.join(', ') : profileData.target_state,
+            budget: Array.isArray(profileData.budget) ? profileData.budget.join(', ') : profileData.budget,
           } : null,
         }),
       });
