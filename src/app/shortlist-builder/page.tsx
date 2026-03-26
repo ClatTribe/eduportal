@@ -17,6 +17,11 @@ import {
   Clock,
   X,
   Sparkles,
+  Share2,
+  Copy,
+  Check,
+  Mail,
+  MessageCircle,
 } from "lucide-react";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -80,6 +85,86 @@ const ShortlistBuilder: React.FC = () => {
   const [editingNotes, setEditingNotes] = useState<number | null>(null);
   const [noteText, setNoteText] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const generateShareText = () => {
+    const courses = shortlistItems.filter((i) => i.item_type === "course" && i.course);
+    const scholarships = shortlistItems.filter((i) => i.item_type === "scholarship" && i.scholarship);
+
+    let text = "My University Shortlist - EduAbroad\n";
+    text += "═══════════════════════════════════\n\n";
+
+    if (courses.length > 0) {
+      text += `COURSES (${courses.length})\n`;
+      text += "───────────────────────────────\n";
+      courses.forEach((item, idx) => {
+        const c = item.course!;
+        text += `\n${idx + 1}. ${c["Program Name"] || "Unknown Program"}\n`;
+        text += `   University: ${c.University || "N/A"}\n`;
+        if (c.Campus) text += `   Campus: ${c.Campus}\n`;
+        if (c.Country) text += `   Country: ${c.Country}\n`;
+        if (c.Duration) text += `   Duration: ${c.Duration}\n`;
+        if (c["Yearly Tuition Fees"]) text += `   Tuition: ${c["Yearly Tuition Fees"]}\n`;
+        if (c["Study Level"]) text += `   Level: ${c["Study Level"]}\n`;
+        text += `   Status: ${item.status.charAt(0).toUpperCase() + item.status.slice(1)}\n`;
+        if (item.notes) text += `   Notes: ${item.notes}\n`;
+      });
+      text += "\n";
+    }
+
+    if (scholarships.length > 0) {
+      text += `SCHOLARSHIPS (${scholarships.length})\n`;
+      text += "───────────────────────────────\n";
+      scholarships.forEach((item, idx) => {
+        const s = item.scholarship!;
+        text += `\n${idx + 1}. ${s.scholarship_name}\n`;
+        text += `   Provider: ${s.provider}\n`;
+        if (s.country_region) text += `   Country: ${s.country_region}\n`;
+        if (s.degree_level) text += `   Level: ${s.degree_level}\n`;
+        if (s.deadline) text += `   Deadline: ${s.deadline}\n`;
+        text += `   Status: ${item.status.charAt(0).toUpperCase() + item.status.slice(1)}\n`;
+        if (item.notes) text += `   Notes: ${item.notes}\n`;
+      });
+      text += "\n";
+    }
+
+    text += "───────────────────────────────\n";
+    text += "Shared via EduAbroad (app.goeduabroad.com)";
+    return text;
+  };
+
+  const handleCopyShare = async () => {
+    const text = generateShareText();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleWhatsAppShare = () => {
+    const text = generateShareText();
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank");
+  };
+
+  const handleEmailShare = () => {
+    const text = generateShareText();
+    const subject = encodeURIComponent("My University Shortlist - EduAbroad");
+    const body = encodeURIComponent(text);
+    window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
+  };
 
   useEffect(() => {
     if (user) {
@@ -346,18 +431,120 @@ const ShortlistBuilder: React.FC = () => {
       >
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-4 sm:mb-6 md:mb-8">
-            <h1
-              className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 flex items-center gap-2 sm:gap-3"
-              style={{ color: accentColor }}
-            >
-              <Heart size={28} className="sm:w-9 sm:h-9" />
-              My Shortlist
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600">
-              Manage your saved courses and scholarships in one place
-            </p>
+          <div className="mb-4 sm:mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1
+                className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 flex items-center gap-2 sm:gap-3"
+                style={{ color: accentColor }}
+              >
+                <Heart size={28} className="sm:w-9 sm:h-9" />
+                My Shortlist
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600">
+                Manage your saved courses and scholarships in one place
+              </p>
+            </div>
+            {shortlistItems.length > 0 && (
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90 self-start sm:self-auto"
+                style={{ backgroundColor: accentColor }}
+              >
+                <Share2 size={16} />
+                Share Shortlist
+              </button>
+            )}
           </div>
+
+          {/* Share Modal */}
+          {showShareModal && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+              onClick={() => setShowShareModal(false)}
+            >
+              <div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+                >
+                  <X size={20} />
+                </button>
+
+                <div className="text-center mb-6">
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+                    style={{ backgroundColor: "rgba(165, 28, 48, 0.1)" }}
+                  >
+                    <Share2 size={22} style={{ color: accentColor }} />
+                  </div>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    Share Your Shortlist
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {shortlistItems.length} item{shortlistItems.length !== 1 ? "s" : ""} ({courseCount} course{courseCount !== 1 ? "s" : ""}, {scholarshipCount} scholarship{scholarshipCount !== 1 ? "s" : ""})
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={handleCopyShare}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-medium transition hover:bg-gray-50"
+                    style={{ border: `1px solid ${borderColor}` }}
+                  >
+                    {copied ? (
+                      <Check size={20} className="text-green-600 flex-shrink-0" />
+                    ) : (
+                      <Copy size={20} style={{ color: accentColor }} className="flex-shrink-0" />
+                    )}
+                    <div>
+                      <p className="text-gray-900">{copied ? "Copied!" : "Copy to Clipboard"}</p>
+                      <p className="text-xs text-gray-500">
+                        Paste anywhere — notes, chats, docs
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={handleWhatsAppShare}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-medium transition hover:bg-gray-50"
+                    style={{ border: `1px solid ${borderColor}` }}
+                  >
+                    <MessageCircle size={20} className="text-green-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-gray-900">Share via WhatsApp</p>
+                      <p className="text-xs text-gray-500">
+                        Send to parents, friends or counselors
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={handleEmailShare}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-medium transition hover:bg-gray-50"
+                    style={{ border: `1px solid ${borderColor}` }}
+                  >
+                    <Mail size={20} className="text-blue-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-gray-900">Share via Email</p>
+                      <p className="text-xs text-gray-500">
+                        Opens your email client with the shortlist
+                      </p>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${borderColor}` }}>
+                  <p className="text-xs text-gray-400 text-center">
+                    Your shortlist will be shared as a formatted text summary
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Main Content Card */}
           <div
