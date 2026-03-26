@@ -109,6 +109,7 @@ const ShortlistBuilder: React.FC = () => {
         if (c["Study Level"]) text += `   Level: ${c["Study Level"]}\n`;
         text += `   Status: ${item.status.charAt(0).toUpperCase() + item.status.slice(1)}\n`;
         if (item.notes) text += `   Notes: ${item.notes}\n`;
+        text += `   View: https://app.goeduabroad.com/course-finder/${c.id}\n`;
       });
       text += "\n";
     }
@@ -125,6 +126,7 @@ const ShortlistBuilder: React.FC = () => {
         if (s.deadline) text += `   Deadline: ${s.deadline}\n`;
         text += `   Status: ${item.status.charAt(0).toUpperCase() + item.status.slice(1)}\n`;
         if (item.notes) text += `   Notes: ${item.notes}\n`;
+        if (s.link) text += `   Apply: ${s.link}\n`;
       });
       text += "\n";
     }
