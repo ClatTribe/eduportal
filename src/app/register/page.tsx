@@ -354,7 +354,7 @@ const RegisterPage = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/home');
+      router.replace('/ask-swati-ai');
     }
   }, [user, loading, router]);
 

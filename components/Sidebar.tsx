@@ -1,21 +1,19 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import {
-  Home,
   User,
   BookOpen,
   DollarSign,
   Users,
   Building2,
   GraduationCap,
-  Award,
-  Trophy,
   LogOut,
   ThumbsUp,
   Menu,
   X,
   TicketsPlane,
   Sparkles,
+  UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -34,11 +32,8 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
 
   const navItems = {
     main: [
-      { icon: Home, label: "Home", path: "/home" },
-      { icon: User, label: "Profile", path: "/profile" },
       { icon: Sparkles, label: "Ask Swati AI", path: "/ask-swati-ai" },
-      // { icon: User, label: "Ask AI", path: "/ask-ai" },
-      // { icon: User, label: "Profile Analyzer", path: "/profile-analyzer" },
+      { icon: User, label: "Profile", path: "/profile" },
     ],
     explore: [
       { icon: BookOpen, label: "Course Finder", path: "/course-finder" },
@@ -50,15 +45,10 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
     applications: [
       { icon: BookOpen, label: "Application Builder", path: "/application-builder" },
       { icon: GraduationCap, label: "Document Upload", path: "/document" },
-      // { icon: Award, label: "Manage Applications", path: "/manage-apps" },
-      // { icon: Trophy, label: "Guidance", path: "/guidance" },
     ],
     Tools: [
       { icon: TicketsPlane, label: "Fly & Settle Services", path: "/fly-&-settle-services" },
       { icon: GraduationCap, label: "Study Materials", path: "/study-material" },
-    ],
-    postAdmit: [
-      { icon: GraduationCap, label: "Finalise Admits", path: "/finalise-admits" },
     ],
   };
 
@@ -166,8 +156,8 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
       <div
         className={`
           fixed md:sticky top-0 h-screen
-          w-64 bg-gradient-to-b from-[#FEF2F3] to-[#FEF2F3] 
-          p-4 border-r border-[#FECDD3] flex flex-col shadow-lg 
+          w-64 bg-gradient-to-b from-[#FEF2F3] to-[#FEF2F3]
+          p-4 border-r border-[#FECDD3] flex flex-col shadow-lg
           transition-transform duration-300 ease-in-out z-50
           ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0
@@ -190,7 +180,6 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
               <span className="relative">BETA</span>
             </span>
           </div>
-          {/* <div className="h-1 w-16 bg-[#A51C30] rounded-full"></div> */}
         </div>
 
         {/* Mobile: Add padding top */}
@@ -205,7 +194,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
           <X size={20} className="text-[#A51C30]" />
         </button>
 
-        {/* Welcome Message - No Dropdown */}
+        {/* Welcome Message */}
         <div className="bg-white rounded-lg p-3 mb-6 shadow-sm border border-[#FECDD3]">
           <div className="flex items-center gap-2 min-w-0">
             <div className="text-sm text-gray-600 flex-shrink-0">Welcome,</div>
@@ -245,6 +234,24 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
               </span>
             </button>
           ))}
+
+          {/* Register / Sign Up Button */}
+          {/* <button
+            onClick={() => handleNavClick("/register")}
+            className={`flex items-center gap-3 p-2.5 w-full text-left rounded-lg transition-all duration-200 group ${
+              isActive("/register")
+                ? "bg-white shadow-md border-l-4 border-[#A51C30] text-[#A51C30]"
+                : "bg-gradient-to-r from-[#A51C30] to-[#d4243e] text-white hover:from-[#8B1528] hover:to-[#A51C30] shadow-sm"
+            }`}
+          >
+            <UserPlus
+              size={18}
+              className={isActive("/register") ? "text-[#A51C30]" : "text-white"}
+            />
+            <span className={`text-sm font-semibold ${isActive("/register") ? "" : "text-white"}`}>
+              Register / Sign Up
+            </span>
+          </button> */}
 
           {/* Explore Section */}
           <div className="pt-4">
@@ -323,6 +330,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
               </button>
             ))}
           </div>
+
           {/* Tools */}
           <div className="pt-4">
             <div className="flex items-center gap-2 mb-2 px-2">
@@ -361,45 +369,6 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
               </button>
             ))}
           </div>
-
-          {/* Post Admit Section */}
-          {/* <div className="pt-4">
-            <div className="flex items-center gap-2 mb-2 px-2">
-              <div className="text-xs font-bold text-[#A51C30] uppercase tracking-wider">
-                Post Admit
-              </div>
-              <div className="flex-1 h-px bg-[#FECDD3]"></div>
-            </div>
-            {navItems.postAdmit.map((item) => (
-              <button
-                key={item.path}
-                onClick={() => handleNavClick(item.path)}
-                className={`flex items-center gap-3 p-2.5 w-full text-left rounded-lg transition-all duration-200 group ${
-                  isActive(item.path)
-                    ? "bg-white shadow-md border-l-4 border-[#A51C30] text-[#A51C30]"
-                    : "hover:bg-white hover:shadow-sm"
-                }`}
-              >
-                <item.icon
-                  size={18}
-                  className={`transition-colors ${
-                    isActive(item.path)
-                      ? "text-[#A51C30]"
-                      : "text-gray-600 group-hover:text-[#A51C30]"
-                  }`}
-                />
-                <span
-                  className={`text-sm transition-colors ${
-                    isActive(item.path)
-                      ? "font-semibold"
-                      : "group-hover:text-[#A51C30]"
-                  }`}
-                >
-                  {item.label}
-                </span>
-              </button>
-            ))}
-          </div> */}
         </nav>
 
         {/* Logout Button */}
