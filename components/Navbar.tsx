@@ -118,7 +118,7 @@ export const Navbar: React.FC = () => {
             {user ? (
               <>
                 <Link
-                  href="/ask-swati-ai"
+                  href="/sam-ai"
                   className="px-4 py-2 text-sm font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-full"
                 >
                   Dashboard
@@ -213,7 +213,7 @@ export const Navbar: React.FC = () => {
             {user ? (
               <>
                 <Link
-                  href="/ask-swati-ai"
+                  href="/sam-ai"
                   onClick={() => setMobileMenuOpen(false)}
                   className="w-full py-3 text-center font-medium text-[#A51C30] bg-blue-50 hover:bg-blue-100 rounded-xl"
                 >

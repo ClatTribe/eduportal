@@ -32,7 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
 
   const navItems = {
     main: [
-      { icon: Sparkles, label: "Ask Swati AI", path: "/ask-swati-ai" },
+      { icon: Sparkles, label: "Sam AI", path: "/sam-ai" },
       { icon: User, label: "Profile", path: "/profile" },
     ],
     explore: [

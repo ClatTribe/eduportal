@@ -655,7 +655,7 @@ export default function AskSwatiAIDashboard() {
     setShowResponse(true);
 
     try {
-      const response = await fetch('/api/ask-swati-ai', {
+      const response = await fetch('/api/sam-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

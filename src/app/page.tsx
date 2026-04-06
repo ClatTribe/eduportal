@@ -100,7 +100,7 @@ export default function Hero() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A51C30] opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#A51C30]"></span>
                 </span>
-                <Link href="/ask-swati-ai" className="text-xs font-bold text-slate-600 tracking-wide ">
+                <Link href="/sam-ai" className="text-xs font-bold text-slate-600 tracking-wide ">
                   New: Admit Finder 2.0 is live
                 </Link>
                 <ArrowRight size={12} className="text-slate-400 group-hover:translate-x-1 transition-transform" />
@@ -163,7 +163,7 @@ export default function Hero() {
                 and connect with alumni—all while keeping your data 100% private.
               </motion.p>
 
-              <Link href={user ? "/ask-swati-ai" : "/register"}>
+              <Link href={user ? "/sam-ai" : "/register"}>
                 <motion.button
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
