@@ -80,7 +80,6 @@ export default function CourseMicrosite() {
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState("overview");
   
-  // Slider State
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -135,14 +134,11 @@ export default function CourseMicrosite() {
     ...parseMedia(course.video).map(url => ({ type: 'video', url })),
   ] : [];
 
-  // --- AUTO ROTATE LOGIC ---
   useEffect(() => {
-    // Only rotate if there's more than 1 item, a video isn't playing, and user isn't hovering
     if (mediaItems.length > 1 && !isPlaying && !isPaused) {
       const interval = setInterval(() => {
         setCurrentSlide((prev) => (prev + 1) % mediaItems.length);
-      }, 2000); // 2 Second Interval
-
+      }, 2000);
       return () => clearInterval(interval);
     }
   }, [mediaItems.length, isPlaying, isPaused]);
@@ -217,140 +213,123 @@ export default function CourseMicrosite() {
           <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
 
-          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-16">
-            <Link href="/course-finder" className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm mb-8 transition-all hover:-translate-x-1 group">
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-16">
+            {/* Back Button */}
+            <Link href="/course-finder" className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm mb-4 sm:mb-8 transition-all hover:-translate-x-1 group">
               <ArrowLeft size={16} className="group-hover:scale-110 transition-transform" />
               Back to Course Finder
             </Link>
 
-            <div className="flex flex-col lg:flex-row lg:items-center gap-10 xl:gap-16">
-              <div className="flex-1 space-y-6">
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-white">
-                      <MapPin size={12} className="text-red-300" />
+            <div className="flex flex-col lg:flex-row lg:items-center gap-6 sm:gap-10 xl:gap-16">
+              
+              {/* MOBILE IMAGE PRIORITY - Visible only on Mobile (<1024px) */}
+              {mediaItems.length > 0 && (
+                <div 
+                  className="block lg:hidden w-full group"
+                  onMouseEnter={() => setIsPaused(true)}
+                  onMouseLeave={() => setIsPaused(false)}
+                >
+                  <div className="relative aspect-[16/9] rounded-2xl overflow-hidden shadow-xl border border-white/10 bg-black">
+                    {current.type === 'image' ? (
+                      <img key={current.url} src={current.url} alt="Campus" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full">
+                        {/* Video components remain same as desktop but smaller for mobile grid */}
+                        {!isPlaying ? (
+                          <div className="relative w-full h-full cursor-pointer" onClick={() => setIsPlaying(true)}>
+                             <img src={ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : ""} className="w-full h-full object-cover" />
+                             <div className="absolute inset-0 flex items-center justify-center bg-black/30"><Play size={32} fill="white"/></div>
+                          </div>
+                        ) : (
+                          <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${ytId}?autoplay=1`} frameBorder="0" allowFullScreen />
+                        )}
+                      </div>
+                    )}
+                    {mediaItems.length > 1 && (
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                            {mediaItems.map((_, i) => (
+                                <div key={i} className={`h-1 rounded-full transition-all ${i === currentSlide ? 'bg-white w-4' : 'bg-white/30 w-1'}`} />
+                            ))}
+                        </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* LEFT CONTENT */}
+              <div className="flex-1 space-y-4 sm:space-y-6">
+                <div className="space-y-2 sm:space-y-4">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white">
+                      <MapPin size={10} className="text-red-300" />
                       {course.Campus || "N/A"}{course.Country ? `, ${course.Country}` : ""}
                     </span>
                     {deadlineLive && (
-                      <span className="flex items-center gap-2 bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full shadow-lg shadow-emerald-900/20">
-                        <span className="relative flex h-2 w-2">
+                      <span className="flex items-center gap-2 bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-400 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 rounded-full">
+                        <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
                           <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative rounded-full h-2 w-2 bg-emerald-400"></span>
+                          <span className="relative rounded-full h-full w-full bg-emerald-400"></span>
                         </span>
                         ADMISSIONS OPEN
                       </span>
                     )}
                   </div>
                   
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-[1.1] tracking-tight drop-shadow-sm">
+                  <h1 className="text-xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight tracking-tight drop-shadow-sm">
                     {course.University}
                   </h1>
-                  <p className="text-xl sm:text-2xl text-white/80 font-medium max-w-2xl leading-snug">
+                  <p className="text-base sm:text-2xl text-white/80 font-medium max-w-2xl leading-snug">
                     {course["Program Name"] || "Program Details"}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-8 border-t border-white/10">
-                  <div>
-                    <p className="text-white/50 text-[10px] uppercase font-black tracking-widest mb-1">Duration</p>
-                    <p className="text-white font-bold flex items-center gap-2"><Clock size={14} className="text-red-300"/> {course.Duration || "N/A"}</p>
+                {/* HERO STATS - SINGLE ROW ON MOBILE */}
+                <div className="flex flex-row justify-between sm:grid sm:grid-cols-3 gap-2 sm:gap-6 pt-4 sm:pt-8 border-t border-white/10 overflow-hidden">
+                  <div className="flex-1 sm:block">
+                    <p className="text-white/50 text-[8px] sm:text-[10px] uppercase font-black tracking-widest mb-0.5 sm:mb-1">Duration</p>
+                    <p className="text-white text-[11px] sm:text-base font-bold flex items-center gap-1 sm:gap-2"><Clock size={12} className="text-red-300 shrink-0"/> {course.Duration || "N/A"}</p>
                   </div>
-                  <div>
-                    <p className="text-white/50 text-[10px] uppercase font-black tracking-widest mb-1">Scholarship</p>
-                    <p className="text-white font-bold flex items-center gap-2"><Award size={14} className="text-red-300"/> {course["Scholarship Available"] || "N/A"}</p>
+                  <div className="flex-1 sm:block border-x border-white/10 px-2 sm:border-none sm:px-0 text-center sm:text-left">
+                    <p className="text-white/50 text-[8px] sm:text-[10px] uppercase font-black tracking-widest mb-0.5 sm:mb-1">Scholarship</p>
+                    <p className="text-white text-[11px] sm:text-base font-bold flex items-center justify-center sm:justify-start gap-1 sm:gap-2"><Award size={12} className="text-red-300 shrink-0"/> {course["Scholarship Available"] || "N/A"}</p>
                   </div>
-                  <div className="col-span-2 md:col-span-1">
-                    <p className="text-white/50 text-[10px] uppercase font-black tracking-widest mb-1">Study Level</p>
-                    <p className="text-white font-bold flex items-center gap-2"><GraduationCap size={14} className="text-red-300"/> {course["Study Level"] || "N/A"}</p>
+                  <div className="flex-1 sm:block text-right sm:text-left">
+                    <p className="text-white/50 text-[8px] sm:text-[10px] uppercase font-black tracking-widest mb-0.5 sm:mb-1">Level</p>
+                    <p className="text-white text-[11px] sm:text-base font-bold flex items-center justify-end sm:justify-start gap-1 sm:gap-2"><GraduationCap size={12} className="text-red-300 shrink-0"/> {course["Study Level"] || "N/A"}</p>
                   </div>
                 </div>
               </div>
 
-              {/* MEDIA SLIDER WITH AUTO-ROTATE */}
+              {/* DESKTOP MEDIA SLIDER - Hidden on Mobile */}
               {mediaItems.length > 0 && (
                 <div 
-                  className="w-full lg:w-[45%] group perspective-1000"
+                  className="hidden lg:block w-[45%] group perspective-1000"
                   onMouseEnter={() => setIsPaused(true)}
                   onMouseLeave={() => setIsPaused(false)}
                 >
-                  <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-black transition-all duration-500 group-hover:scale-[1.02] group-hover:shadow-red-900/30">
-                    
+                  <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-black transition-all duration-500 group-hover:scale-[1.02]">
                     {current.type === 'image' ? (
-                      <img
-                        key={current.url}
-                        src={current.url}
-                        alt="Campus Preview"
-                        className="w-full h-full object-cover transition-opacity duration-700 ease-in-out"
-                      />
-                    ) : ytId ? (
-                      <div className="relative w-full h-full">
-                        {!isPlaying ? (
-                          <>
-                            <img
-                              src={`https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`}
-                              alt="thumbnail"
-                              className="w-full h-full object-cover"
-                            />
-                            <div onClick={() => setIsPlaying(true)} className="absolute inset-0 flex items-center justify-center bg-black/40 cursor-pointer group/play">
-                              <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center shadow-2xl group-hover/play:scale-110 transition-all">
-                                <Play size={28} fill="white" className="ml-1" />
-                              </div>
-                            </div>
-                          </>
+                      <img key={current.url} src={current.url} alt="Campus" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full">
+                         {!isPlaying ? (
+                          <div className="relative w-full h-full cursor-pointer" onClick={() => setIsPlaying(true)}>
+                             <img src={ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : ""} className="w-full h-full object-cover" />
+                             <div className="absolute inset-0 flex items-center justify-center bg-black/40"><Play size={50} fill="white"/></div>
+                          </div>
                         ) : (
                           <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${ytId}?autoplay=1`} frameBorder="0" allowFullScreen />
                         )}
                       </div>
-                    ) : (
-                      <div className="relative w-full h-full">
-                        {!isPlaying ? (
-                          <>
-                            <video className="w-full h-full object-cover" src={current.url} />
-                            <div onClick={() => setIsPlaying(true)} className="absolute inset-0 flex items-center justify-center bg-black/40 cursor-pointer group/play">
-                              <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 group-hover/play:scale-110 transition-transform">
-                                <Play size={28} fill="white" className="ml-1" />
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <video className="w-full h-full object-cover" controls autoPlay src={current.url} />
-                        )}
-                      </div>
                     )}
-
-                    <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10 z-10">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-white">
-                        {current.type === 'image' ? '📷 Photo' : '🎥 Video'}
-                      </span>
-                    </div>
-
                     {mediaItems.length > 1 && (
                       <>
-                        <button 
-                          onClick={() => { setCurrentSlide(p => (p - 1 + mediaItems.length) % mediaItems.length); setIsPlaying(false); }} 
-                          className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-white/20 transition-all opacity-0 group-hover:opacity-100 z-20"
-                        >
-                          <ChevronLeft size={24} />
-                        </button>
-                        <button 
-                          onClick={() => { setCurrentSlide(p => (p + 1) % mediaItems.length); setIsPlaying(false); }} 
-                          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-white/20 transition-all opacity-0 group-hover:opacity-100 z-20"
-                        >
-                          <ChevronRight size={24} />
-                        </button>
+                        <button onClick={() => setCurrentSlide(p => (p - 1 + mediaItems.length) % mediaItems.length)} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"><ChevronLeft/></button>
+                        <button onClick={() => setCurrentSlide(p => (p + 1) % mediaItems.length)} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"><ChevronRight/></button>
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                           {mediaItems.map((_, i) => (<div key={i} className={`h-1.5 rounded-full transition-all ${i === currentSlide ? 'bg-white w-8' : 'bg-white/30 w-1.5'}`} />))}
+                        </div>
                       </>
-                    )}
-
-                    {mediaItems.length > 1 && (
-                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-                        {mediaItems.map((_, i) => (
-                          <button 
-                            key={i} 
-                            onClick={() => { setCurrentSlide(i); setIsPlaying(false); }} 
-                            className={`h-1.5 rounded-full transition-all duration-300 ${i === currentSlide ? 'bg-white w-8' : 'bg-white/30 w-1.5'}`} 
-                          />
-                        ))}
-                      </div>
                     )}
                   </div>
                 </div>
@@ -367,7 +346,7 @@ export default function CourseMicrosite() {
                 <button
                   key={section.id}
                   onClick={() => scrollToSection(section.id)}
-                  className={`whitespace-nowrap px-5 py-4 text-sm font-bold transition-all border-b-2 ${
+                  className={`whitespace-nowrap px-4 sm:px-5 py-3 sm:py-4 text-xs sm:text-sm font-bold transition-all border-b-2 ${
                     activeSection === section.id ? "border-[#A51C30] text-[#A51C30]" : "border-transparent text-gray-500 hover:text-gray-900"
                   }`}
                 >
@@ -379,7 +358,7 @@ export default function CourseMicrosite() {
         </div>
 
         {/* --- CONTENT AREA --- */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {course && (
             <div className="mb-8">
               <CourseMatchCard course={course} isLoggedIn={isLoggedIn} isProfileComplete={isProfileComplete} />
@@ -388,13 +367,11 @@ export default function CourseMicrosite() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
-
+              {/* Overview */}
               <section id="overview" className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-                <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-                  <div>
+                <div className="px-6 py-5 border-b border-gray-100">
                     <span className="text-[10px] font-bold text-[#A51C30] uppercase tracking-widest">Program Profile</span>
                     <h2 className="text-2xl font-bold text-gray-900 mt-0.5">About This Program<span className="text-[#A51C30]">.</span></h2>
-                  </div>
                 </div>
                 <div className="px-6 py-6">
                   <p className="text-gray-600 leading-relaxed text-lg mb-8">
@@ -417,29 +394,17 @@ export default function CourseMicrosite() {
                       </div>
                     ))}
                   </div>
-                  {rankings.length > 0 && (
-                    <div className="mt-8 pt-6 border-t border-gray-50">
-                      <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">University Rankings</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {rankings.map((rank, idx) => (
-                          <span key={idx} className="bg-[#A51C30]/5 text-[#A51C30] text-xs px-4 py-2 rounded-full font-bold border border-[#A51C30]/10 flex items-center gap-2">
-                            <Sparkles size={12}/> {rank}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </section>
 
+              {/* Fees */}
               <section id="fees" className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
                 <div className="px-6 py-5 border-b border-gray-100">
                   <span className="text-[10px] font-bold text-[#A51C30] uppercase tracking-widest">Financials</span>
                   <h2 className="text-2xl font-bold text-gray-900 mt-0.5">Fees & Duration<span className="text-[#A51C30]">.</span></h2>
                 </div>
-                <div className="px-6 py-6">
-                  <div className="bg-gray-50 rounded-2xl overflow-hidden border border-gray-100">
-                    <table className="w-full text-left">
+                <div className="px-6 py-6 overflow-x-auto">
+                    <table className="w-full text-left min-w-[300px]">
                       <tbody className="divide-y divide-gray-200">
                         {[
                           { label: "Duration", value: course.Duration },
@@ -447,16 +412,16 @@ export default function CourseMicrosite() {
                           { label: "Application Fee", value: course["Application Fee"] },
                         ].filter(r => r.value).map((row, i) => (
                           <tr key={i}>
-                            <td className="py-4 px-6 text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3">{row.label}</td>
-                            <td className={`py-4 px-6 text-sm font-bold ${row.highlight ? 'text-[#A51C30] text-lg' : 'text-gray-900'}`}>{row.value}</td>
+                            <td className="py-4 px-2 sm:px-6 text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider">{row.label}</td>
+                            <td className={`py-4 px-2 sm:px-6 text-xs sm:text-sm font-bold ${row.highlight ? 'text-[#A51C30] text-lg' : 'text-gray-900'}`}>{row.value}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                  </div>
                 </div>
               </section>
 
+              {/* Admission */}
               <section id="admission" className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
                 <div className="px-6 py-5 border-b border-gray-100">
                   <span className="text-[10px] font-bold text-[#A51C30] uppercase tracking-widest">Enrollment</span>
@@ -466,63 +431,60 @@ export default function CourseMicrosite() {
                   <div className="space-y-4">
                     {course["Open Intakes"] && (
                         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-                            <span className="text-sm font-bold text-gray-600">Available Intakes</span>
-                            <span className="text-sm font-black text-gray-900">{course["Open Intakes"]}</span>
+                            <span className="text-xs sm:text-sm font-bold text-gray-600">Available Intakes</span>
+                            <span className="text-xs sm:text-sm font-black text-gray-900">{course["Open Intakes"]}</span>
                         </div>
                     )}
                     {course["Application Deadline"] && (
                         <div className="flex items-center justify-between p-4 bg-red-50/50 rounded-xl border border-red-100/50">
-                            <span className="text-sm font-bold text-gray-600">Application Deadline</span>
-                            <span className="text-sm font-black text-[#A51C30]">{formatDeadline(course["Application Deadline"])}</span>
+                            <span className="text-xs sm:text-sm font-bold text-gray-600">Deadline</span>
+                            <span className="text-xs sm:text-sm font-black text-[#A51C30]">{formatDeadline(course["Application Deadline"])}</span>
                         </div>
                     )}
                   </div>
                 </div>
               </section>
 
+              {/* English */}
               {hasEnglishRequirements && (
                 <section id="english" className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
                   <div className="px-6 py-5 border-b border-gray-100">
                     <span className="text-[10px] font-bold text-[#A51C30] uppercase tracking-widest">Proficiency</span>
                     <h2 className="text-2xl font-bold text-gray-900 mt-0.5">English Requirements<span className="text-[#A51C30]">.</span></h2>
                   </div>
-                  <div className="px-6 py-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="px-6 py-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {course["IELTS Score"] && (
-                        <div className="bg-gradient-to-br from-red-50 to-white rounded-2xl p-5 border border-red-100">
-                          <p className="font-black text-[#A51C30] tracking-widest text-xs mb-4">IELTS</p>
-                          <div className="text-4xl font-black text-gray-900">{course["IELTS Score"]}</div>
+                        <div className="bg-gradient-to-br from-red-50 to-white rounded-2xl p-5 border border-red-100 text-center sm:text-left">
+                          <p className="font-black text-[#A51C30] tracking-widest text-[10px] mb-4">IELTS</p>
+                          <div className="text-3xl sm:text-4xl font-black text-gray-900">{course["IELTS Score"]}</div>
                         </div>
                       )}
                       {course["PTE Score"] && (
-                        <div className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-5 border border-purple-100">
-                          <p className="font-black text-purple-700 tracking-widest text-xs mb-4">PTE</p>
-                          <div className="text-4xl font-black text-gray-900">{course["PTE Score"]}</div>
+                        <div className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-5 border border-purple-100 text-center sm:text-left">
+                          <p className="font-black text-purple-700 tracking-widest text-[10px] mb-4">PTE</p>
+                          <div className="text-3xl sm:text-4xl font-black text-gray-900">{course["PTE Score"]}</div>
                         </div>
                       )}
-                    </div>
                   </div>
                 </section>
               )}
             </div>
 
             <div className="space-y-6">
-              <section id="contact" className="bg-white rounded-2xl border border-gray-200 overflow-hidden sticky top-20 shadow-lg">
+              <section id="contact" className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg lg:sticky lg:top-20">
                 <div className="px-6 py-5 bg-gray-50 border-b border-gray-100">
                   <h3 className="text-lg font-bold text-gray-900">Apply Today<span className="text-[#A51C30]">.</span></h3>
                 </div>
                 <div className="px-6 py-6 space-y-6">
-                  <div className="space-y-4">
-                    <Link href={`/application-builder?course_id=${course.id}`} className="w-full flex items-center justify-center gap-2 bg-[#A51C30] text-white py-4 rounded-xl font-bold hover:bg-[#8A1828] transition-all shadow-lg shadow-red-900/20">
+                    <Link href={`/application-builder?course_id=${course.id}`} className="w-full flex items-center justify-center gap-2 bg-[#A51C30] text-white py-4 rounded-xl font-bold hover:bg-[#8A1828] transition-all shadow-lg active:scale-95">
                       <Sparkles size={18} /> Apply for this Course
                     </Link>
-                  </div>
                 </div>
               </section>
 
               <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
                 <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                  <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">Quick Facts</h3>
+                  <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Quick Facts</h3>
                 </div>
                 <div className="px-6 py-4 space-y-4">
                   {[
@@ -533,8 +495,8 @@ export default function CourseMicrosite() {
                     <div key={idx} className="flex items-center gap-4">
                       <item.icon size={16} className="text-[#A51C30] shrink-0" />
                       <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">{item.label}</p>
-                        <p className="text-sm font-bold text-gray-800">{item.value}</p>
+                        <p className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">{item.label}</p>
+                        <p className="text-xs sm:text-sm font-bold text-gray-800">{item.value}</p>
                       </div>
                     </div>
                   ))}
