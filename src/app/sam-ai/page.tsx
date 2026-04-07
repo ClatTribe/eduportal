@@ -778,7 +778,7 @@ export default function AskSwatiAIDashboard() {
           <div className="rounded-2xl p-8 max-w-md w-full text-center" style={{ backgroundColor: COLORS.white, border: `1px solid ${COLORS.border}`, boxShadow: '0 4px 24px rgba(165, 28, 48, 0.08)' }}>
             <Sparkles className="w-16 h-16 mx-auto mb-4" style={{ color: COLORS.accent }} />
             <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.text }}>
-              Welcome to Ask Swati AI
+              Welcome to Ask SAM AI
             </h2>
             <p className="mb-6" style={{ color: COLORS.textSecondary }}>
               Sign in to access your AI-powered study abroad counsellor
@@ -818,7 +818,7 @@ export default function AskSwatiAIDashboard() {
               style={{ backgroundColor: COLORS.accent, color: COLORS.white }}
             >
               <Sparkles className="w-4 h-4" />
-              <span className="text-sm font-semibold">SWATI AI ACTIVE</span>
+              <span className="text-sm font-semibold">SAM AI ACTIVE</span>
             </div>
           </div>
 
@@ -1297,7 +1297,7 @@ export default function AskSwatiAIDashboard() {
           {/* ─── Next Steps Section ─── */}
           <div className="rounded-xl p-6" style={{ backgroundColor: COLORS.surface, borderLeft: `4px solid ${COLORS.accent}` }}>
             <h2 className="text-2xl font-bold mb-6" style={{ color: COLORS.text }}>
-              Next Steps by Swati AI
+              Next Steps by SAM AI
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               {[
@@ -1319,7 +1319,7 @@ export default function AskSwatiAIDashboard() {
               onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = COLORS.accentLight; }}
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = COLORS.accent; }}
             >
-              Ask Swati AI a Question
+              Ask SAM AI a Question
             </button>
           </div>
 
