@@ -305,7 +305,7 @@ export default function CourseMicrosite() {
                 <div 
                   className="hidden lg:block w-[45%] group perspective-1000" 
                   onMouseEnter={() => setIsPaused(true)}
-                  onMouseLeave={() => setIsPaused(false)}
+                  onMouseLeave={() => setIsPaused(false)} 
                 >
                   <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-black transition-all duration-500 group-hover:scale-[1.02]">
                     {current.type === 'image' ? (
