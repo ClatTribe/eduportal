@@ -303,7 +303,7 @@ export default function CourseMicrosite() {
               {/* DESKTOP MEDIA SLIDER - Hidden on Mobile */}
               {mediaItems.length > 0 && (
                 <div 
-                  className="hidden lg:block w-[45%] group perspective-1000"
+                  className="hidden lg:block w-[45%] group perspective-1000" 
                   onMouseEnter={() => setIsPaused(true)}
                   onMouseLeave={() => setIsPaused(false)}
                 >
