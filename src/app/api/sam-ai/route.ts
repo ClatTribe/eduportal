@@ -249,10 +249,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Build system prompt with profile data
     const systemPrompt = buildDynamicPrompt(profileContext);
 
-    // Model selection: use gemini-1.5-flash (stable, production-ready)
+    // Model selection: use gemini-2.5-flash (stable, production-ready)
     // "deep" mode uses the full flash model; "chat" uses the same (lite was unreliable)
-    const PRIMARY_MODEL = "gemini-1.5-flash";
-    const FALLBACK_MODEL = "gemini-1.5-flash-8b";
+    const PRIMARY_MODEL = "gemini-2.5-flash";
+    const FALLBACK_MODEL = "gemini-2.0-flash";
 
     // Try primary model
     let response = await makeGeminiRequest(
@@ -345,7 +345,7 @@ export async function GET(): Promise<NextResponse> {
   return NextResponse.json({
     status: hasApiKey ? "ok" : "misconfigured",
     service: "SAM AI — EduAbroad Study Abroad Mentor",
-    model: "gemini-1.5-flash",
+    model: "gemini-2.5-flash",
     apiKeyConfigured: hasApiKey,
     hint: hasApiKey
       ? undefined
