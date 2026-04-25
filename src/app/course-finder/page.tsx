@@ -159,21 +159,11 @@ const CourseFinder: React.FC = () => {
       const from = page * perPage;
       const to = from + perPage - 1;
 
-      // Only select the columns needed for the card display (not all 30+ columns)
-      const selectColumns = [
-        "id", "University", "University Ranking", "Program Name", "Concentration",
-        "Website URL", "Campus", "Country", "Study Level", "Duration",
-        "Open Intakes", "Intake Year", "Entry Requirements",
-        "IELTS Score", "IELTS No Band Less Than", "TOEFL Score", "PTE Score", "DET Score",
-        "Application Deadline", "Yearly Tuition Fees", "Scholarship Available",
-        "English Proficiency Exam Waiver"
-      ].join(",");
-
       // Use count: "planned" instead of "exact" for much faster response
       // PostgreSQL planner estimate is fast and accurate enough for pagination
       let query = supabase
         .from("courses")
-        .select(selectColumns, { count: "planned" })
+        .select("*", { count: "planned" })
         .not("University", "is", null)
         .order("id", { ascending: true });
 
@@ -216,7 +206,7 @@ const CourseFinder: React.FC = () => {
       if (supabaseError) throw supabaseError;
 
       // Sort by QS ranking (ranked colleges first, by rank ascending)
-      const sortedCourses = sortCoursesByQSRanking((data as unknown as Course[]) || []);
+      const sortedCourses = sortCoursesByQSRanking((data as Course[]) || []);
 
       setCourses(sortedCourses);
       if (count !== null) setTotalCount(count);
