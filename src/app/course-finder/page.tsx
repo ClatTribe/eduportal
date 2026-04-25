@@ -159,9 +159,21 @@ const CourseFinder: React.FC = () => {
       const from = page * perPage;
       const to = from + perPage - 1;
 
+      // Only select the columns needed for the card display (not all 30+ columns)
+      const selectColumns = [
+        "id", "University", "University Ranking", "Program Name", "Concentration",
+        "Website URL", "Campus", "Country", "Study Level", "Duration",
+        "Open Intakes", "Intake Year", "Entry Requirements",
+        "IELTS Score", "IELTS No Band Less Than", "TOEFL Score", "PTE Score", "DET Score",
+        "Application Deadline", "Yearly Tuition Fees", "Scholarship Available",
+        "English Proficiency Exam Waiver"
+      ].join(",");
+
+      // Use count: "planned" instead of "exact" for much faster response
+      // PostgreSQL planner estimate is fast and accurate enough for pagination
       let query = supabase
         .from("courses")
-        .select("*", { count: "exact" })
+        .select(selectColumns, { count: "planned" })
         .not("University", "is", null)
         .order("id", { ascending: true });
 
@@ -176,7 +188,6 @@ const CourseFinder: React.FC = () => {
       }
 
       // FIX: Intake filter now searches for both season names AND month names
-      // e.g. "Fall" also matches "September", "Oct", "August" etc.
       if (filters.intake) {
         const searchTerms = intakeMonthMap[filters.intake] || [filters.intake];
         const orConditions = searchTerms
@@ -190,6 +201,7 @@ const CourseFinder: React.FC = () => {
           `Program Name.ilike.%${filters.search}%,University.ilike.%${filters.search}%,Campus.ilike.%${filters.search}%`
         );
       }
+
       if (filters.programName) {
         query = query.ilike("Program Name", `%${filters.programName}%`);
       }
@@ -204,7 +216,7 @@ const CourseFinder: React.FC = () => {
       if (supabaseError) throw supabaseError;
 
       // Sort by QS ranking (ranked colleges first, by rank ascending)
-      const sortedCourses = sortCoursesByQSRanking(data || []);
+      const sortedCourses = sortCoursesByQSRanking((data as Course[]) || []);
 
       setCourses(sortedCourses);
       if (count !== null) setTotalCount(count);
@@ -221,7 +233,7 @@ const CourseFinder: React.FC = () => {
     }
   };
 
-  const handleRecommendedCoursesChange = (recCourses: Course[]) => {
+const handleRecommendedCoursesChange = (recCourses: Course[]) => {
     // Sort recommended courses by QS ranking too
     const sorted = sortCoursesByQSRanking(recCourses);
     setRecommendedCourses(sorted);
