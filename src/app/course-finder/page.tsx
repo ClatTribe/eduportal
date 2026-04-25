@@ -216,7 +216,7 @@ const CourseFinder: React.FC = () => {
       if (supabaseError) throw supabaseError;
 
       // Sort by QS ranking (ranked colleges first, by rank ascending)
-      const sortedCourses = sortCoursesByQSRanking((data as Course[]) || []);
+      const sortedCourses = sortCoursesByQSRanking((data as unknown as Course[]) || []);
 
       setCourses(sortedCourses);
       if (count !== null) setTotalCount(count);
