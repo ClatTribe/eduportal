@@ -72,7 +72,6 @@ const AcademicSection: React.FC<AcademicSectionProps> = ({
             />
           </div>
         );
-
       case "twelfth":
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -125,108 +124,104 @@ const AcademicSection: React.FC<AcademicSectionProps> = ({
             />
           </div>
         );
-
       case "ug":
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InputField
-              label="Degree"
-              value={formData.ug_degree}
-              onChange={onInputChange}
-              field="ug_degree"
-              placeholder="B.Tech, B.Sc, B.Com, etc."
-              required
-              disabled={!isEditing}
-            />
-            <InputField
-              label="University/College"
-              value={formData.ug_university}
-              onChange={onInputChange}
-              field="ug_university"
-              placeholder="Name of institution"
-              required
-              disabled={!isEditing}
-            />
-            <InputField
-              label="Field of Study"
-              value={formData.ug_field}
-              onChange={onInputChange}
-              field="ug_field"
-              placeholder="Computer Science, Mechanical, etc."
-              disabled={!isEditing}
-            />
-            <InputField
-              label="Year of Graduation"
-              type="number"
-              value={formData.ug_year}
-              onChange={onInputChange}
-              field="ug_year"
-              placeholder="2024"
-              required
-              disabled={!isEditing}
-            />
-            <InputField
-              label="CGPA/Percentage"
-              value={formData.ug_score}
-              onChange={onInputChange}
-              field="ug_score"
-              placeholder="8.5 CGPA or 85%"
-              required
-              disabled={!isEditing}
-            />
+          <div>
+            <p className="text-xs text-gray-500 mb-3 italic">All fields in this section are optional</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InputField
+                label="Degree"
+                value={formData.ug_degree}
+                onChange={onInputChange}
+                field="ug_degree"
+                placeholder="B.Tech, B.Sc, B.Com, etc."
+                disabled={!isEditing}
+              />
+              <InputField
+                label="University/College"
+                value={formData.ug_university}
+                onChange={onInputChange}
+                field="ug_university"
+                placeholder="Name of institution"
+                disabled={!isEditing}
+              />
+              <InputField
+                label="Field of Study"
+                value={formData.ug_field}
+                onChange={onInputChange}
+                field="ug_field"
+                placeholder="Computer Science, Mechanical, etc."
+                disabled={!isEditing}
+              />
+              <InputField
+                label="Year of Graduation"
+                type="number"
+                value={formData.ug_year}
+                onChange={onInputChange}
+                field="ug_year"
+                placeholder="2024"
+                disabled={!isEditing}
+              />
+              <InputField
+                label="CGPA/Percentage"
+                value={formData.ug_score}
+                onChange={onInputChange}
+                field="ug_score"
+                placeholder="8.5 CGPA or 85%"
+                disabled={!isEditing}
+              />
+            </div>
           </div>
         );
-
       case "pg":
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InputField
-              label="Degree"
-              value={formData.pg_degree}
-              onChange={onInputChange}
-              field="pg_degree"
-              placeholder="M.Tech, M.Sc, MBA, etc."
-              required
-              disabled={!isEditing}
-            />
-            <InputField
-              label="University"
-              value={formData.pg_university}
-              onChange={onInputChange}
-              field="pg_university"
-              placeholder="Name of institution"
-              required
-              disabled={!isEditing}
-            />
-            <InputField
-              label="Field of Study"
-              value={formData.pg_field}
-              onChange={onInputChange}
-              field="pg_field"
-              placeholder="Specialization"
-              disabled={!isEditing}
-            />
-            <InputField
-              label="Year of Graduation"
-              type="number"
-              value={formData.pg_year}
-              onChange={onInputChange}
-              field="pg_year"
-              placeholder="2024"
-              required
-              disabled={!isEditing}
-            />
-            <InputField
-              label="CGPA/Percentage"
-              value={formData.pg_score}
-              onChange={onInputChange}
-              field="pg_score"
-              placeholder="8.5 CGPA or 85%"
-              disabled={!isEditing}
-            />
+          <div>
+            <p className="text-xs text-gray-500 mb-3 italic">All fields in this section are optional</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InputField
+                label="Degree"
+                value={formData.pg_degree}
+                onChange={onInputChange}
+                field="pg_degree"
+                placeholder="M.Tech, M.Sc, MBA, etc."
+                disabled={!isEditing}
+              />
+              <InputField
+                label="University"
+                value={formData.pg_university}
+                onChange={onInputChange}
+                field="pg_university"
+                placeholder="Name of institution"
+                disabled={!isEditing}
+              />
+              <InputField
+                label="Field of Study"
+                value={formData.pg_field}
+                onChange={onInputChange}
+                field="pg_field"
+                placeholder="Specialization"
+                disabled={!isEditing}
+              />
+              <InputField
+                label="Year of Graduation"
+                type="number"
+                value={formData.pg_year}
+                onChange={onInputChange}
+                field="pg_year"
+                placeholder="2024"
+                disabled={!isEditing}
+              />
+              <InputField
+                label="CGPA/Percentage"
+                value={formData.pg_score}
+                onChange={onInputChange}
+                field="pg_score"
+                placeholder="8.5 CGPA or 85%"
+                disabled={!isEditing}
+              />
+            </div>
           </div>
         );
-
       default:
         return null;
     }
