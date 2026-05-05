@@ -3,10 +3,12 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Search,
   Clock,
-  ChevronRight,
   Sparkles,
   TrendingUp,
-  ArrowRight,
+  ArrowUpRight,
+  Flame,
+  Zap,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
 import DefaultLayout from "../defaultLayout";
@@ -41,49 +43,57 @@ const CATEGORIES = [
   "News",
 ];
 
-const CATEGORY_COLORS: Record<string, string> = {
-  "Country Guide": "#A51C30",
-  "Visa Tips": "#2563eb",
-  Scholarships: "#059669",
-  "IELTS/TOEFL": "#7c3aed",
-  "Student Life": "#d97706",
-  Rankings: "#dc2626",
-  "Career After": "#0891b2",
-  "Admit Stories": "#be185d",
-  News: "#4f46e5",
-  "Study Abroad": "#A51C30",
+const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string; dot: string }> = {
+  "Country Guide": { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", dot: "bg-rose-500" },
+  "Visa Tips": { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", dot: "bg-blue-500" },
+  Scholarships: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500" },
+  "IELTS/TOEFL": { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200", dot: "bg-violet-500" },
+  "Student Life": { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", dot: "bg-amber-500" },
+  Rankings: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", dot: "bg-red-500" },
+  "Career After": { bg: "bg-cyan-50", text: "text-cyan-700", border: "border-cyan-200", dot: "bg-cyan-500" },
+  "Admit Stories": { bg: "bg-pink-50", text: "text-pink-700", border: "border-pink-200", dot: "bg-pink-500" },
+  News: { bg: "bg-indigo-50", text: "text-indigo-700", border: "border-indigo-200", dot: "bg-indigo-500" },
 };
 
-function getCategoryColor(category: string): string {
-  return CATEGORY_COLORS[category] || "#A51C30";
+function getCatStyle(category: string) {
+  return CATEGORY_STYLES[category] || { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", dot: "bg-rose-500" };
 }
 
 function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
-// Generate a gradient cover based on category when no image is available
-function getCoverGradient(category: string, index: number): string {
-  const gradients = [
-    "linear-gradient(135deg, #A51C30 0%, #d4243e 50%, #f87171 100%)",
-    "linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #60a5fa 100%)",
-    "linear-gradient(135deg, #065f46 0%, #059669 50%, #34d399 100%)",
-    "linear-gradient(135deg, #4c1d95 0%, #7c3aed 50%, #a78bfa 100%)",
-    "linear-gradient(135deg, #78350f 0%, #d97706 50%, #fbbf24 100%)",
-    "linear-gradient(135deg, #7f1d1d 0%, #dc2626 50%, #f87171 100%)",
+function getPatternSVG(index: number): string {
+  const patterns = [
+    `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+    `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.06' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
+    `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.07' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E")`,
   ];
-  return gradients[index % gradients.length];
+  return patterns[index % patterns.length];
 }
+
+const COVER_GRADIENTS = [
+  "linear-gradient(145deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)",
+  "linear-gradient(145deg, #0c0c1d 0%, #1b1464 40%, #3a0ca3 100%)",
+  "linear-gradient(145deg, #132a13 0%, #1a472a 40%, #2d6a4f 100%)",
+  "linear-gradient(145deg, #2d0036 0%, #5c1a72 40%, #9b2335 100%)",
+  "linear-gradient(145deg, #1a1423 0%, #2d1b69 40%, #5a189a 100%)",
+  "linear-gradient(145deg, #0a1628 0%, #172a45 40%, #1b4965 100%)",
+];
 
 export default function MagazinePage() {
   const [posts, setPosts] = useState<MagazinePost[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
 
   useEffect(() => {
     fetchPosts();
@@ -98,7 +108,6 @@ export default function MagazinePage() {
         .eq("status", "published")
         .order("published_at", { ascending: false })
         .limit(50);
-
       if (error) throw error;
       setPosts((data as MagazinePost[]) || []);
     } catch (err) {
@@ -130,218 +139,281 @@ export default function MagazinePage() {
 
   return (
     <DefaultLayout>
-      <div className="min-h-screen bg-white">
-        {/* Hero Header */}
-        <div className="bg-gradient-to-br from-[#FEF2F3] via-white to-[#FEF2F3] border-b border-[#FECDD3]">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-            {/* Live Badge */}
-            <div className="flex items-center gap-2 mb-4">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A51C30] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#A51C30]"></span>
-              </span>
-              <span className="text-xs font-bold text-[#A51C30] uppercase tracking-wider">
-                Fresh content daily
-              </span>
+      <div className="min-h-screen bg-gray-50/50">
+        {/* === HERO SECTION === */}
+        <div className="relative overflow-hidden">
+          {/* Subtle animated background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white via-rose-50/40 to-white" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-[#A51C30]/5 to-transparent rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-blue-500/5 to-transparent rounded-full blur-3xl" />
+
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-6">
+            {/* Top bar */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#A51C30] flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
+                    Magazine
+                  </h1>
+                  <p className="text-xs text-gray-400 font-medium">by EduAbroad</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-[11px] font-semibold text-emerald-600 uppercase tracking-widest">
+                  Updated daily
+                </span>
+              </div>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-3">
-              The EduAbroad{" "}
-              <span className="text-[#A51C30]">Magazine</span>
-            </h1>
-            <p className="text-base sm:text-lg text-gray-600 max-w-2xl">
-              Your daily dose of study abroad insights, visa hacks, scholarship
-              alerts, and student stories. Built for the future global student.
-            </p>
-
-            {/* Search Bar */}
-            <div className="mt-6 max-w-xl">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            {/* Search */}
+            <div className="max-w-2xl">
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-300 group-focus-within:text-[#A51C30] transition-colors" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder='Try "USA scholarships", "IELTS tips", "Canada PR"...'
-                  className="w-full pl-12 pr-4 py-3 sm:py-3.5 text-sm sm:text-base border-2 border-[#FECDD3] rounded-xl focus:outline-none focus:border-[#A51C30] bg-white text-gray-800 placeholder:text-gray-400 shadow-sm transition-all"
+                  placeholder="Search articles, topics, countries..."
+                  className="w-full pl-11 pr-4 py-3 text-sm bg-white border border-gray-200 rounded-2xl focus:outline-none focus:border-[#A51C30] focus:ring-4 focus:ring-[#A51C30]/5 text-gray-800 placeholder:text-gray-300 transition-all"
                 />
               </div>
             </div>
 
-            {/* Category Pills */}
-            <div className="mt-6 flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                    activeCategory === cat
-                      ? "bg-[#A51C30] text-white shadow-md shadow-red-200"
-                      : "bg-white text-gray-600 border border-gray-200 hover:border-[#A51C30] hover:text-[#A51C30]"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            {/* Category Pills — horizontal scroll on mobile */}
+            <div className="mt-5 -mx-4 px-4 overflow-x-auto scrollbar-hide">
+              <div className="flex gap-2 pb-1 w-max">
+                {CATEGORIES.map((cat) => {
+                  const isActive = activeCategory === cat;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCategory(cat)}
+                      className={`px-4 py-2 rounded-xl text-[13px] font-medium whitespace-nowrap transition-all duration-200 ${
+                        isActive
+                          ? "bg-gray-900 text-white"
+                          : "bg-white text-gray-500 border border-gray-150 hover:bg-gray-50 hover:text-gray-700"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        {/* === CONTENT === */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
           {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-[#A51C30] flex items-center gap-3">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#A51C30]"></div>
-                <span className="text-sm font-medium">Loading articles...</span>
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#A51C30]/10 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#A51C30] border-t-transparent"></div>
               </div>
+              <span className="text-sm text-gray-400">Loading articles...</span>
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center py-20">
-              <Sparkles className="w-12 h-12 text-[#A51C30] mx-auto mb-4 opacity-50" />
-              <h3 className="text-xl font-bold text-gray-800 mb-2">
-                Coming Soon
-              </h3>
-              <p className="text-gray-500">
-                Our first articles are being crafted. Check back tomorrow!
-              </p>
+            <div className="text-center py-24">
+              <div className="w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-7 h-7 text-[#A51C30]" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 mb-1">Coming soon</h3>
+              <p className="text-sm text-gray-400">Our first articles are being crafted.</p>
             </div>
           ) : (
             <>
-              {/* Featured Post */}
+              {/* === FEATURED POST — Bento Hero === */}
               {featuredPost && activeCategory === "All" && !searchQuery && (
-                <Link href={`/magazine/${featuredPost.slug}`}>
-                  <div className="group relative rounded-2xl overflow-hidden mb-10 cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300">
+                <Link href={`/magazine/${featuredPost.slug}`} className="block mb-8">
+                  <div
+                    className="group relative rounded-3xl overflow-hidden cursor-pointer"
+                    style={{ minHeight: "380px" }}
+                  >
+                    {/* Dark immersive background */}
                     <div
-                      className="h-64 sm:h-80 md:h-96 w-full"
+                      className="absolute inset-0"
                       style={{
                         background: featuredPost.cover_image_url
                           ? `url(${featuredPost.cover_image_url}) center/cover`
-                          : getCoverGradient(featuredPost.category, 0),
+                          : COVER_GRADIENTS[0],
                       }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                      <div className="flex items-center gap-3 mb-3">
-                        <span
-                          className="px-3 py-1 rounded-full text-xs font-bold text-white"
-                          style={{
-                            backgroundColor: getCategoryColor(
-                              featuredPost.category
-                            ),
-                          }}
-                        >
+                    {/* Subtle pattern overlay */}
+                    <div
+                      className="absolute inset-0 opacity-40"
+                      style={{ backgroundImage: getPatternSVG(0) }}
+                    />
+                    {/* Bottom gradient for text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                    {/* Content */}
+                    <div className="relative h-full flex flex-col justify-end p-6 sm:p-10" style={{ minHeight: "380px" }}>
+                      {/* Top badges */}
+                      <div className="absolute top-5 left-5 sm:top-8 sm:left-10 flex items-center gap-2">
+                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold">
+                          <Flame className="w-3 h-3" />
+                          Featured
+                        </span>
+                        <span className="px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold">
                           {featuredPost.category}
                         </span>
-                        <span className="text-white/80 text-xs flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
+                      </div>
+
+                      {/* Read time chip — top right */}
+                      <div className="absolute top-5 right-5 sm:top-8 sm:right-10">
+                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white/90 text-[11px] font-medium">
+                          <Clock className="w-3 h-3" />
                           {featuredPost.read_time} min read
                         </span>
                       </div>
-                      <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white mb-2 group-hover:text-red-200 transition-colors">
-                        {featuredPost.title}
-                      </h2>
-                      <p className="text-white/80 text-sm sm:text-base max-w-2xl line-clamp-2">
-                        {featuredPost.excerpt}
-                      </p>
-                      <div className="mt-4 flex items-center gap-2 text-white/70 text-xs">
-                        <span>{featuredPost.author}</span>
-                        <span>·</span>
-                        <span>{formatDate(featuredPost.published_at)}</span>
+
+                      {/* Title & excerpt */}
+                      <div className="max-w-3xl">
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 leading-tight group-hover:translate-x-1 transition-transform duration-300">
+                          {featuredPost.title}
+                        </h2>
+                        <p className="text-white/60 text-sm sm:text-base line-clamp-2 mb-5 max-w-xl">
+                          {featuredPost.excerpt}
+                        </p>
+
+                        {/* Author row + CTA */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-xs font-bold">
+                              EA
+                            </div>
+                            <div className="flex items-center gap-2 text-white/50 text-xs">
+                              <span className="text-white/70 font-medium">{featuredPost.author}</span>
+                              <span>·</span>
+                              <span>{formatDate(featuredPost.published_at)}</span>
+                            </div>
+                          </div>
+                          <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm font-medium group-hover:bg-white/20 transition-all">
+                            Read article
+                            <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </Link>
               )}
 
-              {/* Post Count */}
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-[#A51C30]" />
-                  {activeCategory === "All" ? "Latest Articles" : activeCategory}
-                  <span className="text-sm font-normal text-gray-400 ml-1">
-                    ({filteredPosts.length})
+              {/* === SECTION HEADER === */}
+              <div className="flex items-center justify-between mb-5 mt-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
+                    <TrendingUp className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <h3 className="text-[15px] font-semibold text-gray-800">
+                    {activeCategory === "All" ? "Latest" : activeCategory}
+                  </h3>
+                  <span className="text-xs text-gray-300 font-medium">
+                    {filteredPosts.length} articles
                   </span>
-                </h3>
+                </div>
               </div>
 
-              {/* Blog Grid */}
+              {/* === BLOG GRID — Modern Cards === */}
               {regularPosts.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {regularPosts.map((post, index) => (
-                    <Link key={post.id} href={`/magazine/${post.slug}`}>
-                      <article className="group bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col">
-                        {/* Card Cover */}
-                        <div
-                          className="h-44 w-full relative overflow-hidden"
-                          style={{
-                            background: post.cover_image_url
-                              ? `url(${post.cover_image_url}) center/cover`
-                              : getCoverGradient(post.category, index + 1),
-                          }}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {regularPosts.map((post, index) => {
+                    const catStyle = getCatStyle(post.category);
+                    const isHovered = hoveredCard === post.id;
+                    return (
+                      <Link key={post.id} href={`/magazine/${post.slug}`}>
+                        <article
+                          className="group bg-white rounded-2xl border border-gray-100 overflow-hidden cursor-pointer h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1"
+                          onMouseEnter={() => setHoveredCard(post.id)}
+                          onMouseLeave={() => setHoveredCard(null)}
                         >
-                          <div className="absolute top-3 left-3">
-                            <span
-                              className="px-2.5 py-1 rounded-full text-[10px] font-bold text-white uppercase tracking-wide"
+                          {/* Card Cover */}
+                          <div className="relative h-48 overflow-hidden">
+                            <div
+                              className="absolute inset-0 transition-transform duration-500 group-hover:scale-105"
                               style={{
-                                backgroundColor: getCategoryColor(post.category),
+                                background: post.cover_image_url
+                                  ? `url(${post.cover_image_url}) center/cover`
+                                  : COVER_GRADIENTS[(index + 1) % COVER_GRADIENTS.length],
                               }}
-                            >
-                              {post.category}
-                            </span>
-                          </div>
-                          <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-md">
-                            <span className="text-white text-[10px] font-medium flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {post.read_time} min
-                            </span>
-                          </div>
-                        </div>
+                            />
+                            <div
+                              className="absolute inset-0 opacity-30"
+                              style={{ backgroundImage: getPatternSVG(index + 1) }}
+                            />
 
-                        {/* Card Body */}
-                        <div className="p-4 flex-1 flex flex-col">
-                          <h3 className="text-base font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-[#A51C30] transition-colors">
-                            {post.title}
-                          </h3>
-                          <p className="text-sm text-gray-500 line-clamp-2 mb-3 flex-1">
-                            {post.excerpt}
-                          </p>
-
-                          {/* Tags */}
-                          {post.tags && post.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mb-3">
-                              {post.tags.slice(0, 3).map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="px-2 py-0.5 bg-gray-50 text-gray-500 text-[10px] font-medium rounded-md border border-gray-100"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
+                            {/* Floating chips */}
+                            <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
+                              <span className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold ${catStyle.bg} ${catStyle.text} border ${catStyle.border}`}>
+                                {post.category}
+                              </span>
+                              <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-black/30 backdrop-blur-sm text-white text-[11px] font-medium">
+                                <Clock className="w-3 h-3" />
+                                {post.read_time}m
+                              </span>
                             </div>
-                          )}
 
-                          {/* Footer */}
-                          <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-                            <span className="text-xs text-gray-400">
-                              {formatDate(post.published_at)}
-                            </span>
-                            <span className="text-xs text-[#A51C30] font-semibold flex items-center gap-1 group-hover:gap-2 transition-all">
-                              Read
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </span>
+                            {/* Bottom gradient */}
+                            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/30 to-transparent" />
                           </div>
-                        </div>
-                      </article>
-                    </Link>
-                  ))}
+
+                          {/* Card Body */}
+                          <div className="p-5 flex-1 flex flex-col">
+                            <h3 className="text-[15px] font-semibold text-gray-900 mb-2 line-clamp-2 leading-snug group-hover:text-[#A51C30] transition-colors">
+                              {post.title}
+                            </h3>
+                            <p className="text-[13px] text-gray-400 line-clamp-2 mb-4 flex-1 leading-relaxed">
+                              {post.excerpt}
+                            </p>
+
+                            {/* Tags */}
+                            {post.tags && post.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mb-4">
+                                {post.tags.slice(0, 2).map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="px-2 py-0.5 bg-gray-50 text-gray-400 text-[11px] font-medium rounded-md"
+                                  >
+                                    #{tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Footer */}
+                            <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                              <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#A51C30] to-[#d4243e] flex items-center justify-center">
+                                  <span className="text-white text-[8px] font-bold">EA</span>
+                                </div>
+                                <span className="text-[11px] text-gray-300 font-medium">
+                                  {formatDate(post.published_at)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 text-[12px] text-[#A51C30] font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+                                Read
+                                <ArrowUpRight className="w-3.5 h-3.5" />
+                              </div>
+                            </div>
+                          </div>
+                        </article>
+                      </Link>
+                    );
+                  })}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-500">
-                    No articles found for this filter. Try a different category or
-                    search term.
-                  </p>
+                <div className="text-center py-16">
+                  <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                    <Eye className="w-5 h-5 text-gray-300" />
+                  </div>
+                  <p className="text-sm text-gray-400">No articles match your search.</p>
                 </div>
               )}
             </>
