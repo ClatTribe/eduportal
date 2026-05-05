@@ -14,6 +14,7 @@ import {
   TicketsPlane,
   Sparkles,
   UserPlus,
+  Newspaper,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -41,6 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
       { icon: DollarSign, label: "Scholarship Finder", path: "/scholarship-finder" },
       { icon: Building2, label: "Shortlist Builder", path: "/shortlist-builder" },
       { icon: Building2, label: "Compare Your College", path: "/compare-your-college" },
+      { icon: Newspaper, label: "Magazine", path: "/magazine" },
     ],
     applications: [
       { icon: BookOpen, label: "Application Builder", path: "/application-builder" },
