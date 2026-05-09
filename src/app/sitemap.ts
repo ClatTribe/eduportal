@@ -9,7 +9,6 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: "https://app.goeduabroad.com",
@@ -37,7 +36,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Dynamic magazine articles
   const { data: posts } = await supabase
     .from("magazine_posts")
     .select("slug, published_at")
