@@ -132,7 +132,7 @@ const CourseFinder: React.FC = () => {
   // Track the latest fetch to prevent stale responses from overwriting newer ones
   const fetchIdRef = useRef(0);
 
-  const perPage = 15;
+  const perPage = 16;
 
   useEffect(() => {
     if (viewMode === "all") {
@@ -163,7 +163,7 @@ const CourseFinder: React.FC = () => {
       // PostgreSQL planner estimate is fast and accurate enough for pagination
       let query = supabase
         .from("courses")
-        .select("*", { count: "exact" })
+        .select("*", { count: "estimated" })
         .not("University", "is", null)
         .order("qs_rank", { ascending: true, foreignTable: undefined }).order("id", { ascending: true });
 
