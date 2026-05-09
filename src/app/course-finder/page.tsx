@@ -159,11 +159,11 @@ const CourseFinder: React.FC = () => {
       const from = page * perPage;
       const to = from + perPage - 1;
 
-      // Use count: "planned" instead of "exact" for much faster response
+      // Use count: "exact" instead of "exact" for much faster response
       // PostgreSQL planner estimate is fast and accurate enough for pagination
       let query = supabase
         .from("courses")
-        .select("*", { count: "planned" })
+        .select("*", { count: "exact" })
         .not("University", "is", null)
         .order("id", { ascending: true });
 
