@@ -165,7 +165,7 @@ const CourseFinder: React.FC = () => {
         .from("courses")
         .select("*", { count: "exact" })
         .not("University", "is", null)
-        .order("id", { ascending: true });
+        .order("qs_rank", { ascending: true, nullsLast: true });
 
       if (filters.country) {
         query = query.eq("Country", filters.country);
