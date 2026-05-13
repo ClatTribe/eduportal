@@ -1,6 +1,10 @@
 import { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 
+// Regenerate the sitemap at most once an hour so new magazine_posts appear
+// in the sitemap without waiting for the next Vercel build.
+export const revalidate = 3600;
+
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
   "https://inxxmyjxizswmtxumrop.supabase.co";
