@@ -95,6 +95,13 @@ export const Navbar: React.FC = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
+            <Link
+              href="/magazine"
+              className="text-sm font-medium text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer"
+            >
+              Magazine
+            </Link>
+
             <button
               onClick={() => navigateToSection("trust-section")}
               className="text-sm font-medium text-slate-600 hover:text-[#A51C30] transition-colors cursor-pointer"

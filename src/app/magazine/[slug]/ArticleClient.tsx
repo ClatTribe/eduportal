@@ -14,6 +14,9 @@ import {
 import Link from "next/link";
 import DefaultLayout from "../../defaultLayout";
 import { supabase } from "../../../../lib/supabase";
+import { EnquiryForm } from "../EnquiryForm";
+import JumbleWords from "../JumbleWords";
+import { ArticleAuthors } from "../ArticleAuthors";
 
 interface MagazinePost {
   id: number;
@@ -39,36 +42,86 @@ interface TOCItem {
   level: number;
 }
 
-const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  "Country Guide": { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200" },
-  "Visa Tips": { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
-  Scholarships: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
-  "IELTS/TOEFL": { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
-  "Student Life": { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
+const CATEGORY_STYLES: Record<
+  string,
+  { bg: string; text: string; border: string }
+> = {
+  "Country Guide": {
+    bg: "bg-rose-50",
+    text: "text-rose-700",
+    border: "border-rose-200",
+  },
+  "Visa Tips": {
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+    border: "border-blue-200",
+  },
+  Scholarships: {
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    border: "border-emerald-200",
+  },
+  "IELTS/TOEFL": {
+    bg: "bg-violet-50",
+    text: "text-violet-700",
+    border: "border-violet-200",
+  },
+  "Student Life": {
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    border: "border-amber-200",
+  },
   Rankings: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" },
-  "Career After": { bg: "bg-cyan-50", text: "text-cyan-700", border: "border-cyan-200" },
-  "Admit Stories": { bg: "bg-pink-50", text: "text-pink-700", border: "border-pink-200" },
-  News: { bg: "bg-indigo-50", text: "text-indigo-700", border: "border-indigo-200" },
+  "Career After": {
+    bg: "bg-cyan-50",
+    text: "text-cyan-700",
+    border: "border-cyan-200",
+  },
+  "Admit Stories": {
+    bg: "bg-pink-50",
+    text: "text-pink-700",
+    border: "border-pink-200",
+  },
+  News: {
+    bg: "bg-indigo-50",
+    text: "text-indigo-700",
+    border: "border-indigo-200",
+  },
 };
 
 function getCatStyle(category: string) {
-  return CATEGORY_STYLES[category] || { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200" };
+  return (
+    CATEGORY_STYLES[category] || {
+      bg: "bg-rose-50",
+      text: "text-rose-700",
+      border: "border-rose-200",
+    }
+  );
 }
 
 const COVER_GRADIENTS: Record<string, string> = {
-  "Country Guide": "linear-gradient(145deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)",
+  "Country Guide":
+    "linear-gradient(145deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)",
   "Visa Tips": "linear-gradient(145deg, #0a1628 0%, #172a45 40%, #1b4965 100%)",
-  Scholarships: "linear-gradient(145deg, #132a13 0%, #1a472a 40%, #2d6a4f 100%)",
-  "IELTS/TOEFL": "linear-gradient(145deg, #1a1423 0%, #2d1b69 40%, #5a189a 100%)",
-  "Student Life": "linear-gradient(145deg, #2d1b00 0%, #5c3a00 40%, #8a6914 100%)",
+  Scholarships:
+    "linear-gradient(145deg, #132a13 0%, #1a472a 40%, #2d6a4f 100%)",
+  "IELTS/TOEFL":
+    "linear-gradient(145deg, #1a1423 0%, #2d1b69 40%, #5a189a 100%)",
+  "Student Life":
+    "linear-gradient(145deg, #2d1b00 0%, #5c3a00 40%, #8a6914 100%)",
   Rankings: "linear-gradient(145deg, #2d0008 0%, #5c0011 40%, #9b2335 100%)",
-  "Career After": "linear-gradient(145deg, #0a2329 0%, #134e5e 40%, #1b6b7a 100%)",
-  "Admit Stories": "linear-gradient(145deg, #2d0036 0%, #5c1a72 40%, #9b2335 100%)",
+  "Career After":
+    "linear-gradient(145deg, #0a2329 0%, #134e5e 40%, #1b6b7a 100%)",
+  "Admit Stories":
+    "linear-gradient(145deg, #2d0036 0%, #5c1a72 40%, #9b2335 100%)",
   News: "linear-gradient(145deg, #0c0c1d 0%, #1b1464 40%, #3a0ca3 100%)",
 };
 
 function getCoverGradient(category: string): string {
-  return COVER_GRADIENTS[category] || "linear-gradient(145deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)";
+  return (
+    COVER_GRADIENTS[category] ||
+    "linear-gradient(145deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)"
+  );
 }
 
 function formatDate(dateString: string): string {
@@ -87,7 +140,12 @@ function extractHeadings(html: string): TOCItem[] {
     const level = parseInt(match[1]);
     const existingId = match[2];
     const text = match[3].replace(/<[^>]*>/g, "").trim();
-    const id = existingId || text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const id =
+      existingId ||
+      text
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
     headings.push({ id, text, level });
   }
   return headings;
@@ -98,15 +156,17 @@ function addHeadingIds(html: string): string {
     /<h([2-3])([^>]*)>(.*?)<\/h([2-3])>/gi,
     (match, level, attrs, content, closeLevel) => {
       const text = content.replace(/<[^>]*>/g, "").trim();
-      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const id = text
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
       if (attrs.includes("id=")) return match;
       return `<h${level} id="${id}"${attrs}>${content}</h${closeLevel}>`;
-    }
+    },
   );
 }
 
 export default function ArticleClient({ slug }: { slug: string }) {
-
   const [post, setPost] = useState<MagazinePost | null>(null);
   const [relatedPosts, setRelatedPosts] = useState<MagazinePost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,7 +183,8 @@ export default function ArticleClient({ slug }: { slug: string }) {
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
       const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
       setReadProgress(Math.min(progress, 100));
       setShowScrollTop(scrollTop > 500);
@@ -175,10 +236,16 @@ export default function ArticleClient({ slug }: { slug: string }) {
     const title = post?.title || "";
     switch (platform) {
       case "twitter":
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`, "_blank");
+        window.open(
+          `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
+          "_blank",
+        );
         break;
       case "linkedin":
-        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank");
+        window.open(
+          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+          "_blank",
+        );
         break;
       case "copy":
         await navigator.clipboard.writeText(url);
@@ -210,8 +277,12 @@ export default function ArticleClient({ slug }: { slug: string }) {
           <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
             <BookOpen className="w-7 h-7 text-gray-300" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-1">Article not found</h2>
-          <p className="text-sm text-gray-400 mb-6">This article may have been removed.</p>
+          <h2 className="text-lg font-semibold text-gray-800 mb-1">
+            Article not found
+          </h2>
+          <p className="text-sm text-gray-400 mb-6">
+            This article may have been removed.
+          </p>
           <Link
             href="/magazine"
             className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
@@ -245,7 +316,10 @@ export default function ArticleClient({ slug }: { slug: string }) {
         </div>
 
         {/* === HERO COVER === */}
-        <div className="relative overflow-hidden" style={{ minHeight: "320px" }}>
+        <div
+          className="relative overflow-hidden"
+          style={{ minHeight: "320px" }}
+        >
           <div
             className="absolute inset-0"
             style={{
@@ -298,7 +372,9 @@ export default function ArticleClient({ slug }: { slug: string }) {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-200/50 p-6 sm:p-8 mb-8">
             {/* Meta row */}
             <div className="flex items-center gap-2.5 mb-5 flex-wrap">
-              <span className={`px-3 py-1 rounded-lg text-[11px] font-semibold ${catStyle.bg} ${catStyle.text} border ${catStyle.border}`}>
+              <span
+                className={`px-3 py-1 rounded-lg text-[11px] font-semibold ${catStyle.bg} ${catStyle.text} border ${catStyle.border}`}
+              >
                 {post.category}
               </span>
               <span className="text-gray-300 text-[11px] flex items-center gap-1">
@@ -328,7 +404,9 @@ export default function ArticleClient({ slug }: { slug: string }) {
                   <span className="text-white text-xs font-bold">EA</span>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">{post.author}</p>
+                  <p className="text-sm font-semibold text-gray-800">
+                    {post.author}
+                  </p>
                   <p className="text-xs text-gray-400">EduAbroad Magazine</p>
                 </div>
               </div>
@@ -338,7 +416,11 @@ export default function ArticleClient({ slug }: { slug: string }) {
                   className="w-9 h-9 rounded-xl border border-gray-100 flex items-center justify-center hover:bg-gray-50 hover:border-gray-200 transition-all group"
                   title="Share on X"
                 >
-                  <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-600" viewBox="0 0 24 24" fill="currentColor">
+                  <svg
+                    className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-600"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                   </svg>
                 </button>
@@ -347,7 +429,11 @@ export default function ArticleClient({ slug }: { slug: string }) {
                   className="w-9 h-9 rounded-xl border border-gray-100 flex items-center justify-center hover:bg-gray-50 hover:border-gray-200 transition-all group"
                   title="Share on LinkedIn"
                 >
-                  <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#0077B5]" viewBox="0 0 24 24" fill="currentColor">
+                  <svg
+                    className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#0077B5]"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                   </svg>
                 </button>
@@ -356,14 +442,18 @@ export default function ArticleClient({ slug }: { slug: string }) {
                   className="w-9 h-9 rounded-xl border border-gray-100 flex items-center justify-center hover:bg-gray-50 hover:border-gray-200 transition-all group"
                   title="Copy link"
                 >
-                  <Link2 className={`w-3.5 h-3.5 ${copied ? "text-emerald-500" : "text-gray-400 group-hover:text-gray-600"}`} />
+                  <Link2
+                    className={`w-3.5 h-3.5 ${copied ? "text-emerald-500" : "text-gray-400 group-hover:text-gray-600"}`}
+                  />
                 </button>
               </div>
             </div>
           </div>
 
           {/* Scoped article styles */}
-          <style dangerouslySetInnerHTML={{ __html: `
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
             .article-body h2 {
               font-size: 1.4rem;
               font-weight: 700;
@@ -504,7 +594,9 @@ export default function ArticleClient({ slug }: { slug: string }) {
             .article-body h2:first-child {
               margin-top: 0;
             }
-          `}} />
+          `,
+            }}
+          />
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_200px] gap-10">
@@ -518,6 +610,7 @@ export default function ArticleClient({ slug }: { slug: string }) {
             {/* Sidebar TOC (Desktop) */}
             {tocItems.length > 2 && (
               <aside className="hidden lg:block">
+                {/* Sticky TOC */}
                 <div className="sticky top-20">
                   <p className="text-[11px] font-semibold text-gray-300 uppercase tracking-widest mb-4">
                     On this page
@@ -539,6 +632,11 @@ export default function ArticleClient({ slug }: { slug: string }) {
                       </a>
                     ))}
                   </nav>
+
+                  {/* Jumble Words — inside sticky, below TOC */}
+                  <div className="mt-6">
+                    <JumbleWords />
+                  </div>
                 </div>
               </aside>
             )}
@@ -562,6 +660,13 @@ export default function ArticleClient({ slug }: { slug: string }) {
             </div>
           )}
 
+          <ArticleAuthors />
+
+          {/* After the Tags block */}
+          <div className="mt-10">
+            <EnquiryForm />
+          </div>
+
           {/* Related Posts */}
           {relatedPosts.length > 0 && (
             <div className="mt-12 pt-8 border-t border-gray-100 pb-16">
@@ -569,13 +674,19 @@ export default function ArticleClient({ slug }: { slug: string }) {
                 <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
                   <BookOpen className="w-3.5 h-3.5 text-white" />
                 </div>
-                <h3 className="text-[15px] font-semibold text-gray-800">Related articles</h3>
+                <h3 className="text-[15px] font-semibold text-gray-800">
+                  Related articles
+                </h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {relatedPosts.map((related) => {
                   const relCatStyle = getCatStyle(related.category);
                   return (
-                    <Link key={related.id} href={`/magazine/${related.slug}`} className="group">
+                    <Link
+                      key={related.id}
+                      href={`/magazine/${related.slug}`}
+                      className="group"
+                    >
                       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:shadow-gray-200/50 transition-all duration-300 hover:-translate-y-0.5">
                         <div
                           className="h-32 w-full relative overflow-hidden"
@@ -586,7 +697,9 @@ export default function ArticleClient({ slug }: { slug: string }) {
                           }}
                         >
                           <div className="absolute top-2.5 left-2.5">
-                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${relCatStyle.bg} ${relCatStyle.text}`}>
+                            <span
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${relCatStyle.bg} ${relCatStyle.text}`}
+                            >
                               {related.category}
                             </span>
                           </div>
@@ -596,7 +709,9 @@ export default function ArticleClient({ slug }: { slug: string }) {
                             {related.title}
                           </h4>
                           <div className="flex items-center justify-between mt-3">
-                            <span className="text-[11px] text-gray-300">{related.read_time} min read</span>
+                            <span className="text-[11px] text-gray-300">
+                              {related.read_time} min read
+                            </span>
                             <ArrowUpRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#A51C30] transition-colors" />
                           </div>
                         </div>
