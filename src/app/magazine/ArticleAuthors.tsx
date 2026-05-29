@@ -5,6 +5,7 @@ const AUTHORS = [
     name: "Dr. Swati Abhishek Mishra",
     role: "Founder, EduAbroad",
     initials: "SM",
+    image: "/authors/swati.jpeg", // place photo in /public/authors/swati.jpg
     bio: "Former Professor at IIM Lucknow, Dr. Swati founded EduAbroad with a mission to make world-class international education accessible to every Indian student. She holds a Master's in Management from a joint programme with the University of Cambridge and MIT, and a PhD in Strategy & Marketing from the University of Cambridge. She personally oversees curriculum, counsellor training, and student outcomes.",
     linkedin: "https://www.linkedin.com/in/swati-abhishek-mishra/",
   },
@@ -12,11 +13,11 @@ const AUTHORS = [
     name: "Aradhya Vats",
     role: "CEO, EduAbroad",
     initials: "AV",
+    image: "/authors/aradhya.jpeg", // place photo in /public/authors/aradhya.jpg
     bio: "Aradhya leads EduAbroad's operations, product, and growth — building the systems that help thousands of students navigate university shortlisting, visa applications, and scholarship searches each year. As CEO, he focuses on making personalised study-abroad guidance scalable, data-driven, and student-first.",
     linkedin: "https://www.linkedin.com/in/aradhya-vats/",
   },
 ];
-
 export function ArticleAuthors() {
   return (
     <div className="mt-12 pt-8 border-t border-gray-100">
@@ -49,10 +50,27 @@ export function ArticleAuthors() {
             className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm shadow-gray-100/50 flex gap-4"
           >
             {/* Avatar */}
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#A51C30] to-[#d4243e] flex items-center justify-center shrink-0">
-              <span className="text-white text-xs font-bold">
-                {author.initials}
-              </span>
+            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-gray-100">
+              {author.image ? (
+                <img
+                  src={author.image}
+                  alt={author.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // fallback to initials if image fails to load
+                    const target = e.currentTarget;
+                    target.style.display = "none";
+                    target.nextElementSibling?.classList.remove("hidden");
+                  }}
+                />
+              ) : null}
+              <div
+                className={`w-full h-full bg-gradient-to-br from-[#A51C30] to-[#d4243e] flex items-center justify-center ${author.image ? "hidden" : ""}`}
+              >
+                <span className="text-white text-xs font-bold">
+                  {author.initials}
+                </span>
+              </div>
             </div>
 
             {/* Content */}
