@@ -612,6 +612,9 @@ export default function ArticleClient({ slug }: { slug: string }) {
               <aside className="hidden lg:block">
                 {/* Sticky TOC */}
                 <div className="sticky top-20">
+                  <div className="mt-6">
+                    <JumbleWords />
+                  </div>
                   <p className="text-[11px] font-semibold text-gray-300 uppercase tracking-widest mb-4">
                     On this page
                   </p>
@@ -634,9 +637,6 @@ export default function ArticleClient({ slug }: { slug: string }) {
                   </nav>
 
                   {/* Jumble Words — inside sticky, below TOC */}
-                  <div className="mt-6">
-                    <JumbleWords />
-                  </div>
                 </div>
               </aside>
             )}
