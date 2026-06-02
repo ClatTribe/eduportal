@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["@remotion/bundler", "@remotion/renderer"],
   // Webpack config for fallbacks
   webpack: (config, { isServer }) => {
     if (!isServer) {

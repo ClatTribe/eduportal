@@ -39,18 +39,42 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
     explore: [
       { icon: BookOpen, label: "Course Finder", path: "/course-finder" },
       { icon: Users, label: "Admit Finder", path: "/admit-finder" },
-      { icon: DollarSign, label: "Scholarship Finder", path: "/scholarship-finder" },
-      { icon: Building2, label: "Shortlist Builder", path: "/shortlist-builder" },
-      { icon: Building2, label: "Compare Your College", path: "/compare-your-college" },
+      {
+        icon: DollarSign,
+        label: "Scholarship Finder",
+        path: "/scholarship-finder",
+      },
+      {
+        icon: Building2,
+        label: "Shortlist Builder",
+        path: "/shortlist-builder",
+      },
+      {
+        icon: Building2,
+        label: "Compare Your College",
+        path: "/compare-your-college",
+      },
       { icon: Newspaper, label: "Magazine", path: "/magazine" },
     ],
     applications: [
-      { icon: BookOpen, label: "Application Builder", path: "/application-builder" },
+      {
+        icon: BookOpen,
+        label: "Application Builder",
+        path: "/application-builder",
+      },
       { icon: GraduationCap, label: "Document Upload", path: "/document" },
     ],
     Tools: [
-      { icon: TicketsPlane, label: "Fly & Settle Services", path: "/fly-&-settle-services" },
-      { icon: GraduationCap, label: "Study Materials", path: "/study-material" },
+      {
+        icon: TicketsPlane,
+        label: "Fly & Settle Services",
+        path: "/fly-&-settle-services",
+      },
+      {
+        icon: GraduationCap,
+        label: "Study Materials",
+        path: "/study-material",
+      },
     ],
   };
 
@@ -200,7 +224,9 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
         <div className="bg-white rounded-lg p-3 mb-6 shadow-sm border border-[#FECDD3]">
           <div className="flex items-center gap-2 min-w-0">
             <div className="text-sm text-gray-600 flex-shrink-0">Welcome,</div>
-            <div className="text-[#A51C30] font-semibold truncate">{userName}</div>
+            <div className="text-[#A51C30] font-semibold truncate">
+              {userName}
+            </div>
           </div>
         </div>
 
@@ -389,7 +415,10 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
               {isLoggingOut ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#A51C30]"></div>
               ) : (
-                <LogOut size={18} className="group-hover:scale-110 transition-transform" />
+                <LogOut
+                  size={18}
+                  className="group-hover:scale-110 transition-transform"
+                />
               )}
               <span className="font-semibold">
                 {isLoggingOut ? "Logging out..." : "Logout"}
@@ -399,7 +428,9 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
               <ThumbsUp
                 size={16}
                 className={`transition-all duration-300 ${
-                  isLogoutHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
+                  isLogoutHovered
+                    ? "opacity-100 translate-x-0"
+                    : "opacity-0 -translate-x-2"
                 }`}
               />
             )}

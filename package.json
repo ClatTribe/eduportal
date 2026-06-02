@@ -6,24 +6,36 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "post-instagram": "tsx script/post-to-instagram.ts",
+    "post-video": "tsx script/post-video.ts",
+    "publish-social": "tsx script/publish-social.ts",
+    "remotion:studio": "remotion studio remotion/index.ts"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "@remotion/bundler": "^4.0.290",
+    "@remotion/renderer": "^4.0.290",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/supabase-js": "^2.58.0",
     "@vercel/analytics": "^1.6.1",
+    "@vercel/og": "^0.8.5",
     "dotenv": "^17.2.3",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.544.0",
+    "msedge-tts": "^2.0.5",
+    "music-metadata": "^11.12.3",
     "next": "16.0.10",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "recharts": "^3.6.0"
+    "recharts": "^3.6.0",
+    "remotion": "^4.0.290"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@remotion/cli": "^4.0.290",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -33,6 +45,7 @@
     "eslint-config-next": "15.5.4",
     "postcss": "^8",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }
