@@ -1165,6 +1165,100 @@ function WaitForItBadge({ frame }: { frame: number }) {
   );
 }
 
+// ─── Subtitle captions — synced to the narration, shown on EVERY slide ───────
+function SubtitleCaption({
+  text,
+  durationFrames,
+  startFrame = 6,
+}: {
+  text: string;
+  durationFrames: number;
+  startFrame?: number;
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return null;
+
+  // Spread the words across the slide's spoken window
+  const available = Math.max(1, durationFrames - startFrame - 6);
+  const fpw = Math.max(2.5, available / words.length);
+  const elapsed = frame - startFrame;
+  const activeIdx =
+    elapsed < 0 ? -1 : Math.min(Math.floor(elapsed / fpw), words.length - 1);
+  if (activeIdx < 0) return null;
+
+  // Show a sliding window of up to 4 words centred on the active word
+  const WINDOW = 4;
+  const start = Math.max(0, Math.min(activeIdx - 1, words.length - WINDOW));
+  const windowWords = words.slice(start, start + WINDOW);
+
+  const containerOpacity = interpolate(
+    frame,
+    [startFrame, startFrame + 5],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        bottom: 156,
+        left: 0,
+        right: 0,
+        display: "flex",
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 10,
+        padding: "0 40px",
+        opacity: containerOpacity,
+        zIndex: 70,
+      }}
+    >
+      {windowWords.map((word, i) => {
+        const gIdx = start + i;
+        const isActive = gIdx === activeIdx;
+        const pop = isActive
+          ? spring({
+              frame: frame - (startFrame + Math.round(gIdx * fpw)),
+              fps,
+              config: { damping: 12, stiffness: 320, mass: 0.5 },
+              durationInFrames: 7,
+            })
+          : 1;
+        const scale = isActive ? interpolate(pop, [0, 1], [0.7, 1]) : 1;
+        return (
+          <span
+            key={gIdx}
+            style={{
+              fontSize: isActive ? 64 : 52,
+              fontWeight: 900,
+              fontFamily: BRAND.font,
+              letterSpacing: -1,
+              lineHeight: 1.1,
+              color: "#ffffff",
+              transform: `scale(${scale})`,
+              display: "inline-block",
+              WebkitTextStroke: "2px rgba(0,0,0,0.85)",
+              textShadow:
+                "0 0 26px rgba(0,0,0,1), 0 4px 16px rgba(0,0,0,0.95)",
+              background: isActive ? `${RED}` : "transparent",
+              borderRadius: isActive ? 12 : 0,
+              padding: isActive ? "4px 14px" : "4px 2px",
+              boxShadow: isActive ? `0 0 26px ${RED}99` : "none",
+            }}
+          >
+            {word}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Single slide ─────────────────────────────────────────────────────────────
 function SlideContent({
   slide,
@@ -1302,11 +1396,12 @@ function SlideContent({
           />
         </div>
       ) : (
+        // Story headline sits in the centre so it clears the bottom subtitles
         <div
           style={{
             display: "flex",
             flex: 1,
-            alignItems: "flex-end",
+            alignItems: "center",
             opacity: hookOp,
           }}
         >
@@ -1329,6 +1424,164 @@ function SlideContent({
           hasVoice={Boolean(slide.voiceover)}
         />
       </div>
+
+      {/* Subtitles — synced to narration, on EVERY slide */}
+      {slide.voiceover ? (
+        <SubtitleCaption
+          text={slide.voiceover}
+          durationFrames={durationFrames}
+          startFrame={isHook ? 18 : 6}
+        />
+      ) : null}
+    </AbsoluteFill>
+  );
+}
+
+// ─── Photo-driven intro — rapid photo cuts + branding at the very start ──────
+function IntroSequence({
+  photos,
+  title,
+  brandColor,
+  durationFrames,
+}: {
+  photos: string[];
+  title: string;
+  brandColor: string;
+  durationFrames: number;
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const pics = photos.filter(Boolean).slice(0, 3);
+  const per = pics.length ? Math.floor(durationFrames / pics.length) : durationFrames;
+  const idx = pics.length
+    ? Math.min(Math.floor(frame / Math.max(1, per)), pics.length - 1)
+    : 0;
+  const localFrame = frame - idx * per;
+
+  const scale = interpolate(localFrame, [0, per], [1.16, 1.3], {
+    extrapolateRight: "clamp",
+  });
+  const flash = interpolate(localFrame, [0, 5], [0.55, 0], {
+    extrapolateRight: "clamp",
+  });
+
+  const titleS = spring({
+    frame: frame - 8,
+    fps,
+    config: { damping: 13, stiffness: 200, mass: 0.7 },
+    durationInFrames: 16,
+  });
+  const titleY = interpolate(titleS, [0, 1], [44, 0]);
+  const titleOp = interpolate(frame, [8, 20], [0, 1], {
+    extrapolateRight: "clamp",
+  });
+  const ruleW = interpolate(frame, [6, 26], [0, 180], {
+    extrapolateRight: "clamp",
+  });
+  const outOp = interpolate(
+    frame,
+    [durationFrames - 7, durationFrames],
+    [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#000", opacity: outOp }}>
+      {pics.length > 0 ? (
+        <AbsoluteFill style={{ overflow: "hidden" }}>
+          <AbsoluteFill style={{ transform: `scale(${scale})` }}>
+            <Img
+              src={staticFile(pics[idx])}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          </AbsoluteFill>
+          <AbsoluteFill style={{ background: "rgba(0,0,0,0.5)" }} />
+          <AbsoluteFill
+            style={{
+              background:
+                "linear-gradient(to top, rgba(165,28,48,0.4) 0%, transparent 55%)",
+            }}
+          />
+        </AbsoluteFill>
+      ) : (
+        <DarkBackground type="hook" />
+      )}
+
+      {/* White flash on each photo cut */}
+      <AbsoluteFill
+        style={{ background: "#ffffff", opacity: flash, pointerEvents: "none" }}
+      />
+
+      {/* Centre branding + title */}
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 22,
+          padding: "0 60px",
+        }}
+      >
+        <Img
+          src={staticFile("edulogo-clean.png")}
+          style={{
+            width: 300,
+            height: 74,
+            objectFit: "contain",
+            filter: "brightness(0) invert(1)",
+          }}
+        />
+        <div
+          style={{
+            height: 4,
+            width: ruleW,
+            background: brandColor,
+            borderRadius: 999,
+            boxShadow: `0 0 16px ${brandColor}`,
+          }}
+        />
+        <span
+          style={{
+            color: "#ffffff",
+            fontSize: 52,
+            fontWeight: 900,
+            fontStyle: "italic",
+            fontFamily: BRAND.font,
+            textAlign: "center",
+            lineHeight: 1.05,
+            letterSpacing: -1.5,
+            transform: `translateY(${titleY}px)`,
+            opacity: titleOp,
+            textShadow: "0 4px 26px rgba(0,0,0,0.95)",
+          }}
+        >
+          {title}
+        </span>
+        <div
+          style={{
+            background: brandColor,
+            borderRadius: 999,
+            padding: "9px 24px",
+            opacity: titleOp,
+            boxShadow: `0 0 24px ${brandColor}88`,
+          }}
+        >
+          <span
+            style={{
+              color: "#ffffff",
+              fontSize: 20,
+              fontWeight: 800,
+              letterSpacing: 2,
+              fontFamily: BRAND.font,
+            }}
+          >
+            WATCH TILL THE END
+          </span>
+        </div>
+      </AbsoluteFill>
+
+      <CutFlash />
     </AbsoluteFill>
   );
 }
@@ -1345,19 +1598,15 @@ export const BlogVideo: React.FC<BlogVideoProps> = ({
   const brand = brandColor || BRAND.crimson;
   const totalSlides = script.slides.length;
 
-  const TARGET_SECONDS = 40;
+  // ~2s photo-driven intro before the first slide
+  const INTRO_FRAMES = Math.round(2 * BLOG_VIDEO_FPS);
 
-  const perSlideDuration = TARGET_SECONDS / script.slides.length;
   const frameOffsets: number[] = [];
-
-  let acc = 0;
+  let acc = INTRO_FRAMES;
 
   for (const slide of script.slides) {
     frameOffsets.push(acc);
-
-    const slideFrames = Math.round(slide.duration * BLOG_VIDEO_FPS);
-
-    acc += slideFrames;
+    acc += Math.round(slide.duration * BLOG_VIDEO_FPS);
   }
 
   const totalFrames = acc;
@@ -1370,6 +1619,17 @@ export const BlogVideo: React.FC<BlogVideoProps> = ({
           endAt={totalFrames}
         />
       )}
+
+      {/* Photo-driven visual intro */}
+      <Sequence from={0} durationInFrames={INTRO_FRAMES + 8}>
+        <IntroSequence
+          photos={slideImageUrls}
+          title={script.title}
+          brandColor={brand}
+          durationFrames={INTRO_FRAMES}
+        />
+      </Sequence>
+
       {script.slides.map((slide, index) => {
         const durationInFrames = Math.round(slide.duration * BLOG_VIDEO_FPS);
         const from = frameOffsets[index];
