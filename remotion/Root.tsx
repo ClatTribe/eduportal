@@ -42,6 +42,8 @@ export const RemotionRoot: React.FC = () => {
     slideAudioUrls: [],
     backgroundMusicPath: null,
     backgroundMusicVolume: 0.14,
+    tavusIntro: null,
+    tavusOutro: null,
   };
 
   return (

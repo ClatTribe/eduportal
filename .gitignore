@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Remotion runtime TTS (generated per render)
 /remotion/public/_voice/
+
+# Remotion runtime Tavus presenter clips (generated per render)
+/remotion/public/_tavus/

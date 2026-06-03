@@ -9,6 +9,7 @@
     "lint": "eslint",
     "post-instagram": "tsx script/post-to-instagram.ts",
     "post-video": "tsx script/post-video.ts",
+    "generate-tavus-video": "tsx script/generate-tavus-video.ts",
     "publish-social": "tsx script/publish-social.ts",
     "auto-publish": "tsx script/auto-publish.ts",
     "remotion:studio": "remotion studio remotion/index.ts"
@@ -45,8 +46,4 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "postcss": "^8",
-    "tailwindcss": "^4",
-    "tsx": "^4.20.6",
-    "typescript": "^5"
-  }
-}
+    "tailw
