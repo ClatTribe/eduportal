@@ -15,7 +15,7 @@ import { resolveBackgroundMusicForPost } from "../lib/video-music";
 import { fetchSlideImages, cleanupOldPhotos } from "../lib/video-images";
 import {
   cleanupTavusTempDir,
-  generateTavusPresenter,
+  generateTavusNarrator,
   isTavusEnabled,
 } from "../lib/video-tavus";
 import type { TavusSegmentProps } from "../remotion/types";
@@ -108,28 +108,27 @@ export async function renderBlogVideo(post: {
     // Non-fatal: video renders fine with just dark backgrounds
   }
 
-  // Step 3.5: Generate Tavus presenter intro + outro
-  // A talking-head avatar (Tavus stock replica) introduces the article and
-  // delivers the closing CTA. Downloaded into remotion/public for staticFile().
-  let tavusIntro: TavusSegmentProps | null = null;
-  let tavusOutro: TavusSegmentProps | null = null;
+  // Step 3.5: Generate Tavus narrator (picture-in-picture presenter)
+  // One full-length avatar clip narrates the whole article in an Indian accent
+  // and is overlaid as a corner bubble over the slides. Its audio is the
+  // narration, so per-slide voiceover is muted when the narrator is present.
+  let tavusNarrator: TavusSegmentProps | null = null;
   let tavusTempDir: string | undefined;
 
   if (isTavusEnabled()) {
     try {
-      console.log("[video] Generating Tavus presenter...");
-      const presenter = await generateTavusPresenter(script, {
+      console.log("[video] Generating Tavus narrator...");
+      const result = await generateTavusNarrator(script, {
         id: post.id,
         title: post.title,
         excerpt: post.excerpt ?? undefined,
         category: post.category ?? undefined,
       });
-      tavusIntro = presenter.intro;
-      tavusOutro = presenter.outro;
-      tavusTempDir = presenter.tempDir;
+      tavusNarrator = result.narrator;
+      tavusTempDir = result.tempDir;
     } catch (error) {
       console.warn(
-        "[video] Tavus presenter failed - rendering without avatar:",
+        "[video] Tavus narrator failed - rendering without avatar:",
         error instanceof Error ? error.message : error,
       );
     }
@@ -137,22 +136,21 @@ export async function renderBlogVideo(post: {
     console.log("[video] Tavus disabled (set TAVUS_API_KEY to enable)");
   }
 
-  // Step 4: Bundle Remotion
-  // Intro frames: Tavus clip duration when present, else the 2s photo intro.
-  const introFrames = tavusIntro
-    ? Math.round(tavusIntro.durationSeconds * BLOG_VIDEO_FPS)
-    : Math.round(2 * BLOG_VIDEO_FPS);
-  const outroFrames = tavusOutro
-    ? Math.round(tavusOutro.durationSeconds * BLOG_VIDEO_FPS)
-    : 0;
+  // The avatar carries the audio in narrator mode -> mute per-slide voiceover.
+  const effectiveSlideAudioUrls = tavusNarrator ? [] : slideAudioUrls;
 
-  const totalFrames =
-    introFrames +
-    outroFrames +
-    script.slides.reduce(
-      (sum, slide) => sum + Math.round(slide.duration * BLOG_VIDEO_FPS),
-      0,
-    );
+  // Step 4: Bundle Remotion
+  const slidesFrames = script.slides.reduce(
+    (sum, slide) => sum + Math.round(slide.duration * BLOG_VIDEO_FPS),
+    0,
+  );
+  const narratorFrames = tavusNarrator
+    ? Math.round(tavusNarrator.durationSeconds * BLOG_VIDEO_FPS)
+    : 0;
+  // Narrator mode: cover the longer of slides vs. avatar. Else: 2s photo intro + slides.
+  const totalFrames = tavusNarrator
+    ? Math.max(slidesFrames, narratorFrames)
+    : Math.round(2 * BLOG_VIDEO_FPS) + slidesFrames;
 
   const entryPoint = path.join(process.cwd(), "remotion", "index.ts");
   const publicDir = path.join(process.cwd(), "remotion", "public");
@@ -167,12 +165,11 @@ export async function renderBlogVideo(post: {
     coverUrl: post.cover_image_url ?? "",
     brandColor: "#A51C30",
     category: post.category ?? "Study Abroad",
-    slideAudioUrls,
+    slideAudioUrls: effectiveSlideAudioUrls,
     slideImageUrls, // photos passed to BlogVideo
     backgroundMusicPath: music.path,
     backgroundMusicVolume: music.volume,
-    tavusIntro, // talking-head intro
-    tavusOutro, // talking-head outro
+    tavusNarrator, // picture-in-picture presenter (whole video)
   };
 
   // Step 5: Select composition + set exact duration

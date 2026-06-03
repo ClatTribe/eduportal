@@ -1,6 +1,6 @@
 import type { VideoScript } from "../lib/video-script-gemini";
 
-/** A Tavus presenter clip (talking-head avatar) shown full-screen. */
+/** A Tavus presenter clip (talking-head avatar) shown full-screen or as PIP. */
 export type TavusSegmentProps = {
   /** remotion/public path for staticFile() - the avatar MP4 */
   videoPath: string;
@@ -27,6 +27,8 @@ export type BlogVideoProps = {
   tavusIntro?: TavusSegmentProps | null;
   /** Tavus talking-head outro shown after the slides */
   tavusOutro?: TavusSegmentProps | null;
+  /** Tavus presenter overlaid (picture-in-picture) across the whole video */
+  tavusNarrator?: TavusSegmentProps | null;
 };
 
 export const BLOG_VIDEO_FPS = 30;

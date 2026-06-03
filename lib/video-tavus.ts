@@ -1,14 +1,19 @@
 import fs from "fs";
 import path from "path";
 import { parseFile } from "music-metadata";
+import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
 import type { VideoScript } from "./video-script-gemini";
+import { getSupabaseAdmin } from "./supabase-admin";
 
 /**
- * Tavus integration — generates a talking-head "presenter" who introduces and
- * closes the magazine Reel. The avatar (a Tavus stock replica by default) speaks
- * a short intro about the article and a closing call-to-action. The resulting
- * MP4s are downloaded into remotion/public/_tavus so Remotion can play them
- * full-screen with the EduAbroad logo + animated subtitles overlaid on top.
+ * Tavus integration - generates a talking-head "presenter" for the magazine
+ * Reel. Two modes are available:
+ *   - generateTavusNarrator: ONE full-length clip that narrates the whole
+ *     article, overlaid as a picture-in-picture bubble (current default).
+ *   - generateTavusPresenter: a short full-screen intro + outro pair (legacy).
+ *
+ * The resulting MP4s are downloaded into remotion/public/_tavus so Remotion can
+ * play them with staticFile().
  *
  * Docs: https://docs.tavus.io/api-reference/video-request/create-video
  */
@@ -31,7 +36,7 @@ const REMOTION_PUBLIC = path.join(process.cwd(), "remotion", "public");
 export interface TavusSegment {
   /** Path under remotion/public for Remotion staticFile() */
   videoPath: string;
-  /** The exact words spoken — used to drive the synced subtitle captions */
+  /** The exact words spoken - used to drive the synced subtitle captions */
   script: string;
   /** Measured MP4 duration in seconds */
   durationSeconds: number;
@@ -40,7 +45,7 @@ export interface TavusSegment {
 export interface TavusPresenterResult {
   intro: TavusSegment | null;
   outro: TavusSegment | null;
-  /** remotion/public/_tavus/<session> — delete after render */
+  /** remotion/public/_tavus/<session> - delete after render */
   tempDir: string;
 }
 
@@ -99,7 +104,7 @@ async function tavusFetch<T>(
   return (await res.json()) as T;
 }
 
-/** POST /v2/videos — kicks off a render, returns the video_id. */
+/** POST /v2/videos - kicks off a render from a text script, returns the video_id. */
 async function createTavusVideo(
   script: string,
   videoName: string,
@@ -119,7 +124,7 @@ async function createTavusVideo(
   return data.video_id;
 }
 
-/** GET /v2/videos/:id — polls until the render is `ready`. */
+/** GET /v2/videos/:id - polls until the render is `ready`. */
 async function pollUntilReady(videoId: string): Promise<string> {
   const started = Date.now();
 
@@ -203,7 +208,7 @@ function buildPresenterScripts(
 /**
  * Generates the Tavus intro + outro presenter clips and downloads them into
  * remotion/public/_tavus/<session>. Returns null segments individually if a
- * clip fails — the render still proceeds with whatever succeeded.
+ * clip fails - the render still proceeds with whatever succeeded.
  */
 export async function generateTavusPresenter(
   script: VideoScript,
@@ -233,7 +238,7 @@ export async function generateTavusPresenter(
         text,
         `eduabroad-${label}-${sessionId}`,
       );
-      console.log(`[tavus] ${label} video_id=${videoId} — polling…`);
+      console.log(`[tavus] ${label} video_id=${videoId} - polling…`);
       const url = await pollUntilReady(videoId);
 
       const outPath = path.join(tempDir, `${label}.mp4`);
@@ -267,5 +272,158 @@ export function cleanupTavusTempDir(tempDir: string): void {
     fs.rmSync(tempDir, { recursive: true, force: true });
   } catch {
     /* ignore */
+  }
+}
+
+// ─── Narrator (picture-in-picture presenter for the whole video) ──────────────
+
+/** Indian English neural voice - gives the avatar an Indian accent. */
+const NARRATION_VOICE =
+  process.env.TAVUS_TTS_VOICE?.trim() ||
+  process.env.VIDEO_TTS_VOICE?.trim() ||
+  "en-IN-NeerjaNeural";
+
+const AUDIO_BUCKET = "instagram-videos";
+
+/** Joins the whole article narration into one continuous spoken script. */
+function buildFullNarration(
+  script: VideoScript,
+  post: { title: string; category?: string | null },
+): string {
+  const category = post.category?.trim() || "study abroad";
+  const headline = script.title || post.title;
+  const parts: string[] = [
+    `Welcome to the EduAbroad magazine. Today we are talking about ${headline}.`,
+  ];
+  for (const slide of script.slides) {
+    const spoken =
+      slide.voiceover?.trim() ||
+      [slide.heading, slide.subtext].filter(Boolean).join(". ");
+    if (spoken) parts.push(spoken);
+  }
+  parts.push(
+    `That is your ${category} brief from EduAbroad. Read the full article on our website, and follow us for more.`,
+  );
+  return parts.join(" ").replace(/₹/g, "rupees ").replace(/\s+/g, " ").trim();
+}
+
+/** Synthesizes the narration as an MP3 using the Indian English voice. */
+async function synthesizeNarration(
+  text: string,
+  outPath: string,
+): Promise<void> {
+  const tts = new MsEdgeTTS();
+  await tts.setMetadata(
+    NARRATION_VOICE,
+    OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3,
+  );
+  const { audioStream } = await tts.toStream(text);
+  const chunks: Buffer[] = [];
+  for await (const chunk of audioStream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  fs.writeFileSync(outPath, Buffer.concat(chunks));
+}
+
+/** Uploads narration audio to Supabase Storage and returns a public URL. */
+async function uploadAudio(buffer: Buffer, name: string): Promise<string> {
+  const supabase = getSupabaseAdmin();
+  const fileName = `tavus-audio/${name}.mp3`;
+  const { error } = await supabase.storage
+    .from(AUDIO_BUCKET)
+    .upload(fileName, buffer, { contentType: "audio/mpeg", upsert: true });
+  if (error) throw new Error(`Tavus audio upload failed: ${error.message}`);
+  const { data } = supabase.storage.from(AUDIO_BUCKET).getPublicUrl(fileName);
+  return data.publicUrl;
+}
+
+/** POST /v2/videos using a lip-synced audio file (controls the accent). */
+async function createTavusVideoFromAudio(
+  audioUrl: string,
+  videoName: string,
+): Promise<string> {
+  const data = await tavusFetch<TavusVideoResponse>("/v2/videos", {
+    method: "POST",
+    body: JSON.stringify({
+      replica_id: getReplicaId(),
+      audio_url: audioUrl,
+      video_name: videoName,
+    }),
+  });
+  if (!data.video_id) throw new Error("Tavus did not return a video_id");
+  return data.video_id;
+}
+
+export interface TavusNarratorResult {
+  narrator: TavusSegment | null;
+  /** remotion/public/_tavus/<session> - delete after render */
+  tempDir: string;
+}
+
+/**
+ * Generates ONE full-length presenter clip that narrates the whole article,
+ * to be overlaid as a picture-in-picture bubble over the slides.
+ *
+ * Accent: by default the avatar is lip-synced to Indian-English TTS audio
+ * (en-IN). Set TAVUS_VOICE_MODE=script to use the replica's own voice instead.
+ */
+export async function generateTavusNarrator(
+  script: VideoScript,
+  post: {
+    id: number;
+    title: string;
+    excerpt?: string | null;
+    category?: string | null;
+  },
+): Promise<TavusNarratorResult> {
+  const sessionId = `${post.id}-${Date.now()}`;
+  const tempDir = path.join(REMOTION_PUBLIC, "_tavus", sessionId);
+  fs.mkdirSync(tempDir, { recursive: true });
+
+  const fullText = buildFullNarration(script, post);
+  const useScriptVoice = process.env.TAVUS_VOICE_MODE === "script";
+
+  try {
+    let videoId: string;
+
+    if (useScriptVoice) {
+      console.log(`[tavus] Narrator via replica voice (replica ${getReplicaId()})…`);
+      videoId = await createTavusVideo(fullText, `eduabroad-narrator-${sessionId}`);
+    } else {
+      console.log(`[tavus] Narrator via Indian audio (${NARRATION_VOICE})…`);
+      const audioPath = path.join(tempDir, "narration.mp3");
+      await synthesizeNarration(fullText, audioPath);
+      const audioUrl = await uploadAudio(
+        fs.readFileSync(audioPath),
+        `narration-${sessionId}`,
+      );
+      videoId = await createTavusVideoFromAudio(
+        audioUrl,
+        `eduabroad-narrator-${sessionId}`,
+      );
+    }
+
+    console.log(`[tavus] narrator video_id=${videoId} - polling…`);
+    const url = await pollUntilReady(videoId);
+
+    const outPath = path.join(tempDir, "narrator.mp4");
+    await downloadToFile(url, outPath);
+    const durationSeconds = await getMp4DurationSeconds(outPath);
+
+    console.log(`[tavus] narrator ready: ${durationSeconds.toFixed(1)}s`);
+    return {
+      narrator: {
+        videoPath: `_tavus/${sessionId}/narrator.mp4`,
+        script: fullText,
+        durationSeconds,
+      },
+      tempDir,
+    };
+  } catch (error) {
+    console.warn(
+      "[tavus] narrator failed:",
+      error instanceof Error ? error.message : error,
+    );
+    return { narrator: null, tempDir };
   }
 }

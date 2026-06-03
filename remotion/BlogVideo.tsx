@@ -1732,6 +1732,140 @@ function TavusPresenterSegment({
   );
 }
 
+// ─── Closing brand card — fills any time after the slides while narrator talks ─
+function ClosingBrandCard({ brandColor }: { brandColor: string }) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const s = spring({
+    frame,
+    fps,
+    config: { damping: 14, stiffness: 180, mass: 0.8 },
+    durationInFrames: 16,
+  });
+  const y = interpolate(s, [0, 1], [40, 0]);
+  const op = interpolate(frame, [0, 10], [0, 1], { extrapolateRight: "clamp" });
+  return (
+    <AbsoluteFill>
+      <DarkBackground type="cta" />
+      <AmbientOrbs frame={frame} />
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 22,
+          padding: "0 60px",
+          transform: `translateY(${y}px)`,
+          opacity: op,
+        }}
+      >
+        <Img
+          src={staticFile("edulogo-clean.png")}
+          style={{
+            width: 320,
+            height: 78,
+            objectFit: "contain",
+            filter: "brightness(0) invert(1)",
+          }}
+        />
+        <div
+          style={{
+            height: 4,
+            width: 180,
+            background: brandColor,
+            borderRadius: 999,
+            boxShadow: `0 0 16px ${brandColor}`,
+          }}
+        />
+        <span
+          style={{
+            color: "rgba(255,255,255,0.85)",
+            fontSize: 30,
+            fontWeight: 700,
+            fontFamily: BRAND.font,
+          }}
+        >
+          app.goeduabroad.com
+        </span>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+}
+
+// ─── Tavus PIP bubble — presenter overlaid on the corner the whole video ──────
+function TavusPipBubble({
+  segment,
+  brandColor,
+}: {
+  segment: TavusSegmentProps;
+  brandColor: string;
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  // Bubble springs in from the bottom-right at the start
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 16, stiffness: 180, mass: 0.8 },
+    durationInFrames: 18,
+  });
+  const enterY = interpolate(enter, [0, 1], [120, 0]);
+  const enterScale = interpolate(enter, [0, 1], [0.7, 1]);
+
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      <div
+        style={{
+          position: "absolute",
+          right: 44,
+          bottom: 300,
+          width: 372,
+          height: 496,
+          borderRadius: 32,
+          overflow: "hidden",
+          border: `4px solid ${brandColor}`,
+          boxShadow: `0 14px 48px rgba(0,0,0,0.55), 0 0 30px ${brandColor}99`,
+          transform: `translateY(${enterY}px) scale(${enterScale})`,
+          transformOrigin: "bottom right",
+        }}
+      >
+        <OffthreadVideo
+          src={staticFile(segment.videoPath)}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+        {/* Subtle brand wash at the bubble's base */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 96,
+            background: `linear-gradient(to top, ${brandColor}cc, transparent)`,
+          }}
+        />
+        <span
+          style={{
+            position: "absolute",
+            left: 16,
+            bottom: 14,
+            color: "#fff",
+            fontSize: 18,
+            fontWeight: 800,
+            letterSpacing: 0.5,
+            fontFamily: BRAND.font,
+            textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+          }}
+        >
+          EduAbroad
+        </span>
+      </div>
+    </AbsoluteFill>
+  );
+}
+
 // ─── Root composition ─────────────────────────────────────────────────────────
 export const BlogVideo: React.FC<BlogVideoProps> = ({
   script,
@@ -1742,15 +1876,18 @@ export const BlogVideo: React.FC<BlogVideoProps> = ({
   backgroundMusicVolume = 0.14,
   tavusIntro = null,
   tavusOutro = null,
+  tavusNarrator = null,
 }) => {
   const brand = brandColor || BRAND.crimson;
   const totalSlides = script.slides.length;
 
-  // Intro: Tavus presenter clip if available, otherwise the ~2s photo intro.
+  // Intro: full-screen Tavus intro, else (narrator mode) none, else 2s photo intro.
   const PHOTO_INTRO_FRAMES = Math.round(2 * BLOG_VIDEO_FPS);
   const introFrames = tavusIntro
     ? Math.round(tavusIntro.durationSeconds * BLOG_VIDEO_FPS)
-    : PHOTO_INTRO_FRAMES;
+    : tavusNarrator
+      ? 0
+      : PHOTO_INTRO_FRAMES;
 
   const frameOffsets: number[] = [];
   let acc = introFrames;
@@ -1764,7 +1901,11 @@ export const BlogVideo: React.FC<BlogVideoProps> = ({
   const outroFrames = tavusOutro
     ? Math.round(tavusOutro.durationSeconds * BLOG_VIDEO_FPS)
     : 0;
-  const totalFrames = slidesEndFrame + outroFrames;
+  // In narrator mode the avatar audio drives length; cover the longer of the two.
+  const narratorFrames = tavusNarrator
+    ? Math.round(tavusNarrator.durationSeconds * BLOG_VIDEO_FPS)
+    : 0;
+  const totalFrames = Math.max(slidesEndFrame + outroFrames, narratorFrames);
 
   return (
     <AbsoluteFill style={{ backgroundColor: INK }}>
@@ -1776,7 +1917,7 @@ export const BlogVideo: React.FC<BlogVideoProps> = ({
         />
       )}
 
-      {/* Intro — Tavus presenter (full-screen) or photo-driven fallback */}
+      {/* Intro — Tavus full-screen intro, photo intro, or nothing (narrator mode) */}
       {tavusIntro ? (
         <Sequence from={0} durationInFrames={introFrames}>
           <TavusPresenterSegment
@@ -1786,7 +1927,7 @@ export const BlogVideo: React.FC<BlogVideoProps> = ({
             kind="intro"
           />
         </Sequence>
-      ) : (
+      ) : tavusNarrator ? null : (
         <Sequence from={0} durationInFrames={introFrames + 8}>
           <IntroSequence
             photos={slideImageUrls}
@@ -1837,6 +1978,23 @@ export const BlogVideo: React.FC<BlogVideoProps> = ({
             durationFrames={outroFrames}
             kind="outro"
           />
+        </Sequence>
+      )}
+
+      {/* Closing brand card — covers any time the narrator runs past the slides */}
+      {tavusNarrator && totalFrames > slidesEndFrame && (
+        <Sequence
+          from={slidesEndFrame}
+          durationInFrames={totalFrames - slidesEndFrame}
+        >
+          <ClosingBrandCard brandColor={brand} />
+        </Sequence>
+      )}
+
+      {/* Narrator — presenter overlaid (picture-in-picture) over the whole video */}
+      {tavusNarrator && (
+        <Sequence from={0} durationInFrames={totalFrames}>
+          <TavusPipBubble segment={tavusNarrator} brandColor={brand} />
         </Sequence>
       )}
     </AbsoluteFill>

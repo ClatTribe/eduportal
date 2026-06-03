@@ -10,6 +10,8 @@
     "post-instagram": "tsx script/post-to-instagram.ts",
     "post-video": "tsx script/post-video.ts",
     "generate-tavus-video": "tsx script/generate-tavus-video.ts",
+    "preview-tavus": "tsx script/preview-tavus.ts",
+    "studio:preview": "remotion studio remotion/index.ts --props=remotion/preview-props.json --public-dir=remotion/public",
     "publish-social": "tsx script/publish-social.ts",
     "auto-publish": "tsx script/auto-publish.ts",
     "remotion:studio": "remotion studio remotion/index.ts"
@@ -46,4 +48,5 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "postcss": "^8",
-    "tailw
+    "tailwindcss": "^4",
+    "tsx": "^4.20.6",
