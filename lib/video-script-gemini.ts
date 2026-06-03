@@ -79,16 +79,16 @@ VOICEOVER EXAMPLES:
 
 CONTENT RULES:
 
-- Create EXACTLY 5 or 6 slides total
+- Create EXACTLY 7 or 8 slides total — more slides means faster, punchier cuts
 - Use this slide order strictly:
 
 Slide 1:
 hook
 
-Slide 2–3:
-point slides
+Slides 2–5:
+point slides (3 or 4 of them)
 
-Slide 4–5:
+Two of the middle slides:
 stat slides with charts
 
 Final slide:
@@ -98,13 +98,19 @@ cta
 - Every stat slide MUST contain a chart
 - Use ONLY statistics from the article — NEVER invent data
 - Total video duration target: 40–50 seconds
-- Aim for these durations:
+- Aim for these durations (shorter = snappier):
 
-hook: 6–7 sec
-point slides: 5–7 sec
-stat slides: 8–10 sec
-cta: 5–6 sec
+hook: 5–6 sec
+point slides: 4–5 sec
+stat slides: 6–8 sec
+cta: 4–5 sec
 
+HEADINGS (the bold text shown on screen over the photo):
+- Maximum 6 words — punchy and scannable in one glance
+- Front-load the most important / surprising word
+- subtext: one short supporting line, maximum 10 words
+
+- Give EVERY slide an "imageQuery" — a vivid 2-4 word Pexels search term for a real photo (even stat slides, which use it as a darkened backdrop)
 - Add motion effects to every slide
 - Return ONLY valid JSON
 - No markdown
@@ -155,8 +161,9 @@ function truncate(text: string, max: number): string {
 }
 
 function clampDuration(d: number, isStat: boolean): number {
-  const min = isStat ? 7 : 5;
-  const max = isStat ? 10 : 7;
+  // Shorter per-slide times → snappier cuts across 7–8 slides
+  const min = isStat ? 6 : 4;
+  const max = isStat ? 8 : 6;
 
   return Math.min(Math.max(Math.round(d), min), max);
 }
@@ -261,7 +268,7 @@ function sanitizeVoiceover(text: string): string {
 function validateAndCleanSlides(slides: any[]): VideoSlide[] {
   return (slides ?? [])
     .filter((s) => s.heading && s.type)
-    .slice(0, 6)
+    .slice(0, 8)
     .map((s) => ({
       type: s.type,
       heading: truncate(s.heading, 60),
@@ -359,7 +366,7 @@ ${articleText}`;
       let total = slides.reduce((sum, s) => sum + s.duration, 0);
 
       while (total > TARGET_MAX) {
-        const idx = slides.findIndex((s) => s.duration > 5);
+        const idx = slides.findIndex((s) => s.duration > 4);
 
         if (idx === -1) break;
 

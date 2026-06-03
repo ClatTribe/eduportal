@@ -48,8 +48,9 @@ Rules:
 - Pick vivid, photogenic, SPECIFIC queries that match the slide content
 - Hook slide: cinematic establishing shot of the country/city/university
 - Point slides: relevant concept photo (e.g. "student visa passport", "university campus aerial", "indian student laptop cafe")
-- Stat slides: NO photo needed (charts need clean dark background) — return empty string ""
+- Stat slides: pick a CALM, CONTEXTUAL backdrop that will sit heavily darkened behind a chart (e.g. "university library", "campus at dusk", "city skyline night") — never a busy or bright photo
 - CTA slides: motivational study/travel photo
+- EVERY slide must get a query — never return an empty string
 - Queries: 2-4 words, English only, no quotes
 - Prefer: real locations, people studying, campus buildings, city skylines
 - Avoid: generic clichés like "success handshake", "team meeting", "business people"
@@ -92,13 +93,15 @@ export async function generateImageQueriesWithGemini(
   return script.slides.map((slide, i) => {
     const geminiEntry = geminiPlan?.slides?.find((s) => s.slideIndex === i);
     let query = geminiEntry?.searchQuery?.trim() ?? "";
-    if (!query && slide.type !== "stat") {
+    // Every slide (including stat) gets a photo now — stats use it as a
+    // heavily-darkened backdrop behind the chart.
+    if (!query) {
       query = buildFallbackQuery(slide, article);
     }
     return {
       slideIndex: i,
       slideType: slide.type,
-      searchQuery: slide.type === "stat" ? "" : query,
+      searchQuery: query,
       orientation: "portrait" as const,
     };
   });
@@ -114,6 +117,7 @@ function buildFallbackQuery(
 
   if (slide.type === "hook") return country ? `${country} university campus` : "student studying abroad";
   if (slide.type === "cta")  return country ? `${country} student city` : "student travel motivation";
+  if (slide.type === "stat") return country ? `${country} university library` : "university library study";
 
   if (heading.includes("visa"))       return "student visa passport";
   if (heading.includes("tuition") || heading.includes("fee")) return "university scholarship";

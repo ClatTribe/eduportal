@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { ImageResponse } from "@vercel/og";
-import { CAMBRIDGE_SHIELD_SVG, getCarouselLogoImage } from "./carousel-assets";
-import { CAROUSEL_TOTAL_SLIDES } from "./carousel-prompt";
+import {
+  CAMBRIDGE_SHIELD_SVG,
+  getCambridgeShieldImage,
+  getCarouselLogoImage,
+} from "./carousel-assets";
 import type { CarouselSlide } from "./carousel-generator";
 import { BRAND } from "./brand-theme";
 import { FONT_INTER, getCarouselFonts } from "./og-fonts";
@@ -121,12 +124,10 @@ function EduAbroadLogoMark() {
  */
 function BrandHeader({
   logoImage,
-  slideNum,
-  total = CAROUSEL_TOTAL_SLIDES,
+  shieldImage,
 }: {
   logoImage: string | null;
-  slideNum?: number;
-  total?: number;
+  shieldImage: string | null;
 }) {
   return (
     <div
@@ -134,7 +135,7 @@ function BrandHeader({
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-between",
-        alignItems: "flex-start",
+        alignItems: "center",
         width: "100%",
       }}
     >
@@ -142,85 +143,60 @@ function BrandHeader({
       {logoImage ? (
         <img
           src={logoImage}
-          width={320}
-          height={80}
-          style={{ objectFit: "contain", objectPosition: "left top" }}
+          width={326}
+          height={82}
+          style={{ objectFit: "contain", objectPosition: "left center" }}
         />
       ) : (
         <EduAbroadLogoMark />
       )}
 
-      {/* RIGHT: slide counter + Cambridge partner block */}
+      {/* RIGHT: Cambridge partner block — text left of the real shield */}
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
+          flexDirection: "row",
+          alignItems: "center",
           gap: 12,
         }}
       >
-        {/* Slide counter pill */}
-        {slideNum ? (
-          <div
-            style={{
-              display: "flex",
-              background: "#111111",
-              color: "#ffffff",
-              fontSize: TYPE.pill,
-              fontWeight: 700,
-              fontFamily: FONT_INTER,
-              padding: "7px 16px",
-              borderRadius: 999,
-            }}
-          >
-            <span>
-              {slideNum}/{total}
-            </span>
-          </div>
-        ) : null}
-
-        {/* Cambridge partner: text LEFT of shield — matches Image 2 */}
         <div
           style={{
             display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: 1,
           }}
         >
-          <div
+          <span
             style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              gap: 1,
+              color: GREY_LIGHT,
+              fontSize: 14,
+              fontWeight: 400,
+              fontFamily: FONT_INTER,
+              lineHeight: 1.2,
             }}
           >
-            <span
-              style={{
-                color: GREY_LIGHT,
-                fontSize: 13,
-                fontWeight: 400,
-                fontFamily: FONT_INTER,
-                lineHeight: 1.2,
-              }}
-            >
-              Official Cambridge
-            </span>
-            <span
-              style={{
-                color: INK,
-                fontSize: 16,
-                fontWeight: 700,
-                fontFamily: FONT_INTER,
-                lineHeight: 1.2,
-              }}
-            >
-              Learning Partner
-            </span>
-          </div>
-          <img src={CAMBRIDGE_SHIELD_SVG} width={44} height={44} />
+            Official Cambridge
+          </span>
+          <span
+            style={{
+              color: INK,
+              fontSize: 17,
+              fontWeight: 700,
+              fontFamily: FONT_INTER,
+              lineHeight: 1.2,
+            }}
+          >
+            Learning Partner
+          </span>
         </div>
+        <img
+          src={shieldImage ?? CAMBRIDGE_SHIELD_SVG}
+          width={48}
+          height={52}
+          style={{ objectFit: "contain" }}
+        />
       </div>
     </div>
   );
@@ -260,7 +236,13 @@ function ContentBlock({ children }: { children: ReactNode }) {
   );
 }
 
-function BlackFooter({ showSwipe }: { showSwipe?: boolean }) {
+function BlackFooter({
+  showSwipe,
+  shieldImage,
+}: {
+  showSwipe?: boolean;
+  shieldImage: string | null;
+}) {
   return (
     <div
       style={{
@@ -285,7 +267,12 @@ function BlackFooter({ showSwipe }: { showSwipe?: boolean }) {
           gap: 12,
         }}
       >
-        <img src={CAMBRIDGE_SHIELD_SVG} width={36} height={36} />
+        <img
+          src={shieldImage ?? CAMBRIDGE_SHIELD_SVG}
+          width={37}
+          height={40}
+          style={{ objectFit: "contain" }}
+        />
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
           <span
             style={{
@@ -340,14 +327,12 @@ function BlackFooter({ showSwipe }: { showSwipe?: boolean }) {
 function PageShell({
   children,
   logoImage,
-  slideNum,
-  total,
+  shieldImage,
   showSwipe,
 }: {
   children: ReactNode;
   logoImage: string | null;
-  slideNum?: number;
-  total?: number;
+  shieldImage: string | null;
   showSwipe?: boolean;
 }) {
   return (
@@ -362,7 +347,7 @@ function PageShell({
         fontFamily: FONT_INTER,
       }}
     >
-      <BrandHeader logoImage={logoImage} slideNum={slideNum} total={total} />
+      <BrandHeader logoImage={logoImage} shieldImage={shieldImage} />
       <HeaderRule />
       {/* Flex-1 wrapper centers content vertically in remaining space */}
       <div
@@ -376,7 +361,7 @@ function PageShell({
       >
         {children}
       </div>
-      <BlackFooter showSwipe={showSwipe} />
+      <BlackFooter showSwipe={showSwipe} shieldImage={shieldImage} />
     </div>
   );
 }
@@ -461,9 +446,11 @@ function CoverHeadline({
 function CoverSlide({
   slide,
   logoImage,
+  shieldImage,
 }: {
   slide: CarouselSlide;
   logoImage: string | null;
+  shieldImage: string | null;
   category: string;
 }) {
   const kicker = sanitizeText(slide.kicker ?? "SATURDAY · MASTERS FOCUS");
@@ -473,12 +460,7 @@ function CoverSlide({
   const detail = slide.subtitle ? sanitizeText(slide.subtitle) : "";
 
   return (
-    <PageShell
-      logoImage={logoImage}
-      slideNum={slide.slideNumber ?? 1}
-      total={slide.totalSlides}
-      showSwipe
-    >
+    <PageShell logoImage={logoImage} shieldImage={shieldImage} showSwipe>
       <ContentBlock>
         <TopicLabel>{kicker}</TopicLabel>
         <CoverHeadline title={title} highlight={highlight} />
@@ -597,9 +579,11 @@ function LargeHeadline({
 function PointSlide({
   slide,
   logoImage,
+  shieldImage,
 }: {
   slide: CarouselSlide;
   logoImage: string | null;
+  shieldImage: string | null;
   category: string;
 }) {
   const kicker = sanitizeText(slide.kicker ?? "KEY · INSIGHT");
@@ -608,11 +592,7 @@ function PointSlide({
   const body = slide.subtitle ? sanitizeText(slide.subtitle) : "";
 
   return (
-    <PageShell
-      logoImage={logoImage}
-      slideNum={slide.slideNumber}
-      total={slide.totalSlides}
-    >
+    <PageShell logoImage={logoImage} shieldImage={shieldImage}>
       <ContentBlock>
         <TopicLabel>{kicker}</TopicLabel>
         <LargeHeadline title={title} highlight={highlight} size={TYPE.pointTitle} />
@@ -637,9 +617,11 @@ function PointSlide({
 function SummarySlide({
   slide,
   logoImage,
+  shieldImage,
 }: {
   slide: CarouselSlide;
   logoImage: string | null;
+  shieldImage: string | null;
   category: string;
 }) {
   const kicker = sanitizeText(slide.kicker ?? "SUMMARY · BREAKDOWN");
@@ -648,11 +630,7 @@ function SummarySlide({
   const subtitle = slide.subtitle ? sanitizeText(slide.subtitle) : "";
 
   return (
-    <PageShell
-      logoImage={logoImage}
-      slideNum={slide.slideNumber}
-      total={slide.totalSlides}
-    >
+    <PageShell logoImage={logoImage} shieldImage={shieldImage}>
       <ContentBlock>
         <TopicLabel>{kicker}</TopicLabel>
         <LargeHeadline title={title} highlight={highlight} size={TYPE.summaryTitle} />
@@ -677,9 +655,11 @@ function SummarySlide({
 function CtaSlide({
   slide,
   logoImage,
+  shieldImage,
 }: {
   slide: CarouselSlide;
   logoImage: string | null;
+  shieldImage: string | null;
   category: string;
 }) {
   const kicker = sanitizeText(slide.kicker ?? "YOUR · NEXT STEP");
@@ -687,11 +667,7 @@ function CtaSlide({
   const subtitle = slide.subtitle ? sanitizeText(slide.subtitle) : "";
 
   return (
-    <PageShell
-      logoImage={logoImage}
-      slideNum={slide.slideNumber}
-      total={slide.totalSlides}
-    >
+    <PageShell logoImage={logoImage} shieldImage={shieldImage}>
       <ContentBlock>
         <TopicLabel>{kicker}</TopicLabel>
         <LargeHeadline title={title} highlight="" size={TYPE.ctaTitle} />
@@ -717,34 +693,70 @@ function SlideLayout({
   slide,
   category,
   logoImage,
+  shieldImage,
 }: {
   slide: CarouselSlide;
   category: string;
   logoImage: string | null;
+  shieldImage: string | null;
 }) {
   if (slide.type === "cover") {
-    return <CoverSlide slide={slide} category={category} logoImage={logoImage} />;
+    return (
+      <CoverSlide
+        slide={slide}
+        category={category}
+        logoImage={logoImage}
+        shieldImage={shieldImage}
+      />
+    );
   }
   if (slide.type === "summary") {
-    return <SummarySlide slide={slide} category={category} logoImage={logoImage} />;
+    return (
+      <SummarySlide
+        slide={slide}
+        category={category}
+        logoImage={logoImage}
+        shieldImage={shieldImage}
+      />
+    );
   }
   if (slide.type === "cta") {
-    return <CtaSlide slide={slide} category={category} logoImage={logoImage} />;
+    return (
+      <CtaSlide
+        slide={slide}
+        category={category}
+        logoImage={logoImage}
+        shieldImage={shieldImage}
+      />
+    );
   }
-  return <PointSlide slide={slide} category={category} logoImage={logoImage} />;
+  return (
+    <PointSlide
+      slide={slide}
+      category={category}
+      logoImage={logoImage}
+      shieldImage={shieldImage}
+    />
+  );
 }
 
 export async function renderCarouselSlidePng(
   slide: CarouselSlide,
   category: string,
 ): Promise<ArrayBuffer> {
-  const [fonts, logoImage] = await Promise.all([
+  const [fonts, logoImage, shieldImage] = await Promise.all([
     getCarouselFonts(),
     getCarouselLogoImage(),
+    getCambridgeShieldImage(),
   ]);
 
   const response = new ImageResponse(
-    <SlideLayout slide={slide} category={category} logoImage={logoImage} />,
+    <SlideLayout
+      slide={slide}
+      category={category}
+      logoImage={logoImage}
+      shieldImage={shieldImage}
+    />,
     {
       width: WIDTH,
       height: HEIGHT,
