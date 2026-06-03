@@ -1,12 +1,3 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/post-to-instagram",
-      "schedule": "30 7 * * *"
-    },
-    {
-      "path": "/api/cron/post-video",
-      "schedule": "30 8 * * *"
-    }
-  ]
+  "crons": []
 }

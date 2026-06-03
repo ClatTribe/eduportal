@@ -10,6 +10,7 @@
     "post-instagram": "tsx script/post-to-instagram.ts",
     "post-video": "tsx script/post-video.ts",
     "publish-social": "tsx script/publish-social.ts",
+    "auto-publish": "tsx script/auto-publish.ts",
     "remotion:studio": "remotion studio remotion/index.ts"
   },
   "dependencies": {

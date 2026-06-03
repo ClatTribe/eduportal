@@ -253,11 +253,15 @@ function PhotoBackground({
   overlayOpacity = 0.52,
   animateKenBurns = false,
   durationFrames = 150,
+  blur = 0,
+  bottomScrim = true,
 }: {
   src: string;
   overlayOpacity?: number;
   animateKenBurns?: boolean;
   durationFrames?: number;
+  blur?: number;
+  bottomScrim?: boolean;
 }) {
   const frame = useCurrentFrame();
   const scale = animateKenBurns
@@ -288,15 +292,26 @@ function PhotoBackground({
             height: "100%",
             objectFit: "cover",
             objectPosition: "center",
-            filter: "blur(20px)",
+            filter: blur > 0 ? `blur(${blur}px)` : "none",
           }}
         />
       </AbsoluteFill>
+      {/* Even darkening so text stays legible everywhere */}
       <AbsoluteFill style={{ background: `rgba(0,0,0,${overlayOpacity})` }} />
+      {/* Strong bottom scrim — anchors the caption/headline over the photo */}
+      {bottomScrim && (
+        <AbsoluteFill
+          style={{
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 22%, transparent 52%)",
+          }}
+        />
+      )}
+      {/* Subtle brand wash at the very bottom */}
       <AbsoluteFill
         style={{
           background:
-            "linear-gradient(to top, rgba(165,28,48,0.45) 0%, transparent 50%)",
+            "linear-gradient(to top, rgba(165,28,48,0.30) 0%, transparent 38%)",
         }}
       />
     </AbsoluteFill>
@@ -349,10 +364,10 @@ function HookPhotoReveal({
 function EduAbroadLogo() {
   return (
     <Img
-      src={staticFile("edulogo.png")}
+      src={staticFile("edulogo-clean.png")}
       style={{
-        width: 220,
-        height: 54,
+        width: 230,
+        height: 56,
         objectFit: "contain",
         objectPosition: "left center",
         filter: "brightness(0) invert(1)",
@@ -942,6 +957,63 @@ function ContentCard({
   );
 }
 
+// ─── Story lower-third — bold text on a full-bleed photo (no card) ────────────
+function StoryLowerThird({
+  slide,
+  brandColor,
+  enterY,
+  frame,
+  fps,
+  isHook,
+}: {
+  slide: VideoSlide;
+  brandColor: string;
+  enterY: number;
+  frame: number;
+  fps: number;
+  isHook: boolean;
+}) {
+  const isCta = slide.type === "cta";
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 18,
+        width: "100%",
+        transform: `translateY(${enterY}px)`,
+        paddingBottom: 6,
+      }}
+    >
+      <KickerBadge
+        text={isHook ? "BREAKING" : isCta ? "YOUR NEXT STEP" : "KEY INSIGHT"}
+        frame={frame}
+        fps={fps}
+        brandColor={brandColor}
+      />
+      <BreathingHeadline
+        text={slide.heading}
+        frame={frame}
+        fps={fps}
+        fontSize={isHook ? 74 : 60}
+        accentColor={brandColor}
+        accentWords={isHook ? 2 : 1}
+      />
+      {slide.subtext ? (
+        <SubtextLine
+          text={slide.subtext.slice(0, 90)}
+          frame={frame}
+          fps={fps}
+          fontSize={28}
+        />
+      ) : null}
+      {isCta ? (
+        <PulsingCtaButton frame={frame} fps={fps} brandColor={brandColor} />
+      ) : null}
+    </div>
+  );
+}
+
 // ─── Footer with live waveform ─────────────────────────────────────────────────
 function SlideFooter({
   opacity,
@@ -1025,26 +1097,14 @@ function SlideFooter({
         >
           app.goeduabroad.com
         </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 32 32"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width="32" height="32" rx="4" fill="#8B0000" />
-            <path
-              fill="#fff"
-              d="M16 6l-8 4v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11v-6l-8-4z"
-            />
-            <path
-              fill="#D4AF37"
-              d="M16 8l-6 3v5c0 4 2.5 7.5 6 9 3.5-1.5 6-5 6-9v-5l-6-3z"
-            />
-          </svg>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Img
+            src={staticFile("cambridge-shield.png")}
+            style={{ width: 22, height: 24, objectFit: "contain" }}
+          />
           <span
             style={{
-              color: "rgba(255,255,255,0.3)",
+              color: "rgba(255,255,255,0.45)",
               fontSize: 16,
               fontWeight: 600,
               fontFamily: BRAND.font,
@@ -1058,130 +1118,6 @@ function SlideFooter({
   );
 }
 
-// ─── Word-by-word TikTok caption ──────────────────────────────────────────────
-function WordByWordCaption({
-  text,
-  durationFrames,
-  startFrame = 6,
-}: {
-  text: string;
-  durationFrames: number;
-  startFrame?: number;
-}) {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const words = text.trim().split(/\s+/).filter(Boolean);
-  if (!words.length) return null;
-
-  const available = durationFrames - startFrame - 8;
-  const fpw = Math.max(2, available / words.length);
-  const elapsed = frame - startFrame;
-  const activeIdx =
-    elapsed < 0 ? -1 : Math.min(Math.floor(elapsed / fpw), words.length - 1);
-
-  const LINE = 3;
-  const lines: string[][] = [];
-  for (let i = 0; i < words.length; i += LINE)
-    lines.push(words.slice(i, i + LINE));
-
-  const activeLine = Math.max(0, Math.floor(activeIdx / LINE));
-  const visibleLines = lines.slice(activeLine, activeLine + 2);
-  const lineOffset = activeLine;
-
-  const containerOpacity = interpolate(
-    frame,
-    [startFrame, startFrame + 5],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 250, // was 120
-        left: 0,
-        right: 0,
-
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-
-        gap: 8,
-        padding: "0 20px", // less side padding
-
-        opacity: containerOpacity,
-        zIndex: 50,
-      }}
-    >
-      {visibleLines.map((lineWords, lineIdx) => {
-        const globalLine = lineOffset + lineIdx;
-        return (
-          <div
-            key={globalLine}
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              flexWrap: "wrap",
-              justifyContent: "center",
-              gap: 6,
-              opacity: lineIdx === 0 ? 1 : 0.28,
-            }}
-          >
-            {lineWords.map((word, wi) => {
-              const gIdx = globalLine * LINE + wi;
-              const isActive = gIdx === activeIdx;
-              const isPast = gIdx < activeIdx;
-              const ws = isActive
-                ? spring({
-                    frame: frame - (startFrame + Math.round(gIdx * fpw)),
-                    fps,
-                    config: { damping: 11, stiffness: 300, mass: 0.5 },
-                    durationInFrames: 7,
-                  })
-                : isPast
-                  ? 1
-                  : 0;
-              const scale = isActive ? interpolate(ws, [0, 1], [0.6, 1]) : 1;
-              const wOp = isActive ? 1 : isPast ? 0.65 : 0.25;
-              return (
-                <span
-                  key={wi}
-                  style={{
-                    fontSize: isActive ? 84 : 68, // increased from 38/32
-                    fontWeight: isActive ? 900 : 800,
-                    fontFamily: BRAND.font,
-                    letterSpacing: -1,
-                    lineHeight: 1.15,
-
-                    color: isActive ? "#ffffff" : "rgba(255,255,255,0.7)",
-                    opacity: wOp,
-
-                    transform: `scale(${scale})`,
-                    display: "inline-block",
-
-                    textShadow: isActive
-                      ? "0 0 40px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9), 0 4px 20px rgba(0,0,0,1)"
-                      : "0 2px 12px rgba(0,0,0,0.9)",
-
-                    WebkitTextStroke: "2px rgba(0,0,0,0.8)",
-
-                    background: isActive ? `${RED}55` : "transparent",
-                    borderRadius: isActive ? 12 : 0,
-
-                    padding: isActive ? "6px 14px" : "4px 0",
-                  }}
-                >
-                  {word}
-                </span>
-              );
-            })}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 // ─── "WAIT FOR IT" badge (hook only) ─────────────────────────────────────────
 function WaitForItBadge({ frame }: { frame: number }) {
@@ -1254,7 +1190,7 @@ function SlideContent({
 
   const isHook = slide.type === "hook";
   const isStat = slide.type === "stat";
-  const hasPhoto = Boolean(photoSrc) && !isStat;
+  const hasPhoto = Boolean(photoSrc);
 
   const shake = useScreenShake(isStat);
   const fadeIn = interpolate(frame, [0, 8], [0, 1], {
@@ -1306,10 +1242,20 @@ function SlideContent({
             photoSrc={photoSrc}
             durationFrames={durationFrames}
           />
-        ) : (
+        ) : isStat ? (
+          // Stat: heavily darkened + blurred photo so the chart/number pops
           <PhotoBackground
             src={photoSrc}
-            overlayOpacity={0.56}
+            overlayOpacity={0.78}
+            blur={18}
+            bottomScrim={false}
+            durationFrames={durationFrames}
+          />
+        ) : (
+          // Story: sharp, cinematic full-bleed photo with bottom scrim
+          <PhotoBackground
+            src={photoSrc}
+            overlayOpacity={0.32}
             durationFrames={durationFrames}
           />
         )
@@ -1317,9 +1263,9 @@ function SlideContent({
         <DarkBackground type={slide.type} />
       )}
 
-      {/* Always-on ambient animations */}
+      {/* Ambient animations — kept subtle, skipped over sharp story photos */}
       <AmbientOrbs frame={frame} />
-      <ParticleStream frame={frame} />
+      {(!hasPhoto || isStat) && <ParticleStream frame={frame} />}
 
       {/* Cut flash */}
       <CutFlash />
@@ -1342,18 +1288,38 @@ function SlideContent({
         />
       </div>
 
-      {/* Content card */}
-      <div style={{ display: "flex", flex: 1, opacity: hookOp }}>
-        <ContentCard
-          slide={slide}
-          brandColor={brandColor}
-          enterY={cardY}
-          hasPhoto={hasPhoto}
-          frame={frame}
-          fps={fps}
-          durationFrames={durationFrames}
-        />
-      </div>
+      {/* Content: stat → branded chart frame; story → bold lower-third on photo */}
+      {isStat ? (
+        <div style={{ display: "flex", flex: 1, opacity: hookOp }}>
+          <ContentCard
+            slide={slide}
+            brandColor={brandColor}
+            enterY={cardY}
+            hasPhoto={hasPhoto}
+            frame={frame}
+            fps={fps}
+            durationFrames={durationFrames}
+          />
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            flex: 1,
+            alignItems: "flex-end",
+            opacity: hookOp,
+          }}
+        >
+          <StoryLowerThird
+            slide={slide}
+            brandColor={brandColor}
+            enterY={cardY}
+            frame={frame}
+            fps={fps}
+            isHook={isHook}
+          />
+        </div>
+      )}
 
       {/* Footer */}
       <div style={{ opacity: footerOp * hookOp }}>
@@ -1363,15 +1329,6 @@ function SlideContent({
           hasVoice={Boolean(slide.voiceover)}
         />
       </div>
-
-      {/* Word-by-word captions */}
-      {slide.voiceover && (
-        <WordByWordCaption
-          text={slide.voiceover}
-          durationFrames={durationFrames}
-          startFrame={isHook ? 22 : 8}
-        />
-      )}
     </AbsoluteFill>
   );
 }

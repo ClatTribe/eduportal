@@ -2,24 +2,45 @@ import { access, readFile } from "fs/promises";
 import path from "path";
 
 let carouselLogoDataUrl: string | null = null;
+let cambridgeShieldDataUrl: string | null = null;
 
-/** Transparent / white-bg horizontal logo only (never the black marketing banner). */
-export async function getCarouselLogoImage(): Promise<string | null> {
-  const filePath = path.join(process.cwd(), "public", "edulogo.png");
+async function loadPngAsDataUrl(fileName: string): Promise<string | null> {
+  const filePath = path.join(process.cwd(), "public", fileName);
   try {
     await access(filePath);
   } catch {
     return null;
   }
+  const buf = await readFile(filePath);
+  return `data:image/png;base64,${buf.toString("base64")}`;
+}
 
-  if (!carouselLogoDataUrl) {
-    const buf = await readFile(filePath);
-    carouselLogoDataUrl = `data:image/png;base64,${buf.toString("base64")}`;
+/**
+ * Clean horizontal EduAbroad logo (icon + wordmark + "Run by Harvard-Cambridge
+ * Alumni"), cropped from the official Cambridge lockup. No marketing banner.
+ */
+export async function getCarouselLogoImage(): Promise<string | null> {
+  if (carouselLogoDataUrl === null) {
+    carouselLogoDataUrl = await loadPngAsDataUrl("edulogo-clean.png");
   }
   return carouselLogoDataUrl;
 }
 
-/** Simple Cambridge shield for partner row (Satori-safe inline SVG). */
+/**
+ * Real heraldic Cambridge shield (red/white with gold lions), cropped from the
+ * official lockup. Used in the header partner row and the footer.
+ */
+export async function getCambridgeShieldImage(): Promise<string | null> {
+  if (cambridgeShieldDataUrl === null) {
+    cambridgeShieldDataUrl = await loadPngAsDataUrl("cambridge-shield.png");
+  }
+  return cambridgeShieldDataUrl;
+}
+
+/**
+ * @deprecated Placeholder shield. Kept only as a fallback if the real shield
+ * PNG is missing. Prefer getCambridgeShieldImage().
+ */
 export const CAMBRIDGE_SHIELD_SVG =
   "data:image/svg+xml," +
   encodeURIComponent(
