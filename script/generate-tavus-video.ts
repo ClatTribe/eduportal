@@ -67,12 +67,24 @@ async function main() {
 
   const forcePostId = parseCliPostId() ?? undefined;
 
+  // Mode override. npm tends to eat "--tavus" as a config flag, so we also
+  // accept a plain word after `--`:  npm run generate-tavus-video -- tavus
+  // Falls back to the post-id rotation (2 template : 1 Tavus) when neither given.
+  const args = process.argv.slice(2);
+  const wantTavus = args.includes("--tavus") || args.includes("tavus");
+  const wantTemplate =
+    args.includes("--template") || args.includes("template");
+  const useTavus = wantTavus ? true : wantTemplate ? false : undefined;
+
   console.log("Fetching magazine article…");
   const post = await fetchPost(forcePostId);
   console.log(`→ #${post.id} "${post.title}"\n`);
 
-  console.log("Rendering video (Tavus intro/outro + slides)…");
-  const { videoUrl, videoBuffer, source, script } = await renderBlogVideo(post);
+  console.log("Rendering video…");
+  const { videoUrl, videoBuffer, source, script } = await renderBlogVideo(
+    post,
+    { useTavus },
+  );
 
   const outDir = path.join(process.cwd(), "out");
   fs.mkdirSync(outDir, { recursive: true });
@@ -83,7 +95,8 @@ async function main() {
   console.log(`  Script source: ${source}`);
   console.log(`  Slides:        ${script.slides.length}`);
   console.log(`  Local file:    ${localPath}`);
-  console.log(`  Uploaded URL:  ${videoUrl}`);
+  console.log("\n  ── Shareable link (send this — opens/plays in any browser) ──");
+  console.log(`  ${videoUrl}\n`);
 }
 
 main().catch((error) => {

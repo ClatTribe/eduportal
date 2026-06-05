@@ -1269,6 +1269,7 @@ function SlideContent({
   photoSrc,
   globalFrame,
   totalFrames,
+  showSubtitles = true,
 }: {
   slide: VideoSlide;
   brandColor: string;
@@ -1277,6 +1278,7 @@ function SlideContent({
   photoSrc: string;
   globalFrame: number;
   totalFrames: number;
+  showSubtitles?: boolean;
 }) {
   const frame = useCurrentFrame();
   const actualGlobalFrame = globalFrame + frame;
@@ -1426,8 +1428,9 @@ function SlideContent({
         />
       </div>
 
-      {/* Subtitles — synced to narration, on EVERY slide */}
-      {slide.voiceover ? (
+      {/* Per-slide subtitles (disabled in narrator mode — a single global
+          caption track is used there so it stays synced to the one voice). */}
+      {showSubtitles && slide.voiceover ? (
         <SubtitleCaption
           text={slide.voiceover}
           durationFrames={durationFrames}
@@ -1814,53 +1817,62 @@ function TavusPipBubble({
   const enterY = interpolate(enter, [0, 1], [120, 0]);
   const enterScale = interpolate(enter, [0, 1], [0.7, 1]);
 
+  const D = 460; // circle diameter
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
       <div
         style={{
           position: "absolute",
-          right: 44,
-          bottom: 300,
-          width: 372,
-          height: 496,
-          borderRadius: 32,
-          overflow: "hidden",
-          border: `4px solid ${brandColor}`,
-          boxShadow: `0 14px 48px rgba(0,0,0,0.55), 0 0 30px ${brandColor}99`,
+          right: 70,
+          bottom: 430,
+          width: D,
+          height: D,
           transform: `translateY(${enterY}px) scale(${enterScale})`,
           transformOrigin: "bottom right",
         }}
       >
-        <OffthreadVideo
-          src={staticFile(segment.videoPath)}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-        {/* Subtle brand wash at the bubble's base */}
+        {/* Circular avatar */}
+        <div
+          style={{
+            width: D,
+            height: D,
+            borderRadius: "50%",
+            overflow: "hidden",
+            background: "#000",
+            border: `5px solid ${brandColor}`,
+            boxShadow: `0 16px 50px rgba(0,0,0,0.55), 0 0 36px ${brandColor}aa`,
+          }}
+        >
+          <OffthreadVideo
+            src={staticFile(segment.videoPath)}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </div>
+        {/* Name pill anchored to the bottom of the circle */}
         <div
           style={{
             position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 96,
-            background: `linear-gradient(to top, ${brandColor}cc, transparent)`,
-          }}
-        />
-        <span
-          style={{
-            position: "absolute",
-            left: 16,
-            bottom: 14,
-            color: "#fff",
-            fontSize: 18,
-            fontWeight: 800,
-            letterSpacing: 0.5,
-            fontFamily: BRAND.font,
-            textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+            bottom: -14,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: brandColor,
+            borderRadius: 999,
+            padding: "6px 20px",
+            boxShadow: "0 6px 18px rgba(0,0,0,0.45)",
           }}
         >
-          EduAbroad
-        </span>
+          <span
+            style={{
+              color: "#fff",
+              fontSize: 18,
+              fontWeight: 800,
+              letterSpacing: 0.5,
+              fontFamily: BRAND.font,
+            }}
+          >
+            EduAbroad
+          </span>
+        </div>
       </div>
     </AbsoluteFill>
   );
@@ -1962,8 +1974,9 @@ export const BlogVideo: React.FC<BlogVideoProps> = ({
               slideNum={index + 1}
               totalSlides={totalSlides}
               photoSrc={photoSrc}
-              globalFrame={from + useCurrentFrame()}
+              globalFrame={from}
               totalFrames={totalFrames}
+              showSubtitles={!tavusNarrator}
             />
           </Sequence>
         );
@@ -1995,6 +2008,20 @@ export const BlogVideo: React.FC<BlogVideoProps> = ({
       {tavusNarrator && (
         <Sequence from={0} durationInFrames={totalFrames}>
           <TavusPipBubble segment={tavusNarrator} brandColor={brand} />
+        </Sequence>
+      )}
+
+      {/* One continuous caption track spanning the whole narration — stays in
+          step with the single avatar voice and runs to the very end. */}
+      {tavusNarrator && (
+        <Sequence from={0} durationInFrames={totalFrames}>
+          <AbsoluteFill>
+            <SubtitleCaption
+              text={tavusNarrator.script}
+              durationFrames={totalFrames}
+              startFrame={8}
+            />
+          </AbsoluteFill>
         </Sequence>
       )}
     </AbsoluteFill>

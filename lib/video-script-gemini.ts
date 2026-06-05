@@ -1,4 +1,5 @@
 import { generateGeminiJson } from "./gemini";
+import { generateScriptJsonViaLLM } from "./script-llm";
 import type { MusicTrackKey } from "./video-music-gemini";
 
 export type VideoSlideType = "hook" | "point" | "stat" | "cta";
@@ -79,31 +80,32 @@ VOICEOVER EXAMPLES:
 
 CONTENT RULES:
 
-- Create EXACTLY 7 or 8 slides total — more slides means faster, punchier cuts
+- Create EXACTLY 5 or 6 slides total — tight and punchy, no filler
 - Use this slide order strictly:
 
 Slide 1:
 hook
 
-Slides 2–5:
-point slides (3 or 4 of them)
+Slides 2–4:
+point slides (2 or 3 of them)
 
-Two of the middle slides:
+One or two of the middle slides:
 stat slides with charts
 
 Final slide:
 cta
 
-- Include EXACTLY 2 stat slides
+- Include 1 or 2 stat slides (at least one)
 - Every stat slide MUST contain a chart
 - Use ONLY statistics from the article — NEVER invent data
-- Total video duration target: 40–50 seconds
+- Keep each slide's voiceover to ONE short sentence (max 12 words) — only the most important info
+- Total video duration target: 28–32 seconds
 - Aim for these durations (shorter = snappier):
 
-hook: 5–6 sec
+hook: 4–5 sec
 point slides: 4–5 sec
-stat slides: 6–8 sec
-cta: 4–5 sec
+stat slides: 5–6 sec
+cta: 3–4 sec
 
 HEADINGS (the bold text shown on screen over the photo):
 - Maximum 6 words — punchy and scannable in one glance
@@ -332,7 +334,7 @@ export async function generateVideoScript(post: {
   category?: string;
   tags?: string[];
   slug: string;
-}): Promise<{ script: VideoScript; source: "gemini" | "fallback" }> {
+}): Promise<{ script: VideoScript; source: "gemini" | "llm" | "fallback" }> {
   const articleText = post.content
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
@@ -349,57 +351,47 @@ Excerpt: ${post.excerpt || ""}
 Article:
 ${articleText}`;
 
-  try {
-    const geminiOutput = await generateGeminiJson<any>(
-      IMPROVED_SYSTEM_PROMPT,
-      userPrompt,
-    );
-    const slideCount = geminiOutput?.slides?.length ?? 0;
+  // Turn a raw model JSON object into a validated, duration-balanced script.
+  const assemble = (output: any): VideoScript | null => {
+    const slideCount = output?.slides?.length ?? 0;
+    if (!(slideCount >= 3 && output?.caption && output?.title)) return null;
 
-    if (slideCount >= 3 && geminiOutput?.caption && geminiOutput?.title) {
-      let slides = validateAndCleanSlides(geminiOutput.slides);
-      slides = ensureStatCharts(slides);
+    let slides = validateAndCleanSlides(output.slides);
+    slides = ensureStatCharts(slides);
 
-      const TARGET_MIN = 40;
-      const TARGET_MAX = 50;
+    const TARGET_MIN = 26;
+    const TARGET_MAX = 34;
+    let total = slides.reduce((sum, s) => sum + s.duration, 0);
 
-      let total = slides.reduce((sum, s) => sum + s.duration, 0);
-
-      while (total > TARGET_MAX) {
-        const idx = slides.findIndex((s) => s.duration > 4);
-
-        if (idx === -1) break;
-
-        slides[idx].duration -= 1;
-
-        total = slides.reduce((sum, s) => sum + s.duration, 0);
-      }
-
-      while (total < TARGET_MIN) {
-        const idx = slides.findIndex((s) => s.type === "stat");
-
-        if (idx === -1) break;
-
-        slides[idx].duration += 1;
-
-        total = slides.reduce((sum, s) => sum + s.duration, 0);
-      }
-
-      const music = parseMusic(geminiOutput);
-
-      const totalDuration = total;
-      return {
-        script: {
-          title: truncate(geminiOutput.title, 120),
-          caption: truncate(geminiOutput.caption, 2200),
-          slides,
-          totalDuration,
-          music,
-          musicMood: music?.trackKey,
-        },
-        source: "gemini",
-      };
+    while (total > TARGET_MAX) {
+      const idx = slides.findIndex((s) => s.duration > 4);
+      if (idx === -1) break;
+      slides[idx].duration -= 1;
+      total = slides.reduce((sum, s) => sum + s.duration, 0);
     }
+    while (total < TARGET_MIN) {
+      const idx = slides.findIndex((s) => s.type === "stat");
+      if (idx === -1) break;
+      slides[idx].duration += 1;
+      total = slides.reduce((sum, s) => sum + s.duration, 0);
+    }
+
+    const music = parseMusic(output);
+    return {
+      title: truncate(output.title, 120),
+      caption: truncate(output.caption, 2200),
+      slides,
+      totalDuration: total,
+      music,
+      musicMood: music?.trackKey,
+    };
+  };
+
+  // 1) Gemini (primary)
+  try {
+    const out = await generateGeminiJson<any>(IMPROVED_SYSTEM_PROMPT, userPrompt);
+    const script = out ? assemble(out) : null;
+    if (script) return { script, source: "gemini" };
   } catch (error) {
     console.error(
       "[video] Gemini error:",
@@ -407,6 +399,22 @@ ${articleText}`;
     );
   }
 
+  // 2) Secondary OpenAI-compatible LLM (only runs if SCRIPT_LLM_API_KEY is set)
+  try {
+    const out = await generateScriptJsonViaLLM(IMPROVED_SYSTEM_PROMPT, userPrompt);
+    const script = out ? assemble(out) : null;
+    if (script) {
+      console.log("[video] Script generated via secondary LLM");
+      return { script, source: "llm" };
+    }
+  } catch (error) {
+    console.error(
+      "[video] Secondary LLM error:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  // 3) Offline fallback (no API) — pulls real sentences/numbers from the article
   return { script: buildFallbackScript(post), source: "fallback" };
 }
 
@@ -420,11 +428,24 @@ function buildFallbackScript(post: {
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  const nums = plain.match(/\b(\d{1,3})\s*%/g)?.map((p) => parseInt(p)) ?? [
-    42, 68,
-  ];
+
+  // Pull clean, substantive sentences straight from the article body so the
+  // narration is on-topic even without any AI.
+  const sentences = plain
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 40 && s.length <= 200 && /[a-zA-Z]/.test(s));
+
+  const pick = (i: number, fallback: string) =>
+    (sentences[i] ?? fallback).replace(/\s+/g, " ").trim();
+  const headingFrom = (s: string, max = 52) =>
+    truncate(s.split(/\s+/).slice(0, 7).join(" ").replace(/[.,;:]+$/, ""), max);
+
+  const nums = plain.match(/\b(\d{1,3})\s*%/g)?.map((p) => parseInt(p)) ?? [];
+  const hasNums = nums.length >= 2;
   const n1 = nums[0] ?? 42;
   const n2 = nums[1] ?? 68;
+
   const cat = (post.category ?? "").toLowerCase();
   const trackKey: MusicTrackKey = cat.includes("visa")
     ? "urgent"
@@ -432,58 +453,65 @@ function buildFallbackScript(post: {
       ? "inspiring"
       : "energetic";
 
+  const intro = pick(0, post.excerpt ?? post.title);
+  const point1 = pick(1, intro);
+  const point2 = pick(2, point1);
+
   const slides: VideoSlide[] = [
     {
       type: "hook",
       heading: truncate(post.title, 60),
-      subtext: "Stay for the data",
+      subtext: "Here's what matters",
       duration: 6,
-      voiceover: post.title,
+      voiceover: intro,
       motion: { effect: "pop", duration: 700, delay: 100, intensity: "bold" },
     },
     {
+      type: "point",
+      heading: headingFrom(point1),
+      subtext: "Key takeaway",
+      duration: 8,
+      voiceover: point1,
+      motion: {
+        effect: "slide-in",
+        duration: 700,
+        delay: 150,
+        intensity: "medium",
+      },
+    },
+    {
       type: "stat",
-      heading: "Year on Year Change",
-      subtext: "Real numbers",
-      duration: 10,
-      voiceover: `From ${n1} percent in 2024 to ${n2} percent in 2026 — a significant shift.`,
+      heading: hasNums ? "By the numbers" : headingFrom(point2),
+      subtext: "What the data shows",
+      duration: 9,
+      voiceover: hasNums
+        ? `From ${n1} percent to ${n2} percent — a significant shift.`
+        : point2,
       chart: {
         kind: "comparison",
         items: [
-          { label: "2024", value: n1 },
-          { label: "2026", value: n2 },
+          { label: "Before", value: n1 },
+          { label: "Now", value: n2 },
         ],
         unit: "%",
       },
       motion: { effect: "scale", duration: 800, delay: 300, intensity: "bold" },
     },
     {
-      type: "stat",
-      heading: `${n2} Percent`,
-      subtext: "The headline stat",
-      duration: 10,
-      voiceover: `The key figure is ${n2} percent. Read the full breakdown on EduAbroad.`,
-      chart: {
-        kind: "hero",
-        items: [{ label: "Key metric", value: n2 }],
-        heroValue: n2,
-        heroLabel: "Key metric",
-        unit: "%",
-        trend: n2 > n1 ? "up" : "down",
-      },
-      motion: {
-        effect: "bounce",
-        duration: 900,
-        delay: 400,
-        intensity: "bold",
-      },
+      type: "point",
+      heading: headingFrom(point2),
+      subtext: "Worth knowing",
+      duration: 8,
+      voiceover: point2,
+      motion: { effect: "fade", duration: 600, delay: 150, intensity: "medium" },
     },
     {
       type: "cta",
-      heading: "Full guide in bio",
+      heading: "Read the full guide",
       subtext: "EduAbroad magazine",
       duration: 6,
-      voiceover: "Tap the link in bio for the complete breakdown on EduAbroad.",
+      voiceover:
+        "Read the complete breakdown on EduAbroad. Follow us for more study abroad updates.",
       motion: {
         effect: "fade",
         duration: 500,

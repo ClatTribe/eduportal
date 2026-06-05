@@ -18,6 +18,7 @@ import {
   generateTavusNarrator,
   isTavusEnabled,
 } from "../lib/video-tavus";
+import { describeMode, isTavusVideo } from "../lib/video-mode";
 import type { TavusSegmentProps } from "../remotion/types";
 import { BLOG_VIDEO_FPS } from "../remotion/types";
 
@@ -27,19 +28,22 @@ export interface RenderBlogVideoResult {
   videoUrl: string;
   videoBuffer: Buffer;
   script: VideoScript;
-  source: "gemini" | "fallback";
+  source: "gemini" | "llm" | "fallback";
 }
 
-export async function renderBlogVideo(post: {
-  id: number;
-  title: string;
-  content: string;
-  excerpt?: string | null;
-  category?: string | null;
-  tags?: string[] | null;
-  slug: string;
-  cover_image_url?: string | null;
-}): Promise<RenderBlogVideoResult> {
+export async function renderBlogVideo(
+  post: {
+    id: number;
+    title: string;
+    content: string;
+    excerpt?: string | null;
+    category?: string | null;
+    tags?: string[] | null;
+    slug: string;
+    cover_image_url?: string | null;
+  },
+  options?: { useTavus?: boolean },
+): Promise<RenderBlogVideoResult> {
   // Step 1: Generate video script with Gemini
   console.log("[video] Generating script...");
   let { script, source } = await generateVideoScript({
@@ -109,13 +113,17 @@ export async function renderBlogVideo(post: {
   }
 
   // Step 3.5: Generate Tavus narrator (picture-in-picture presenter)
-  // One full-length avatar clip narrates the whole article in an Indian accent
-  // and is overlaid as a corner bubble over the slides. Its audio is the
-  // narration, so per-slide voiceover is muted when the narrator is present.
+  // Every 3rd article is a Tavus (avatar) video; the other two are animated
+  // templates — 2 template : 1 Tavus, keyed off the post id (see
+  // lib/video-mode.ts). Override per call via options.useTavus or globally with
+  // VIDEO_MODE in .env.local.
+  const useTavus = (options?.useTavus ?? isTavusVideo(post.id)) && isTavusEnabled();
+  console.log(`[video] Mode: ${describeMode(useTavus)}`);
+
   let tavusNarrator: TavusSegmentProps | null = null;
   let tavusTempDir: string | undefined;
 
-  if (isTavusEnabled()) {
+  if (useTavus) {
     try {
       console.log("[video] Generating Tavus narrator...");
       const result = await generateTavusNarrator(script, {
@@ -128,16 +136,44 @@ export async function renderBlogVideo(post: {
       tavusTempDir = result.tempDir;
     } catch (error) {
       console.warn(
-        "[video] Tavus narrator failed - rendering without avatar:",
+        "[video] Tavus narrator failed - rendering animated template instead:",
         error instanceof Error ? error.message : error,
       );
     }
-  } else {
+  } else if (!isTavusEnabled()) {
     console.log("[video] Tavus disabled (set TAVUS_API_KEY to enable)");
+  } else {
+    console.log("[video] Template day — skipping Tavus avatar");
   }
 
-  // The avatar carries the audio in narrator mode -> mute per-slide voiceover.
+  // Audio source: the avatar clip carries the voice when it rendered; if Tavus
+  // failed/timed out, fall back to the per-slide voiceover so it's never silent.
   const effectiveSlideAudioUrls = tavusNarrator ? [] : slideAudioUrls;
+  if (!tavusNarrator) {
+    const hasVoice = effectiveSlideAudioUrls.some(Boolean);
+    console.log(
+      hasVoice
+        ? "[video] No Tavus avatar — using per-slide voiceover (not silent)."
+        : "[video] WARNING: no Tavus avatar and no per-slide voiceover — video will be silent.",
+    );
+  }
+
+  // Narrator mode: stretch/shrink the slides to exactly fill the avatar's
+  // spoken length, so the visuals run the whole video with no dead air and the
+  // total matches the (budget-capped, ~target) narration length.
+  if (tavusNarrator) {
+    const cur = script.slides.reduce((s, x) => s + x.duration, 0);
+    if (cur > 0) {
+      const f = tavusNarrator.durationSeconds / cur;
+      script = {
+        ...script,
+        slides: script.slides.map((s) => ({
+          ...s,
+          duration: Math.max(2.5, s.duration * f),
+        })),
+      };
+    }
+  }
 
   // Step 4: Bundle Remotion
   const slidesFrames = script.slides.reduce(

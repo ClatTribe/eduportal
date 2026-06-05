@@ -132,8 +132,10 @@ async function main() {
     );
   }
 
+  // Default previews the avatar; pass --template to preview a template day.
+  const wantTavus = !process.argv.includes("--template");
   let tavusNarrator = null;
-  if (isTavusEnabled()) {
+  if (wantTavus && isTavusEnabled()) {
     try {
       console.log("Generating Tavus narrator (this can take a few minutes)...");
       const result = await generateTavusNarrator(script, {
@@ -151,10 +153,34 @@ async function main() {
     }
   }
 
+  // Stretch/shrink slides to fill the avatar's spoken length (no dead air).
+  if (tavusNarrator) {
+    const cur = script.slides.reduce((s, x) => s + x.duration, 0);
+    if (cur > 0) {
+      const f = tavusNarrator.durationSeconds / cur;
+      script = {
+        ...script,
+        slides: script.slides.map((s) => ({
+          ...s,
+          duration: Math.max(2.5, s.duration * f),
+        })),
+      };
+    }
+  }
+
   const music = await resolveBackgroundMusicForPost();
 
-  // Avatar carries the narration audio -> mute per-slide voiceover.
+  // Audio source: the avatar clip carries the voice when it rendered; if Tavus
+  // failed/timed out, fall back to the per-slide voiceover so it's never silent.
   const effectiveSlideAudioUrls = tavusNarrator ? [] : slideAudioUrls;
+  if (!tavusNarrator) {
+    const hasVoice = effectiveSlideAudioUrls.some(Boolean);
+    console.log(
+      hasVoice
+        ? "No Tavus avatar — using per-slide voiceover so the video isn't silent."
+        : "WARNING: no Tavus avatar AND no per-slide voiceover — video would be silent.",
+    );
+  }
 
   const inputProps = {
     script,

@@ -29,7 +29,10 @@ const TAVUS_API_BASE =
 const DEFAULT_REPLICA_ID = "r79e1c033f";
 
 const POLL_INTERVAL_MS = 8_000;
-const POLL_TIMEOUT_MS = 8 * 60 * 1000; // Tavus renders can take a few minutes
+// Tavus render time varies with their queue/demand. Default 20 min; override
+// with TAVUS_POLL_TIMEOUT_MIN in .env.local if renders are taking longer.
+const POLL_TIMEOUT_MS =
+  (Number(process.env.TAVUS_POLL_TIMEOUT_MIN) || 20) * 60 * 1000;
 
 const REMOTION_PUBLIC = path.join(process.cwd(), "remotion", "public");
 
@@ -285,27 +288,59 @@ const NARRATION_VOICE =
 
 const AUDIO_BUCKET = "instagram-videos";
 
-/** Joins the whole article narration into one continuous spoken script. */
+/** Target video length in seconds. Override with VIDEO_TARGET_SECONDS. */
+export const TARGET_SECONDS = Number(process.env.VIDEO_TARGET_SECONDS) || 30;
+/** Spoken words per second (en-IN at the configured rate) — used for budgeting. */
+const WORDS_PER_SECOND = 3;
+
+function wordCount(s: string): number {
+  return s.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/**
+ * Builds the narration the avatar speaks, capped to a ~TARGET_SECONDS word
+ * budget. Keeps a short intro, then as many slide voiceovers as fit (whole
+ * sentences only, so it never cuts off mid-thought), then a short CTA. Trimming
+ * the spoken text is what keeps the final video close to the target length.
+ */
 function buildFullNarration(
   script: VideoScript,
   post: { title: string; category?: string | null },
 ): string {
-  const category = post.category?.trim() || "study abroad";
   const headline = script.title || post.title;
-  const parts: string[] = [
-    `Welcome to the EduAbroad magazine. Today we are talking about ${headline}.`,
-  ];
-  for (const slide of script.slides) {
-    const spoken =
-      slide.voiceover?.trim() ||
-      [slide.heading, slide.subtext].filter(Boolean).join(". ");
-    if (spoken) parts.push(spoken);
-  }
-  parts.push(
-    `That is your ${category} brief from EduAbroad. Read the full article on our website, and follow us for more.`,
+  const intro = `Welcome to the EduAbroad magazine. Today, ${headline}.`;
+  const outro = `Read the full article on EduAbroad, and follow us for more.`;
+
+  const totalBudget = Math.round(TARGET_SECONDS * WORDS_PER_SECOND);
+  const bodyBudget = Math.max(
+    16,
+    totalBudget - wordCount(intro) - wordCount(outro),
   );
-  return parts.join(" ").replace(/₹/g, "rupees ").replace(/\s+/g, " ").trim();
+
+  const body: string[] = [];
+  let used = 0;
+  for (const slide of script.slides) {
+    const spoken = (
+      slide.voiceover?.trim() ||
+      [slide.heading, slide.subtext].filter(Boolean).join(". ")
+    ).trim();
+    if (!spoken) continue;
+    const w = wordCount(spoken);
+    // Keep at least one slide, then stop once the budget is reached.
+    if (body.length > 0 && used + w > bodyBudget) break;
+    body.push(spoken);
+    used += w;
+  }
+
+  return [intro, ...body, outro]
+    .join(" ")
+    .replace(/₹/g, "rupees ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
+
+/** Speaking rate for the avatar narration. Override with TAVUS_TTS_RATE. */
+const NARRATION_RATE = process.env.TAVUS_TTS_RATE?.trim() || "+22%";
 
 /** Synthesizes the narration as an MP3 using the Indian English voice. */
 async function synthesizeNarration(
@@ -317,7 +352,7 @@ async function synthesizeNarration(
     NARRATION_VOICE,
     OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3,
   );
-  const { audioStream } = await tts.toStream(text);
+  const { audioStream } = await tts.toStream(text, { rate: NARRATION_RATE });
   const chunks: Buffer[] = [];
   for await (const chunk of audioStream) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));

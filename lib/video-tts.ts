@@ -15,6 +15,9 @@ function getVoiceName(): string {
   return process.env.VIDEO_TTS_VOICE?.trim() || DEFAULT_VOICE;
 }
 
+/** Speaking rate for the per-slide (template) voiceover. Faster = snappier. */
+const VIDEO_TTS_RATE = process.env.VIDEO_TTS_RATE?.trim() || "+22%";
+
 function clampDuration(seconds: number): number {
   return Math.min(Math.max(seconds, 3), 14);
 }
@@ -33,7 +36,7 @@ async function synthesizeToFile(text: string, outPath: string): Promise<void> {
     OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3,
   );
 
-  const { audioStream } = await tts.toStream(text);
+  const { audioStream } = await tts.toStream(text, { rate: VIDEO_TTS_RATE });
   const chunks: Buffer[] = [];
   for await (const chunk of audioStream) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
@@ -77,7 +80,10 @@ export async function applyVoiceoverToScript(
     try {
       await synthesizeToFile(text, audioPath);
       const audioSeconds = await getAudioDurationSeconds(audioPath);
-      const duration = clampDuration(Math.max(slide.duration, audioSeconds + 0.35));
+      // Track the audio length tightly (small 0.15s tail). Slides used to be
+      // held to the longer Gemini duration, which left silence at the end of
+      // each slide — the "voice stops" gap between slides in template mode.
+      const duration = clampDuration(audioSeconds + 0.15);
 
       slideAudioUrls.push(`_voice/${sessionId}/slide-${i}.mp3`);
       updatedSlides.push({ ...slide, duration });

@@ -1,11 +1,27 @@
-/** Models tried in order (newest first). See https://ai.google.dev/gemini-api/docs/models */
-const MODEL_CHAIN = [
+/**
+ * Models tried in order (best first). Override with GEMINI_MODELS in .env.local
+ * (comma-separated) to match what your key/plan actually has — list yours with:
+ *   curl "https://generativelanguage.googleapis.com/v1beta/models?key=YOUR_KEY"
+ *
+ * The "-lite" models have the highest free-tier quotas, so they sit near the top
+ * as quota-friendly fallbacks. Dead 1.5 models were removed (they 404 now).
+ * See https://ai.google.dev/gemini-api/docs/models
+ */
+const DEFAULT_MODELS = [
   "gemini-2.5-flash",
-  "gemini-2.0-flash-001",
+  "gemini-2.5-flash-lite",
   "gemini-2.0-flash",
-  "gemini-1.5-flash",
-  "gemini-1.5-flash-8b",
-] as const;
+  "gemini-2.0-flash-lite",
+  "gemini-2.0-flash-001",
+  "gemini-2.5-pro",
+];
+
+const MODEL_CHAIN: string[] = (() => {
+  const fromEnv = process.env.GEMINI_MODELS?.split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
+  return fromEnv && fromEnv.length > 0 ? fromEnv : DEFAULT_MODELS;
+})();
 
 interface GeminiResponse {
   candidates?: Array<{
