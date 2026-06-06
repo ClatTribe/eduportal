@@ -32,6 +32,7 @@ import { resolveBackgroundMusicForPost } from "../lib/video-music";
 import {
   generateTavusNarrator,
   isTavusEnabled,
+  type TavusSegment,
 } from "../lib/video-tavus";
 import { BLOG_VIDEO_FPS } from "../remotion/types";
 
@@ -134,7 +135,7 @@ async function main() {
 
   // Default previews the avatar; pass --template to preview a template day.
   const wantTavus = !process.argv.includes("--template");
-  let tavusNarrator = null;
+  let tavusNarrator: TavusSegment | null = null;
   if (wantTavus && isTavusEnabled()) {
     try {
       console.log("Generating Tavus narrator (this can take a few minutes)...");

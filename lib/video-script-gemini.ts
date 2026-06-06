@@ -423,6 +423,7 @@ function buildFallbackScript(post: {
   content: string;
   slug: string;
   category?: string;
+  excerpt?: string;
 }): VideoScript {
   const plain = post.content
     .replace(/<[^>]+>/g, " ")
