@@ -90,6 +90,15 @@ async function markPostAsPosted(
 export async function runInstagramPost(options?: {
   forcePostId?: number;
 }): Promise<InstagramRunResult> {
+  // On/off toggle for the Instagram carousel. Set INSTAGRAM_CAROUSEL_ENABLED=false
+  // in the environment to stop posting carousels (cron + manual both respect it).
+  if (process.env.INSTAGRAM_CAROUSEL_ENABLED === "false") {
+    return {
+      skipped: true,
+      reason: "Instagram carousel disabled (INSTAGRAM_CAROUSEL_ENABLED=false)",
+    };
+  }
+
   const missing = validateInstagramConfig();
   if (missing.length > 0) {
     throw new Error(`Missing env vars: ${missing.join(", ")}`);
