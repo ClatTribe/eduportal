@@ -68,6 +68,9 @@ export async function runMagazineSocialPublish(
     }
   }
 
+  // When the carousel is intentionally disabled, still publish the Reel/Short
+  // (don't gate the video on a carousel that we deliberately skipped).
+  const carouselDisabled = process.env.INSTAGRAM_CAROUSEL_ENABLED === "false";
   const refreshed = await getPostSocialStatus(postId);
   let video: Awaited<ReturnType<typeof runVideoPost>>;
 
@@ -77,7 +80,11 @@ export async function runMagazineSocialPublish(
       skipped: true,
       reason: "Reel / Short already posted for this article",
     };
-  } else if (!refreshed?.instagram_posted_at && carousel.skipped) {
+  } else if (
+    !refreshed?.instagram_posted_at &&
+    carousel.skipped &&
+    !carouselDisabled
+  ) {
     video = {
       skipped: true,
       reason: "Carousel not posted — cannot publish Reel yet",
