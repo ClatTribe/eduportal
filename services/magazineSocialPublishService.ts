@@ -70,7 +70,10 @@ export async function runMagazineSocialPublish(
 
   // When the carousel is intentionally disabled, still publish the Reel/Short
   // (don't gate the video on a carousel that we deliberately skipped).
-  const carouselDisabled = process.env.INSTAGRAM_CAROUSEL_ENABLED === "false";
+  const carouselFlag = (process.env.INSTAGRAM_CAROUSEL_ENABLED ?? "")
+    .trim()
+    .toLowerCase();
+  const carouselDisabled = ["false", "0", "off", "no"].includes(carouselFlag);
   const refreshed = await getPostSocialStatus(postId);
   let video: Awaited<ReturnType<typeof runVideoPost>>;
 

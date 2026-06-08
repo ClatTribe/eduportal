@@ -90,12 +90,18 @@ async function markPostAsPosted(
 export async function runInstagramPost(options?: {
   forcePostId?: number;
 }): Promise<InstagramRunResult> {
-  // On/off toggle for the Instagram carousel. Set INSTAGRAM_CAROUSEL_ENABLED=false
-  // in the environment to stop posting carousels (cron + manual both respect it).
-  if (process.env.INSTAGRAM_CAROUSEL_ENABLED === "false") {
+  // On/off toggle for the Instagram carousel. Set INSTAGRAM_CAROUSEL_ENABLED to
+  // false/0/off/no to stop posting carousels (cron + manual both respect it).
+  const raw = process.env.INSTAGRAM_CAROUSEL_ENABLED;
+  const flag = (raw ?? "").trim().toLowerCase();
+  const carouselDisabled = ["false", "0", "off", "no"].includes(flag);
+  console.log(
+    `[ig] carousel enabled=${!carouselDisabled} (INSTAGRAM_CAROUSEL_ENABLED=${raw ?? "unset"})`,
+  );
+  if (carouselDisabled) {
     return {
       skipped: true,
-      reason: "Instagram carousel disabled (INSTAGRAM_CAROUSEL_ENABLED=false)",
+      reason: `Instagram carousel disabled (INSTAGRAM_CAROUSEL_ENABLED=${raw})`,
     };
   }
 
