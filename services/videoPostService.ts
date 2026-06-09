@@ -27,7 +27,7 @@ export interface VideoPostResult {
   videoUrl: string;
   instagramReelMediaId: string | null;
   youtubeShortId: string | null;
-  scriptSource: "gemini" | "fallback";
+  scriptSource: "gemini" | "llm" | "fallback";
   slideCount: number;
 }
 

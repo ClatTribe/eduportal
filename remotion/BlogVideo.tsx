@@ -4,6 +4,7 @@ import {
   Audio,
   Html5Audio,
   Img,
+  OffthreadVideo,
   Sequence,
   interpolate,
   spring,
@@ -13,7 +14,7 @@ import {
 } from "remotion";
 import { BRAND } from "../lib/brand-theme";
 import type { VideoSlide } from "../lib/video-script-gemini";
-import type { BlogVideoProps } from "./types";
+import type { BlogVideoProps, TavusSegmentProps } from "./types";
 import { VideoCharts } from "./VideoCharts";
 import { BLOG_VIDEO_FPS } from "./types";
 
@@ -1268,6 +1269,7 @@ function SlideContent({
   photoSrc,
   globalFrame,
   totalFrames,
+  showSubtitles = true,
 }: {
   slide: VideoSlide;
   brandColor: string;
@@ -1276,6 +1278,7 @@ function SlideContent({
   photoSrc: string;
   globalFrame: number;
   totalFrames: number;
+  showSubtitles?: boolean;
 }) {
   const frame = useCurrentFrame();
   const actualGlobalFrame = globalFrame + frame;
@@ -1425,8 +1428,9 @@ function SlideContent({
         />
       </div>
 
-      {/* Subtitles — synced to narration, on EVERY slide */}
-      {slide.voiceover ? (
+      {/* Per-slide subtitles (disabled in narrator mode — a single global
+          caption track is used there so it stays synced to the one voice). */}
+      {showSubtitles && slide.voiceover ? (
         <SubtitleCaption
           text={slide.voiceover}
           durationFrames={durationFrames}
@@ -1586,6 +1590,294 @@ function IntroSequence({
   );
 }
 
+// ─── Tavus presenter segment — full-screen talking-head + branding overlay ────
+function TavusPresenterSegment({
+  segment,
+  brandColor,
+  durationFrames,
+  kind,
+}: {
+  segment: TavusSegmentProps;
+  brandColor: string;
+  durationFrames: number;
+  kind: "intro" | "outro";
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  const fadeIn = interpolate(frame, [0, 8], [0, 1], {
+    extrapolateRight: "clamp",
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationFrames - 8, durationFrames],
+    [1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  const logoS = spring({
+    frame: frame - 4,
+    fps,
+    config: { damping: 14, stiffness: 200, mass: 0.7 },
+    durationInFrames: 14,
+  });
+  const logoY = interpolate(logoS, [0, 1], [-40, 0]);
+
+  const labelText = kind === "intro" ? "EDUABROAD MAGAZINE" : "YOUR NEXT STEP";
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#000", opacity: fadeIn * fadeOut }}>
+      {/* Talking-head avatar fills the frame */}
+      <AbsoluteFill style={{ overflow: "hidden" }}>
+        <OffthreadVideo
+          src={staticFile(segment.videoPath)}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </AbsoluteFill>
+
+      {/* Brand wash so overlays stay legible over any avatar background */}
+      <AbsoluteFill
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 22%, transparent 60%, rgba(0,0,0,0.82) 100%)",
+        }}
+      />
+      <AbsoluteFill
+        style={{
+          background: `linear-gradient(to top, ${brandColor}33 0%, transparent 34%)`,
+        }}
+      />
+
+      {/* Ambient brand motion + entry flash */}
+      <AmbientOrbs frame={frame} />
+      <CutFlash />
+
+      {/* Top branding row: logo + segment label pill */}
+      <div
+        style={{
+          position: "absolute",
+          top: 56,
+          left: 52,
+          right: 52,
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          transform: `translateY(${logoY}px)`,
+        }}
+      >
+        <Img
+          src={staticFile("edulogo-clean.png")}
+          style={{
+            width: 240,
+            height: 58,
+            objectFit: "contain",
+            objectPosition: "left center",
+            filter: "brightness(0) invert(1)",
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            background: brandColor,
+            borderRadius: 999,
+            padding: "8px 18px",
+            boxShadow: `0 0 18px ${brandColor}88`,
+          }}
+        >
+          <span
+            style={{
+              color: "#fff",
+              fontSize: 14,
+              fontWeight: 800,
+              letterSpacing: 1.2,
+              fontFamily: BRAND.font,
+            }}
+          >
+            {labelText}
+          </span>
+        </div>
+      </div>
+
+      {/* Cambridge partner footer mark */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 56,
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 8,
+          opacity: 0.85,
+        }}
+      >
+        <span
+          style={{
+            color: "rgba(255,255,255,0.55)",
+            fontSize: 16,
+            fontWeight: 600,
+            fontFamily: BRAND.font,
+          }}
+        >
+          app.goeduabroad.com
+        </span>
+      </div>
+
+      {/* Synced subtitle captions over the avatar */}
+      <SubtitleCaption
+        text={segment.script}
+        durationFrames={durationFrames}
+        startFrame={10}
+      />
+    </AbsoluteFill>
+  );
+}
+
+// ─── Closing brand card — fills any time after the slides while narrator talks ─
+function ClosingBrandCard({ brandColor }: { brandColor: string }) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const s = spring({
+    frame,
+    fps,
+    config: { damping: 14, stiffness: 180, mass: 0.8 },
+    durationInFrames: 16,
+  });
+  const y = interpolate(s, [0, 1], [40, 0]);
+  const op = interpolate(frame, [0, 10], [0, 1], { extrapolateRight: "clamp" });
+  return (
+    <AbsoluteFill>
+      <DarkBackground type="cta" />
+      <AmbientOrbs frame={frame} />
+      <AbsoluteFill
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 22,
+          padding: "0 60px",
+          transform: `translateY(${y}px)`,
+          opacity: op,
+        }}
+      >
+        <Img
+          src={staticFile("edulogo-clean.png")}
+          style={{
+            width: 320,
+            height: 78,
+            objectFit: "contain",
+            filter: "brightness(0) invert(1)",
+          }}
+        />
+        <div
+          style={{
+            height: 4,
+            width: 180,
+            background: brandColor,
+            borderRadius: 999,
+            boxShadow: `0 0 16px ${brandColor}`,
+          }}
+        />
+        <span
+          style={{
+            color: "rgba(255,255,255,0.85)",
+            fontSize: 30,
+            fontWeight: 700,
+            fontFamily: BRAND.font,
+          }}
+        >
+          app.goeduabroad.com
+        </span>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+}
+
+// ─── Tavus PIP bubble — presenter overlaid on the corner the whole video ──────
+function TavusPipBubble({
+  segment,
+  brandColor,
+}: {
+  segment: TavusSegmentProps;
+  brandColor: string;
+}) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  // Bubble springs in from the bottom-right at the start
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 16, stiffness: 180, mass: 0.8 },
+    durationInFrames: 18,
+  });
+  const enterY = interpolate(enter, [0, 1], [120, 0]);
+  const enterScale = interpolate(enter, [0, 1], [0.7, 1]);
+
+  const D = 460; // circle diameter
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      <div
+        style={{
+          position: "absolute",
+          right: 70,
+          bottom: 430,
+          width: D,
+          height: D,
+          transform: `translateY(${enterY}px) scale(${enterScale})`,
+          transformOrigin: "bottom right",
+        }}
+      >
+        {/* Circular avatar */}
+        <div
+          style={{
+            width: D,
+            height: D,
+            borderRadius: "50%",
+            overflow: "hidden",
+            background: "#000",
+            border: `5px solid ${brandColor}`,
+            boxShadow: `0 16px 50px rgba(0,0,0,0.55), 0 0 36px ${brandColor}aa`,
+          }}
+        >
+          <OffthreadVideo
+            src={staticFile(segment.videoPath)}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </div>
+        {/* Name pill anchored to the bottom of the circle */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: -14,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: brandColor,
+            borderRadius: 999,
+            padding: "6px 20px",
+            boxShadow: "0 6px 18px rgba(0,0,0,0.45)",
+          }}
+        >
+          <span
+            style={{
+              color: "#fff",
+              fontSize: 18,
+              fontWeight: 800,
+              letterSpacing: 0.5,
+              fontFamily: BRAND.font,
+            }}
+          >
+            EduAbroad
+          </span>
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+}
+
 // ─── Root composition ─────────────────────────────────────────────────────────
 export const BlogVideo: React.FC<BlogVideoProps> = ({
   script,
@@ -1594,22 +1886,39 @@ export const BlogVideo: React.FC<BlogVideoProps> = ({
   slideImageUrls = [],
   backgroundMusicPath,
   backgroundMusicVolume = 0.14,
+  tavusIntro = null,
+  tavusOutro = null,
+  tavusNarrator = null,
 }) => {
   const brand = brandColor || BRAND.crimson;
   const totalSlides = script.slides.length;
 
-  // ~2s photo-driven intro before the first slide
-  const INTRO_FRAMES = Math.round(2 * BLOG_VIDEO_FPS);
+  // Intro: full-screen Tavus intro, else (narrator mode) none, else 2s photo intro.
+  const PHOTO_INTRO_FRAMES = Math.round(2 * BLOG_VIDEO_FPS);
+  const introFrames = tavusIntro
+    ? Math.round(tavusIntro.durationSeconds * BLOG_VIDEO_FPS)
+    : tavusNarrator
+      ? 0
+      : PHOTO_INTRO_FRAMES;
 
   const frameOffsets: number[] = [];
-  let acc = INTRO_FRAMES;
+  let acc = introFrames;
 
   for (const slide of script.slides) {
     frameOffsets.push(acc);
     acc += Math.round(slide.duration * BLOG_VIDEO_FPS);
   }
 
-  const totalFrames = acc;
+  const slidesEndFrame = acc;
+  const outroFrames = tavusOutro
+    ? Math.round(tavusOutro.durationSeconds * BLOG_VIDEO_FPS)
+    : 0;
+  // In narrator mode the avatar audio drives length; cover the longer of the two.
+  const narratorFrames = tavusNarrator
+    ? Math.round(tavusNarrator.durationSeconds * BLOG_VIDEO_FPS)
+    : 0;
+  const totalFrames = Math.max(slidesEndFrame + outroFrames, narratorFrames);
+
   return (
     <AbsoluteFill style={{ backgroundColor: INK }}>
       {backgroundMusicPath && (
@@ -1620,15 +1929,26 @@ export const BlogVideo: React.FC<BlogVideoProps> = ({
         />
       )}
 
-      {/* Photo-driven visual intro */}
-      <Sequence from={0} durationInFrames={INTRO_FRAMES + 8}>
-        <IntroSequence
-          photos={slideImageUrls}
-          title={script.title}
-          brandColor={brand}
-          durationFrames={INTRO_FRAMES}
-        />
-      </Sequence>
+      {/* Intro — Tavus full-screen intro, photo intro, or nothing (narrator mode) */}
+      {tavusIntro ? (
+        <Sequence from={0} durationInFrames={introFrames}>
+          <TavusPresenterSegment
+            segment={tavusIntro}
+            brandColor={brand}
+            durationFrames={introFrames}
+            kind="intro"
+          />
+        </Sequence>
+      ) : tavusNarrator ? null : (
+        <Sequence from={0} durationInFrames={introFrames + 8}>
+          <IntroSequence
+            photos={slideImageUrls}
+            title={script.title}
+            brandColor={brand}
+            durationFrames={introFrames}
+          />
+        </Sequence>
+      )}
 
       {script.slides.map((slide, index) => {
         const durationInFrames = Math.round(slide.duration * BLOG_VIDEO_FPS);
@@ -1654,12 +1974,56 @@ export const BlogVideo: React.FC<BlogVideoProps> = ({
               slideNum={index + 1}
               totalSlides={totalSlides}
               photoSrc={photoSrc}
-              globalFrame={from + useCurrentFrame()}
+              globalFrame={from}
               totalFrames={totalFrames}
+              showSubtitles={!tavusNarrator}
             />
           </Sequence>
         );
       })}
+
+      {/* Outro — Tavus presenter closing CTA */}
+      {tavusOutro && (
+        <Sequence from={slidesEndFrame} durationInFrames={outroFrames}>
+          <TavusPresenterSegment
+            segment={tavusOutro}
+            brandColor={brand}
+            durationFrames={outroFrames}
+            kind="outro"
+          />
+        </Sequence>
+      )}
+
+      {/* Closing brand card — covers any time the narrator runs past the slides */}
+      {tavusNarrator && totalFrames > slidesEndFrame && (
+        <Sequence
+          from={slidesEndFrame}
+          durationInFrames={totalFrames - slidesEndFrame}
+        >
+          <ClosingBrandCard brandColor={brand} />
+        </Sequence>
+      )}
+
+      {/* Narrator — presenter overlaid (picture-in-picture) over the whole video */}
+      {tavusNarrator && (
+        <Sequence from={0} durationInFrames={totalFrames}>
+          <TavusPipBubble segment={tavusNarrator} brandColor={brand} />
+        </Sequence>
+      )}
+
+      {/* One continuous caption track spanning the whole narration — stays in
+          step with the single avatar voice and runs to the very end. */}
+      {tavusNarrator && (
+        <Sequence from={0} durationInFrames={totalFrames}>
+          <AbsoluteFill>
+            <SubtitleCaption
+              text={tavusNarrator.script}
+              durationFrames={totalFrames}
+              startFrame={8}
+            />
+          </AbsoluteFill>
+        </Sequence>
+      )}
     </AbsoluteFill>
   );
 };
