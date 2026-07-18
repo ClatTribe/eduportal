@@ -81,7 +81,7 @@ export function EnquiryForm() {
         A real counsellor (not a bot) will call within 24 hours with a plan
         tailored to your goals.
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 gap-4 mb-4">
         <div className="flex flex-col gap-1.5">
           <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
             Your name
@@ -131,7 +131,7 @@ export function EnquiryForm() {
             <option>2028</option>
           </select>
         </div>
-        <div className="flex flex-col gap-1.5 sm:col-span-2">
+        <div className="flex flex-col gap-1.5">
           <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
             What do you need help with?{" "}
             <span className="text-gray-300 normal-case font-normal tracking-normal">

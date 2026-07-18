@@ -180,7 +180,7 @@ export default function JumbleWords() {
   }, [initGame]);
 
   const currentWordObj = WORDS[currentIndex];
-  if (!currentWordObj) return null;
+  if (!currentWordObj) return <div className="p-4 bg-red-100 text-red-500">JumbleWords: No current word found</div>;
 
   const targetWordLength = currentWordObj.word.length;
 

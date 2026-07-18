@@ -367,7 +367,7 @@ export default function ArticleClient({ slug }: { slug: string }) {
         </div>
 
         {/* === ARTICLE CONTENT === */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-20 relative z-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-20 relative z-10">
           {/* Header Card */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-200/50 p-6 sm:p-8 mb-8">
             {/* Meta row */}
@@ -448,6 +448,11 @@ export default function ArticleClient({ slug }: { slug: string }) {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Mobile Enquiry Form - only visible on small screens */}
+          <div className="block lg:hidden mb-8">
+            <EnquiryForm />
           </div>
 
           {/* Scoped article styles */}
@@ -599,7 +604,7 @@ export default function ArticleClient({ slug }: { slug: string }) {
           />
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_200px] gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 lg:gap-12">
             {/* Article Body */}
             <div
               ref={contentRef}
@@ -611,32 +616,32 @@ export default function ArticleClient({ slug }: { slug: string }) {
             {tocItems.length > 2 && (
               <aside className="hidden lg:block">
                 {/* Sticky TOC */}
-                <div className="sticky top-20">
-                  <div className="mt-6">
-                    <JumbleWords />
+                <div className="sticky top-20 flex flex-col gap-8 max-h-[calc(100vh-100px)] overflow-y-auto pb-6">
+                  <EnquiryForm />
+                  <JumbleWords />
+                  
+                  <div>
+                    <p className="text-[11px] font-semibold text-gray-300 uppercase tracking-widest mb-4">
+                      On this page
+                    </p>
+                    <nav className="space-y-1">
+                      {tocItems.map((item) => (
+                        <a
+                          key={item.id}
+                          href={`#${item.id}`}
+                          className={`block text-[12px] py-1.5 transition-all duration-200 rounded-md px-2 ${
+                            item.level === 3 ? "pl-5" : ""
+                          } ${
+                            activeHeading === item.id
+                              ? "text-[#A51C30] font-semibold bg-rose-50/50"
+                              : "text-gray-400 hover:text-gray-600"
+                          }`}
+                        >
+                          {item.text}
+                        </a>
+                      ))}
+                    </nav>
                   </div>
-                  <p className="text-[11px] font-semibold text-gray-300 uppercase tracking-widest mb-4">
-                    On this page
-                  </p>
-                  <nav className="space-y-1">
-                    {tocItems.map((item) => (
-                      <a
-                        key={item.id}
-                        href={`#${item.id}`}
-                        className={`block text-[12px] py-1.5 transition-all duration-200 rounded-md px-2 ${
-                          item.level === 3 ? "pl-5" : ""
-                        } ${
-                          activeHeading === item.id
-                            ? "text-[#A51C30] font-semibold bg-rose-50/50"
-                            : "text-gray-400 hover:text-gray-600"
-                        }`}
-                      >
-                        {item.text}
-                      </a>
-                    ))}
-                  </nav>
-
-                  {/* Jumble Words — inside sticky, below TOC */}
                 </div>
               </aside>
             )}
@@ -663,9 +668,7 @@ export default function ArticleClient({ slug }: { slug: string }) {
           <ArticleAuthors />
 
           {/* After the Tags block */}
-          <div className="mt-10">
-            <EnquiryForm />
-          </div>
+          {/* Form moved to sidebar */}
 
           {/* Related Posts */}
           {relatedPosts.length > 0 && (
