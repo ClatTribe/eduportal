@@ -33,6 +33,21 @@ export function EnquiryForm() {
         source_url: typeof window !== "undefined" ? window.location.href : null,
       });
       if (sbError) throw sbError;
+
+      // Send email via our API route
+      await fetch("/api/enquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          mobile: form.mobile,
+          email: form.email,
+          target_year: form.year,
+          message: form.message || null,
+          source_url: typeof window !== "undefined" ? window.location.href : null,
+        }),
+      });
+
       setSubmitted(true);
     } catch (err) {
       console.error("Enquiry submission error:", err);
