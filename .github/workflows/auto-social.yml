@@ -1,79 +1,79 @@
-name: Auto social publish (carousel + Reel + Short)
+# name: Auto social publish (carousel + Reel + Short)
 
-# Runs the full pipeline on GitHub's Ubuntu runners, where Remotion can
-# actually render video (Vercel serverless cannot). Picks up the latest
-# published-but-unposted magazine article and posts it everywhere.
-#
-# Schedule is in UTC. Articles publish ~12:00 PM IST, so we check 3x/day:
-#   - 02:30 UTC = 08:00 IST  (morning)
-#   - 07:30 UTC = 13:00 IST  (afternoon, just after the noon publish)
-#   - 14:30 UTC = 20:00 IST  (night)
+# # Runs the full pipeline on GitHub's Ubuntu runners, where Remotion can
+# # actually render video (Vercel serverless cannot). Picks up the latest
+# # published-but-unposted magazine article and posts it everywhere.
+# #
+# # Schedule is in UTC. Articles publish ~12:00 PM IST, so we check 3x/day:
+# #   - 02:30 UTC = 08:00 IST  (morning)
+# #   - 07:30 UTC = 13:00 IST  (afternoon, just after the noon publish)
+# #   - 14:30 UTC = 20:00 IST  (night)
 
-on:
-  schedule:
-    - cron: "30 2 * * *"
-    - cron: "30 7 * * *"
-    - cron: "30 14 * * *"
-  workflow_dispatch: # lets you run it manually from the Actions tab
+# on:
+#   schedule:
+#     - cron: "30 2 * * *"
+#     - cron: "30 7 * * *"
+#     - cron: "30 14 * * *"
+#   workflow_dispatch: # lets you run it manually from the Actions tab
 
-# Never let two runs overlap (renders are heavy).
-concurrency:
-  group: auto-social
-  cancel-in-progress: false
+# # Never let two runs overlap (renders are heavy).
+# concurrency:
+#   group: auto-social
+#   cancel-in-progress: false
 
-jobs:
-  publish:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 30
+# jobs:
+#   publish:
+#     runs-on: ubuntu-22.04
+#     timeout-minutes: 30
 
-    env:
-      # ── Supabase ──
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      # ── Site / Gemini ──
-      NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      # ── Instagram / Meta Graph API ──
-      INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
-      INSTAGRAM_BUSINESS_ACCOUNT_ID: ${{ secrets.INSTAGRAM_BUSINESS_ACCOUNT_ID }}
-      # ── YouTube ──
-      YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
-      YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-      YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
-      # ── Media / voice (optional — leave secret unset to use code defaults) ──
-      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-      REEL_BACKGROUND_MUSIC: ${{ secrets.REEL_BACKGROUND_MUSIC }}
-      REEL_MUSIC_VOLUME: ${{ secrets.REEL_MUSIC_VOLUME }}
-      VIDEO_VOICE_ENABLED: ${{ secrets.VIDEO_VOICE_ENABLED }}
-      VIDEO_MUSIC_ENABLED: ${{ secrets.VIDEO_MUSIC_ENABLED }}
-      VIDEO_TTS_VOICE: ${{ secrets.VIDEO_TTS_VOICE }}
+#     env:
+#       # ── Supabase ──
+#       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+#       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+#       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+#       # ── Site / Gemini ──
+#       NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+#       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+#       # ── Instagram / Meta Graph API ──
+#       INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+#       INSTAGRAM_BUSINESS_ACCOUNT_ID: ${{ secrets.INSTAGRAM_BUSINESS_ACCOUNT_ID }}
+#       # ── YouTube ──
+#       YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+#       YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+#       YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+#       # ── Media / voice (optional — leave secret unset to use code defaults) ──
+#       PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+#       REEL_BACKGROUND_MUSIC: ${{ secrets.REEL_BACKGROUND_MUSIC }}
+#       REEL_MUSIC_VOLUME: ${{ secrets.REEL_MUSIC_VOLUME }}
+#       VIDEO_VOICE_ENABLED: ${{ secrets.VIDEO_VOICE_ENABLED }}
+#       VIDEO_MUSIC_ENABLED: ${{ secrets.VIDEO_MUSIC_ENABLED }}
+#       VIDEO_TTS_VOICE: ${{ secrets.VIDEO_TTS_VOICE }}
 
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
+#       - name: Setup Node
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: "20"
+#           cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+#       - name: Install dependencies
+#         run: npm ci
 
-      # Remotion renders via a headless Chrome shell. Install the Linux
-      # libraries it needs, then pre-download the browser.
-      - name: Install Remotion / Chrome system libraries
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libnss3 libdbus-1-3 libatk1.0-0 libgbm-dev libasound2 \
-            libxrandr2 libxkbcommon-dev libxfixes3 libxcomposite1 \
-            libxdamage1 libatk-bridge2.0-0 libpango-1.0-0 libcairo2 libcups2
+#       # Remotion renders via a headless Chrome shell. Install the Linux
+#       # libraries it needs, then pre-download the browser.
+#       - name: Install Remotion / Chrome system libraries
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y \
+#             libnss3 libdbus-1-3 libatk1.0-0 libgbm-dev libasound2 \
+#             libxrandr2 libxkbcommon-dev libxfixes3 libxcomposite1 \
+#             libxdamage1 libatk-bridge2.0-0 libpango-1.0-0 libcairo2 libcups2
 
-      - name: Ensure Remotion browser
-        run: npx remotion browser ensure
+#       - name: Ensure Remotion browser
+#         run: npx remotion browser ensure
 
-      - name: Run auto publisher
-        run: npm run auto-publish
+#       - name: Run auto publisher
+#         run: npm run auto-publish
