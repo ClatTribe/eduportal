@@ -86,7 +86,7 @@ const PlaneRoadmap: React.FC = () => {
       description: "Find your ideal Home abroad",
       buttonText: "Enquire Now",
       buttonLink: "/fly-&-settle-services/",
-      position: "left",
+      position: "left", 
       icon: TrendingUp,
     },
     {
