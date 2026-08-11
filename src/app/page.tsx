@@ -196,7 +196,7 @@ export default function Hero() {
                   </div>
                   <div className="text-left">
                     <div className="text-2xl sm:text-3xl font-bold text-slate-900">95%</div>
-                    <div className="text-sm text-slate-700">Visa Success Rate</div>
+                    <div className="text-sm text-slate-700">Student Satisfaction</div>
                   </div>
                 </div>
 
