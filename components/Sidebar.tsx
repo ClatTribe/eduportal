@@ -63,6 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userName, onSignOut }) => {
         path: "/application-builder",
       },
       { icon: GraduationCap, label: "Document Upload", path: "/document" },
+      // { icon: Users, label: "Mentor Guru", path: "/mentor-guru" },
     ],
     Tools: [
       {
