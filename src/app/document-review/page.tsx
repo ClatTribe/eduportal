@@ -49,13 +49,13 @@ interface Review {
   created_at?: string;
 }
 
-const TABS: { key: Category; label: string; column: string }[] = [
-  { key: "sop", label: "SOP", column: "sop_docs" },
-  { key: "lor", label: "LOR", column: "lor_docs" },
-  { key: "resume", label: "Resume", column: "resume_docs" },
+const TABS: { key: Category; label: string }[] = [
+  { key: "sop", label: "SOP" },
+  { key: "lor", label: "LOR" },
+  { key: "resume", label: "Resume" },
 ];
 
-const DAILY_LIMIT = 3;
+const DAILY_LIMIT = 6;
 
 const severityStyle = (s: string) =>
   s === "high"
@@ -63,6 +63,20 @@ const severityStyle = (s: string) =>
     : s === "medium"
     ? "bg-amber-50 text-amber-800 border-amber-200"
     : "bg-gray-50 text-gray-700 border-gray-200";
+
+const prettyDate = (iso?: string) => {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
+};
 
 const DocumentReviewInner = () => {
   const router = useRouter();
@@ -100,23 +114,26 @@ const DocumentReviewInner = () => {
     try {
       setLoading(true);
 
-      const [{ data: docs }, { data: prof }, { data: past }] = await Promise.all([
-        supabase
-          .from("student_documents")
-          .select("sop_docs, lor_docs, resume_docs")
-          .eq("user_id", user.id)
-          .single(),
-        supabase
-          .from("admit_profiles")
-          .select("degree, program, target_countries")
-          .eq("user_id", user.id)
-          .single(),
-        supabase
-          .from("document_reviews")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false }),
-      ]);
+      const [{ data: docs }, { data: prof }, { data: past, error: pastErr }] =
+        await Promise.all([
+          supabase
+            .from("student_documents")
+            .select("sop_docs, lor_docs, resume_docs")
+            .eq("user_id", user.id)
+            .single(),
+          supabase
+            .from("admit_profiles")
+            .select("degree, program, target_countries")
+            .eq("user_id", user.id)
+            .single(),
+          supabase
+            .from("document_reviews")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false }),
+        ]);
+
+      if (pastErr) console.error("Could not load saved reviews:", pastErr);
 
       setFiles({
         sop: docs?.sop_docs || [],
@@ -150,13 +167,14 @@ const DocumentReviewInner = () => {
 
   const current = files[tab] || [];
   const activeFile = current[selected[tab]] || null;
-  const activeReview = activeFile ? reviews[`${tab}:${activeFile.url}`] : null;
+  const reviewKey = activeFile ? `${tab}:${activeFile.url}` : "";
+  const activeReview = reviewKey ? reviews[reviewKey] : null;
 
   const runReview = async () => {
     if (!activeFile || !user) return;
     if (usedToday >= DAILY_LIMIT) {
       setError(
-        `You have used all ${DAILY_LIMIT} reviews for today. Come back tomorrow.`
+        `You have used all ${DAILY_LIMIT} checks for today. Come back tomorrow.`
       );
       return;
     }
@@ -183,29 +201,41 @@ const DocumentReviewInner = () => {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error || "Could not review this document.");
+        setError(data?.error || "Could not check this document.");
         return;
       }
 
-      setReviews((prev) => ({ ...prev, [`${tab}:${activeFile.url}`]: data }));
-      setUsedToday((n) => n + 1);
+      const { data: saved, error: saveErr } = await supabase
+        .from("document_reviews")
+        .insert([
+          {
+            user_id: user.id,
+            category: tab,
+            file_name: activeFile.name,
+            file_url: activeFile.url,
+            score: data.score,
+            verdict: data.verdict,
+            summary: data.summary,
+            strengths: data.strengths,
+            issues: data.issues,
+            checklist: data.checklist,
+            model: data.model,
+          },
+        ])
+        .select()
+        .single();
 
-      await supabase.from("document_reviews").insert([
-        {
-          user_id: user.id,
-          category: tab,
-          file_name: activeFile.name,
-          file_url: activeFile.url,
-          score: data.score,
-          verdict: data.verdict,
-          summary: data.summary,
-          strengths: data.strengths,
-          issues: data.issues,
-          checklist: data.checklist,
-          model: data.model,
+      if (saveErr) console.error("Could not save review:", saveErr);
+
+      setReviews((prev) => ({
+        ...prev,
+        [`${tab}:${activeFile.url}`]: {
+          ...data,
+          created_at: saved?.created_at || new Date().toISOString(),
         },
-      ]);
-    } catch (e: any) {
+      }));
+      setUsedToday((n) => n + 1);
+    } catch {
       setError("Network problem. Try again.");
     } finally {
       setRunning(false);
@@ -223,9 +253,11 @@ const DocumentReviewInner = () => {
   }
   if (!user) return null;
 
-  const isImage = activeFile
-    ? /\.(png|jpe?g|webp)$/i.test(activeFile.url.split("?")[0])
-    : false;
+  const ext = activeFile
+    ? (activeFile.url.split("?")[0].split(".").pop() || "").toLowerCase()
+    : "";
+  const isImage = ["png", "jpg", "jpeg", "webp"].includes(ext);
+  const isPdf = ext === "pdf";
 
   return (
     <DefaultLayout>
@@ -276,7 +308,10 @@ const DocumentReviewInner = () => {
               {current.map((f, i) => (
                 <button
                   key={f.url}
-                  onClick={() => setSelected((p) => ({ ...p, [tab]: i }))}
+                  onClick={() => {
+                    setSelected((p) => ({ ...p, [tab]: i }));
+                    setError(null);
+                  }}
                   className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
                     selected[tab] === i
                       ? "bg-red-50 text-red-700 border-red-300"
@@ -284,6 +319,9 @@ const DocumentReviewInner = () => {
                   }`}
                 >
                   {f.name.length > 28 ? f.name.slice(0, 28) + "..." : f.name}
+                  {reviews[`${tab}:${f.url}`] && (
+                    <Check size={11} className="inline ml-1 text-green-600" />
+                  )}
                 </button>
               ))}
             </div>
@@ -321,18 +359,38 @@ const DocumentReviewInner = () => {
                     Open <ExternalLink size={12} />
                   </a>
                 </div>
+
                 {isImage ? (
                   <img
                     src={activeFile.url}
                     alt={activeFile.name}
                     className="w-full h-[70vh] object-contain bg-gray-50"
                   />
-                ) : (
+                ) : isPdf ? (
                   <iframe
                     src={activeFile.url}
                     title={activeFile.name}
                     className="w-full h-[70vh] bg-gray-50"
                   />
+                ) : (
+                  <div className="h-[70vh] bg-gray-50 flex flex-col items-center justify-center text-center p-6">
+                    <FileText className="text-gray-300 mb-3" size={32} />
+                    <p className="text-sm text-gray-700 font-medium mb-1">
+                      Word files can&apos;t be previewed here
+                    </p>
+                    <p className="text-xs text-gray-500 mb-4 max-w-xs leading-relaxed">
+                      The feedback on the right still reads your full document.
+                      Upload a PDF if you want to see it side by side.
+                    </p>
+                    <a
+                      href={activeFile.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#af0100] hover:underline"
+                    >
+                      Open the file
+                    </a>
+                  </div>
                 )}
               </div>
 
@@ -397,7 +455,9 @@ const DocumentReviewInner = () => {
                             {activeReview.verdict}
                           </p>
                           <p className="text-xs text-gray-500">
-                            Out of 100 · first-pass check
+                            {activeReview.created_at
+                              ? `Checked ${prettyDate(activeReview.created_at)}`
+                              : "Out of 100"}
                           </p>
                         </div>
                         <button
@@ -409,7 +469,7 @@ const DocumentReviewInner = () => {
                             size={13}
                             className={running ? "animate-spin" : ""}
                           />
-                          Re-check
+                          {running ? "Checking..." : "Check again"}
                         </button>
                       </div>
                       <p className="text-sm text-gray-700 leading-relaxed">
