@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Save, X, Trash2, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
 import DefaultLayout from "../defaultLayout";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../../../contexts/AuthContext";
 import { supabase } from "../../../lib/supabase";
 
@@ -210,6 +211,7 @@ Section.displayName = "Section";
 
 const ProfilePage = () => {
   const { user } = useAuth();
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(!cachedFormData);
   const [saving, setSaving] = useState(false);
@@ -597,7 +599,8 @@ const ProfilePage = () => {
       cacheTimestamp = Date.now();
       invalidateProfileCache();
       setIsEditing(false);
-      setTimeout(() => setSuccessMessage(""), 3000);
+      
+      router.push('/thank-you');
     } catch (err) {
       console.error("Error saving profile:", err);
       setError("Failed to save profile. Please try again.");
