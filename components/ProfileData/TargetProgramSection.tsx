@@ -57,10 +57,10 @@ const DEGREE_OPTIONS = [
 ];
 
 const TERM_OPTIONS = [
-  { value: 'Spring 2026', label: 'Spring 2026' },
-  { value: 'Summer 2026', label: 'Summer 2026' },
-  { value: 'Fall 2026', label: 'Fall 2026' },
-  { value: '2027', label: '2027 or later' }
+  { value: 'Spring 2027', label: 'Spring 2027' },
+  { value: 'Summer 2027', label: 'Summer 2027' },
+  { value: 'Fall 2027', label: 'Fall 2027' },
+  { value: '2028', label: '2028 or later' }
 ];
 
 const TargetProgramSection: React.FC<TargetProgramSectionProps> = ({
