@@ -47,7 +47,7 @@ export default function RootLayout({
         {/* Google Tag Manager (noscript) */}
         <noscript>
           <iframe 
-            src="https://www.googletagmanager.com/ns.html?id=GTM-NS86VPDJ"
+            src="https://www.googletagmanager.com/ns.html?id=GTM-NS86VPDJ" 
             height="0" 
             width="0" 
             style={{ display: 'none', visibility: 'hidden' }}
