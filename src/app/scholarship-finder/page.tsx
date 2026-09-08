@@ -37,7 +37,7 @@ interface Scholarship {
   price?: string
   created_at?: string
   matchScore?: number
-  isFeatured?: boolean
+  is_featured?: boolean
 }
 
 interface UserProfile {
@@ -50,20 +50,9 @@ const accentColor = '#A51C30';
 const primaryBg = '#FFFFFF';
 const borderColor = '#FECDD3';
 
-const FEATURED_SCHOLARSHIP: Scholarship = {
-  id: -1,
-  country_region: "All",
-  scholarship_name: "Pt. J.S. Mishra",
-  provider: "Edu Abroad",
-  degree_level: "Undergraduate / Postgraduate",
-  deadline: "Varies by university",
-  detailed_eligibility:
-    "High-achieving Indian students facing significant economic barriers; program highlights inclusion for persons with disabilities and displaced youth; leadership & community impact valued",
-  price: "5 Lakh+",
-  link: "#",
-  matchScore: 100,
-  isFeatured: true,
-}
+// The "Pt. J.S. Mishra" featured scholarship is a real row in scholarship_new
+// (id 1, is_featured = true) rather than a hardcoded object — that's what
+// lets it be saved/shortlisted like any other scholarship.
 
 const degreeLevels = ["Undergraduate", "Graduate", "Master", "Postgraduate", "PhD", "Postdoc"]
 
@@ -142,13 +131,6 @@ const ScholarshipFinder: React.FC = () => {
       setLoading(true)
       setError(null)
 
-      if (!userProfile || !userProfile.target_countries?.length || !userProfile.degree) {
-        setError("Please complete your profile to see personalized recommendations")
-        setFilteredScholarships([{ ...FEATURED_SCHOLARSHIP, matchScore: 100 }])
-        setLoading(false)
-        return
-      }
-
       const { data, error: supabaseError } = await supabase
         .from("scholarship_new")
         .select("*")
@@ -156,7 +138,19 @@ const ScholarshipFinder: React.FC = () => {
 
       if (supabaseError) throw supabaseError
 
-      const filtered = (data || []).filter((scholarship) => {
+      const all = (data as Scholarship[]) || []
+      const featuredRow = all.find((s) => s.is_featured)
+      const featured = featuredRow ? [{ ...featuredRow, matchScore: 100 }] : []
+
+      if (!userProfile || !userProfile.target_countries?.length || !userProfile.degree) {
+        setError("Please complete your profile to see personalized recommendations")
+        setFilteredScholarships(featured)
+        setLoading(false)
+        return
+      }
+
+      const filtered = all.filter((scholarship) => {
+        if (scholarship.is_featured) return false
         if (!scholarship.scholarship_name) return false
         if (!userProfile.target_countries.includes(scholarship.country_region || "")) return false
         return true
@@ -175,15 +169,15 @@ const ScholarshipFinder: React.FC = () => {
         const remaining = scoredScholarships
           .filter((s) => !topRecommendations.find((t) => t.id === s.id))
           .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
-          
+
         topRecommendations.push(...remaining)
       }
 
-      setFilteredScholarships([{ ...FEATURED_SCHOLARSHIP, matchScore: 100 }, ...topRecommendations])
+      setFilteredScholarships([...featured, ...topRecommendations])
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch recommended scholarships")
       console.error("Error fetching recommended scholarships:", err)
-      setFilteredScholarships([{ ...FEATURED_SCHOLARSHIP, matchScore: 100 }])
+      setFilteredScholarships([])
     } finally {
       setLoading(false)
     }
@@ -200,6 +194,7 @@ const fetchScholarships = async (page: number, search: string, country: string, 
         .from("scholarship_new")
         .select("*", { count: "exact" })
         .not("scholarship_name", "is", null)
+        .order("is_featured", { ascending: false })
         .order("deadline", { ascending: true })
 
       if (country) query = query.eq("country_region", country)
@@ -214,7 +209,7 @@ const fetchScholarships = async (page: number, search: string, country: string, 
       const { data, count, error: supabaseError } = await query
       if (supabaseError) throw supabaseError
 
-      setScholarships([FEATURED_SCHOLARSHIP, ...(data as Scholarship[] || [])])
+      setScholarships((data as Scholarship[]) || [])
       if (count !== null) setTotalCount(count)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch scholarships")
@@ -256,7 +251,7 @@ const fetchScholarships = async (page: number, search: string, country: string, 
   }
 
   const getMatchBadge = (scholarship: Scholarship) => {
-    if (scholarship.isFeatured) {
+    if (scholarship.is_featured) {
       return (
         <span className="text-xs px-2 sm:px-3 py-1 rounded-full font-semibold flex items-center gap-1" style={{ backgroundColor: 'rgba(251, 191, 36, 0.1)', color: '#d97706', border: '1px solid rgba(251, 191, 36, 0.3)' }}>
           <Star size={14} className="fill-current" />
@@ -424,7 +419,7 @@ const fetchScholarships = async (page: number, search: string, country: string, 
             <div className="flex items-center gap-2">
               <Award style={{ color: accentColor }} size={20} className="sm:w-6 sm:h-6 flex-shrink-0" />
               <span className="font-semibold text-sm sm:text-base text-gray-900">
-                {viewMode === "all" ? (totalCount + 1).toLocaleString() : filteredScholarships.length.toLocaleString()} {viewMode === "recommended" ? "recommended " : ""}scholarship{filteredScholarships.length !== 1 ? 's' : ''} found,  stay tuned for more !
+                {viewMode === "all" ? totalCount.toLocaleString() : filteredScholarships.length.toLocaleString()} {viewMode === "recommended" ? "recommended " : ""}scholarship{filteredScholarships.length !== 1 ? 's' : ''} found,  stay tuned for more !
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -454,7 +449,7 @@ const fetchScholarships = async (page: number, search: string, country: string, 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {paginatedScholarships.map((s, index) => {
                 const isBlurred = viewMode === "recommended" && index >= 3
-                const isFeatured = s.isFeatured
+                const isFeatured = s.is_featured
 
                 return (
                   <div key={s.id} className={`rounded-xl p-4 sm:p-6 hover:shadow-lg transition-shadow relative ${isBlurred ? "overflow-hidden" : ""}`}
@@ -530,7 +525,7 @@ const fetchScholarships = async (page: number, search: string, country: string, 
       </div>
       {/* Pagination Component */}
                     <Pagination
-                      totalItems={viewMode === "all" ? totalCount + 1 : filteredScholarships.length}
+                      totalItems={viewMode === "all" ? totalCount : filteredScholarships.length}
                       currentPage={currentPage}
                       perPage={perPage}
                       onPageChange={(page: number) => { setCurrentPage(page); if (viewMode === "all") { fetchScholarships(page, searchQuery, selectedCountry, selectedLevel) } }}

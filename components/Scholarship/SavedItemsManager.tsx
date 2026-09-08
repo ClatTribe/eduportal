@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-// import { supabase } from '../../lib/supabase';
 
 export const useSavedItems = (userId: string | undefined, itemType: 'scholarship' | 'course') => {
   const [savedItems, setSavedItems] = useState<Set<number>>(new Set());

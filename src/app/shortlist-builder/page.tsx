@@ -203,7 +203,7 @@ const ShortlistBuilder: React.FC = () => {
             return { ...item, course: courseData };
           } else if (item.item_type === "scholarship" && item.scholarship_id) {
             const { data: scholarshipData } = await supabase
-              .from("scholarship")
+              .from("scholarship_new")
               .select("*")
               .eq("id", item.scholarship_id)
               .single();
