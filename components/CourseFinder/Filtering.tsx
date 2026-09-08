@@ -239,7 +239,10 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
           .not('University', 'is', null)
         if (selectedCountry) query = query.eq('Country', selectedCountry)
         if (selectedStudyLevel) query = query.eq('Study Level', selectedStudyLevel)
-        query = query.limit(10000)
+        // Capped well below the old 10000 — this is only ever used to build a
+        // deduped dropdown list, not to show results, so it doesn't need to
+        // scan/transfer thousands of rows.
+        query = query.limit(1000)
         const { data } = await query
         if (data) {
           const unique = [...new Set(
@@ -254,6 +257,16 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
     fetchUniversities()
   }, [showFilters, selectedCountry, selectedStudyLevel])
 
+  // Debounce the free-typed program name before it drives a query — without
+  // this, fetchPrograms below re-ran on every keystroke (each one pulling up
+  // to 5000 rows with a leading-wildcard ILIKE), which is what made typing
+  // into any filter feel slow.
+  const [debouncedProgramNameInput, setDebouncedProgramNameInput] = useState("")
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedProgramNameInput(programNameInput), 400)
+    return () => clearTimeout(timer)
+  }, [programNameInput])
+
   useEffect(() => {
     if (!showFilters) return
     const fetchPrograms = async () => {
@@ -265,8 +278,8 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
         if (selectedCountry) query = query.eq('Country', selectedCountry)
         if (selectedStudyLevel) query = query.eq('Study Level', selectedStudyLevel)
         if (selectedUniversity) query = query.eq('University', selectedUniversity)
-        if (programNameInput) query = query.ilike('Program Name', `%${programNameInput}%`)
-        query = query.limit(5000)
+        if (debouncedProgramNameInput) query = query.ilike('Program Name', `%${debouncedProgramNameInput}%`)
+        query = query.limit(1000)
         const { data } = await query
         if (data) {
           const unique = [...new Set(
@@ -279,7 +292,7 @@ const FilterComponent: React.FC<FilterProps> = ({ viewMode, onFilterValuesChange
       }
     }
     fetchPrograms()
-  }, [showFilters, selectedCountry, selectedStudyLevel, selectedUniversity, programNameInput])
+  }, [showFilters, selectedCountry, selectedStudyLevel, selectedUniversity, debouncedProgramNameInput])
 
   // Smart search: triggered when user presses Enter in search bar
   const handleSmartSearch = () => {
