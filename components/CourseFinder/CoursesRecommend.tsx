@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Sparkles, Trophy, Award, Target } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
@@ -62,6 +62,11 @@ const CoursesRecommend: React.FC<CoursesRecommendProps> = ({
 }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(true)
+
+  // Cache the last computed recommendations so re-opening the tab (without the
+  // profile changing) doesn't re-hit the database at all.
+  const lastFetchKeyRef = useRef<string | null>(null)
+  const cachedRecommendationsRef = useRef<Course[]>([])
 
   useEffect(() => {
     fetchUserProfile()
@@ -223,61 +228,60 @@ const CoursesRecommend: React.FC<CoursesRecommendProps> = ({
         return
       }
 
-      // Fetch all courses in batches
-      let allCourses: Course[] = []
-      let from = 0
-      const batchSize = 1000
-      let hasMore = true
-
-      while (hasMore) {
-        const { data, error: supabaseError } = await supabase
-          .from("courses")
-          .select("*")
-          .order("id", { ascending: true })
-          .range(from, from + batchSize - 1)
-
-        if (supabaseError) throw supabaseError
-
-        if (data && data.length > 0) {
-          allCourses = [...allCourses, ...data]
-          hasMore = data.length === batchSize
-          from += batchSize
-        } else {
-          hasMore = false
-        }
-      }
-
       const targetStudyLevel = userProfile.degree === "Bachelors" ? "Undergraduate" : "Postgraduate"
 
-      // Filter courses
-      const filtered = allCourses.filter((course) => {
-        if (!course.University) return false
-        if (course["Study Level"] !== targetStudyLevel) return false
-        if (!userProfile.target_countries.includes(course.Country || "")) return false
-        return true
+      // Skip the network entirely if nothing that affects the result has changed
+      // since the last fetch (e.g. user just switched tabs back and forth).
+      const fetchKey = JSON.stringify({
+        countries: [...userProfile.target_countries].sort(),
+        degree: userProfile.degree,
+        program: userProfile.program,
       })
+      if (fetchKey === lastFetchKeyRef.current && cachedRecommendationsRef.current.length > 0) {
+        onRecommendedCoursesChange(cachedRecommendationsRef.current)
+        onLoadingChange(false)
+        return
+      }
 
-      // Calculate match scores for all courses
-      const scoredCourses = filtered.map((course) => ({
+      // Mirror the exact query shape the "All courses" tab uses (plain eq/in
+      // filters + order + a small limit, NO ilike/"or" text search). ILIKE
+      // with a leading wildcard cannot use a normal index and forces Postgres
+      // to scan the whole 79k-row table, which is almost certainly why the
+      // keyword-filtered version above was taking 40+ seconds.
+      const { data, error: supabaseError } = await supabase
+        .from("courses")
+        .select("*")
+        .not("University", "is", null)
+        .eq("Study Level", targetStudyLevel)
+        .in("Country", userProfile.target_countries)
+        .order("qs_rank", { ascending: true })
+        .order("id", { ascending: true })
+        .limit(200)
+
+      if (supabaseError) throw supabaseError
+
+      const scoredCourses = (data || []).map((course) => ({
         ...course,
         matchScore: calculateMatchScore(course),
       }))
 
-      // Filter for relevant courses (score > 10)
       const relevantCourses = scoredCourses.filter((c) => (c.matchScore || 0) > 10)
 
-      // Get top 10 recommendations
-      const topRecommendations = relevantCourses.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0)).slice(0, 10)
+      let topRecommendations = relevantCourses
+        .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
+        .slice(0, 10)
 
-      // If we don't have 10 recommendations, fill with the best remaining courses
       if (topRecommendations.length < 10) {
         const remaining = scoredCourses
           .filter((c) => !topRecommendations.find((t) => t.id === c.id))
           .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
           .slice(0, 10 - topRecommendations.length)
 
-        topRecommendations.push(...remaining)
+        topRecommendations = [...topRecommendations, ...remaining]
       }
+
+      lastFetchKeyRef.current = fetchKey
+      cachedRecommendationsRef.current = topRecommendations
 
       onRecommendedCoursesChange(topRecommendations)
     } catch (err) {
