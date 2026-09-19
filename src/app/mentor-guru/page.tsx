@@ -121,6 +121,20 @@ const MentorGuruPage = () => {
   const [saving, setSaving] = useState<string | null>(null);
   const [booked, setBooked] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  const [contact, setContact] = useState<{ name: string; email: string; phone: string }>({
+    name: "",
+    email: "",
+    phone: "",
+  });
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    window.clearTimeout((showToast as any)._t);
+    (showToast as any)._t = window.setTimeout(() => setToast(null), 5000);
+  };
 
   const titleCase = (s: string) =>
     s
@@ -149,11 +163,16 @@ const MentorGuruPage = () => {
       if (user) {
         const { data: p } = await supabase
           .from("admit_profiles")
-          .select("degree, program, target_countries, mentor_id")
+          .select("degree, program, target_countries, mentor_id, name, email, phone")
           .eq("user_id", user.id)
           .single();
 
         setMyMentorId(p?.mentor_id || null);
+        setContact({
+          name: p?.name || user.user_metadata?.full_name || "",
+          email: p?.email || user.email || "",
+          phone: p?.phone || "",
+        });
 
         if (p?.degree && p?.program) {
           setProfileComplete(true);
@@ -200,11 +219,21 @@ const MentorGuruPage = () => {
     setStep(0);
   };
 
-  const chooseMentor = async (id: string) => {
+  const startSelect = (id: string) => {
     if (!user) {
       router.push("/register");
       return;
     }
+    if (id === myMentorId) return;
+    setError(null);
+    setPendingId(id);
+  };
+
+  const cancelPending = () => setPendingId(null);
+
+  const confirmSelection = async (id: string) => {
+    if (!user) return;
+    const mentor = mentors.find((m) => m.id === id);
     try {
       setSaving(id);
       const { error: e } = await supabase
@@ -212,9 +241,59 @@ const MentorGuruPage = () => {
         .update({ mentor_id: id, mentor_assigned_at: new Date().toISOString() })
         .eq("user_id", user.id);
       if (e) throw e;
+
       setMyMentorId(id);
+      setPendingId(null);
+
+      try {
+        await fetch("/api/mentor-selection", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: contact.name,
+            email: contact.email,
+            mobile: contact.phone,
+            mentor_name: mentor?.full_name || "Unknown mentor",
+            mentor_headline: mentor?.headline || "",
+            mentor_universities: (mentor?.universities || []).join(", "),
+            mentor_countries: (mentor?.countries || []).join(", "),
+            degree: answers?.degree || "",
+            program: answers?.program || "",
+            target_countries: (answers?.countries || []).join(", "),
+            source_url: typeof window !== "undefined" ? window.location.href : null,
+          }),
+        });
+      } catch (mailErr) {
+        console.error("Mentor selection email error:", mailErr);
+      }
+
+      showToast(
+        "Request sent! Our team will confirm your mentor shortly."
+      );
     } catch (e: any) {
       setError(e?.message || "Could not save your mentor.");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const askRemoveMentor = (id: string) => setConfirmRemoveId(id);
+  const cancelRemoveMentor = () => setConfirmRemoveId(null);
+
+  const removeMentor = async (id: string) => {
+    if (!user) return;
+    try {
+      setSaving(id);
+      const { error: e } = await supabase
+        .from("admit_profiles")
+        .update({ mentor_id: null, mentor_assigned_at: null })
+        .eq("user_id", user.id);
+      if (e) throw e;
+      setMyMentorId(null);
+      setConfirmRemoveId(null);
+      showToast("Mentor removed. You can choose a new one anytime.");
+    } catch (e: any) {
+      setError(e?.message || "Could not remove your mentor.");
     } finally {
       setSaving(null);
     }
@@ -534,6 +613,7 @@ const MentorGuruPage = () => {
     })
     .sort(
       (a, b) =>
+        (a.m.id === myMentorId ? -1 : b.m.id === myMentorId ? 1 : 0) ||
         (b.m.sort_order || 0) - (a.m.sort_order || 0) ||
         b.score - a.score ||
         (b.m.students_guided || 0) - (a.m.students_guided || 0)
@@ -544,6 +624,8 @@ const MentorGuruPage = () => {
 
   const Card = ({ m, score }: { m: Mentor; score: number }) => {
     const mine = m.id === myMentorId;
+    const isPending = m.id === pendingId;
+    const isConfirmingRemove = m.id === confirmRemoveId;
     const fieldMatch = (m.specializations || []).some(
       (s) => s.toLowerCase() === answers.program.toLowerCase()
     );
@@ -561,10 +643,12 @@ const MentorGuruPage = () => {
 
     return (
       <div
-        className={`group bg-white rounded-xl p-4 flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-8px_rgba(175,1,0,0.45)] ${
+        className={`group rounded-xl p-4 flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-8px_rgba(175,1,0,0.45)] ${
           mine
-            ? "border-2 border-[#af0100]"
-            : "border border-red-200 hover:border-[#af0100]"
+            ? "border-2 border-green-500 bg-green-50/40"
+            : isPending
+            ? "border-2 border-yellow-400 bg-yellow-50/60"
+            : "bg-white border border-red-200 hover:border-[#af0100]"
         }`}
       >
         <div className="flex items-start gap-3 mb-3">
@@ -647,21 +731,72 @@ const MentorGuruPage = () => {
         </div>
 
         {user ? (
-          <button
-            onClick={() => chooseMentor(m.id)}
-            disabled={saving === m.id || mine}
-            className={`w-full text-sm font-medium py-2.5 rounded-xl border transition-all disabled:opacity-60 ${
-              mine
-                ? "border-[#af0100] text-[#af0100] bg-red-50"
-                : "border-gray-200 text-gray-700 group-hover:bg-[#af0100] group-hover:text-white group-hover:border-[#af0100]"
-            }`}
-          >
-            {mine
-              ? "Your mentor"
-              : saving === m.id
-              ? "Saving..."
-              : "Choose as my mentor"}
-          </button>
+          isPending ? (
+            <div className="flex gap-2">
+              <button
+                onClick={() => confirmSelection(m.id)}
+                disabled={saving === m.id}
+                className="flex-1 text-sm font-medium py-2.5 rounded-xl bg-[#af0100] text-white hover:opacity-90 disabled:opacity-60"
+              >
+                {saving === m.id ? "Saving..." : "Confirm"}
+              </button>
+              <button
+                onClick={cancelPending}
+                disabled={saving === m.id}
+                className="flex-1 text-sm font-medium py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : mine ? (
+            isConfirmingRemove ? (
+              <div>
+                <p className="text-xs text-gray-600 mb-2 text-center">
+                  Remove this mentor?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => removeMentor(m.id)}
+                    disabled={saving === m.id}
+                    className="flex-1 text-sm font-medium py-2.5 rounded-xl bg-red-600 text-white hover:opacity-90 disabled:opacity-60"
+                  >
+                    {saving === m.id ? "Removing..." : "Yes, remove"}
+                  </button>
+                  <button
+                    onClick={cancelRemoveMentor}
+                    disabled={saving === m.id}
+                    className="flex-1 text-sm font-medium py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                  >
+                    No, keep
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <button
+                  disabled
+                  className="w-full text-sm font-medium py-2.5 rounded-xl border-2 border-green-500 text-green-700 bg-green-50 flex items-center justify-center gap-1.5"
+                >
+                  <Check size={15} className="text-green-600" />
+                  Your mentor
+                </button>
+                <button
+                  onClick={() => askRemoveMentor(m.id)}
+                  className="w-full text-center text-xs text-gray-400 hover:text-red-600 underline mt-1.5"
+                >
+                  Change mentor
+                </button>
+              </div>
+            )
+          ) : (
+            <button
+              onClick={() => startSelect(m.id)}
+              disabled={saving === m.id}
+              className="w-full text-sm font-medium py-2.5 rounded-xl border border-gray-200 text-gray-700 group-hover:bg-[#af0100] group-hover:text-white group-hover:border-[#af0100] disabled:opacity-60"
+            >
+              Choose as my mentor
+            </button>
+          )
         ) : (
           <button
             onClick={() =>
@@ -692,6 +827,12 @@ const MentorGuruPage = () => {
   return (
     <DefaultLayout>
       <div className="min-h-screen bg-[#FAFAFA] p-4 pt-24 sm:p-6 sm:pt-6">
+        {toast && (
+          <div className="fixed bottom-24 right-5 z-50 max-w-xs bg-gray-900 text-white text-sm rounded-xl px-4 py-3 shadow-lg flex items-start gap-2">
+            <Check size={16} className="text-green-400 mt-0.5 shrink-0" />
+            <span>{toast}</span>
+          </div>
+        )}
         <div className="max-w-6xl mx-auto">
           {!profileComplete && (
             <div className="bg-white border border-red-200 rounded-xl p-4 mb-5 flex items-start gap-3">
