@@ -430,7 +430,7 @@ const handleRecommendedCoursesChange = (recCourses: Course[]) => {
               {/* Course Cards Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {displayCourses.map((course, index) => {
-                  const isBlurred = viewMode === "recommended" && index >= 2;
+                  const isBlurred = false;
                   const courseIndex = currentPage * perPage + index;
                   const inCompare = isInCompare(course.id);
                   return (
