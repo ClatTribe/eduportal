@@ -656,10 +656,10 @@ const MentorGuruPage = () => {
             <img
               src={m.headshot_url}
               alt={m.full_name}
-              className="w-11 h-11 rounded-full object-cover shrink-0"
+              className="w-20 h-20 rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-11 h-11 shrink-0 rounded-full bg-red-50 text-red-700 font-semibold text-sm flex items-center justify-center group-hover:bg-red-100 transition-colors">
+            <div className="w-20 h-20 shrink-0 rounded-full bg-red-50 text-red-700 font-semibold text-sm flex items-center justify-center group-hover:bg-red-100 transition-colors">
               {initials(m.full_name)}
             </div>
           )}
