@@ -250,9 +250,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Model fallback cascade: use gemini-3.5-flash first (as verified in edunext), then 2.5, 2.0, 1.5
     const MODELS_TO_TRY = [
       "gemini-3.5-flash",
-      "gemini-2.5-flash",
-      "gemini-2.0-flash",
-      "gemini-1.5-flash",
     ];
 
     let response: Response | null = null;
