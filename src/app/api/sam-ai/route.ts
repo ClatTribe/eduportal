@@ -139,14 +139,18 @@ async function makeGeminiRequest(
   systemPrompt: string,
   apiKey: string
 ): Promise<Response> {
+  const cleanKey = apiKey.trim();
   return fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": cleanKey,
+      },
       body: JSON.stringify({
         contents: messages,
-        system_instruction: {
+        systemInstruction: {
           parts: [{ text: systemPrompt }],
         },
         generationConfig: {
@@ -154,14 +158,7 @@ async function makeGeminiRequest(
           topP: 0.95,
           topK: 40,
           maxOutputTokens: 8192,
-          candidateCount: 1,
         },
-        safetySettings: [
-          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-        ],
       }),
     }
   );
@@ -172,8 +169,8 @@ async function makeGeminiRequest(
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Check API key first
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    if (!GEMINI_API_KEY) {
+    const rawApiKey = process.env.GEMINI_API_KEY;
+    if (!rawApiKey || !rawApiKey.trim()) {
       console.error("SAM AI: GEMINI_API_KEY environment variable is not set");
       return NextResponse.json(
         {
@@ -183,6 +180,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         { status: 503 }
       );
     }
+    const GEMINI_API_KEY = rawApiKey.trim();
 
     // Parse body
     let body: RequestBody;
@@ -249,45 +247,59 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Build system prompt with profile data
     const systemPrompt = buildDynamicPrompt(profileContext);
 
-    // Model selection: use gemini-2.5-flash (stable, production-ready)
-    // "deep" mode uses the full flash model; "chat" uses the same (lite was unreliable)
-    const PRIMARY_MODEL = "gemini-2.5-flash";
-    const FALLBACK_MODEL = "gemini-2.0-flash";
+    // Model fallback cascade: try modern 2.0 Flash first, then 1.5 Flash, then 2.5 Flash
+    const MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"];
 
-    // Try primary model
-    let response = await makeGeminiRequest(
-      PRIMARY_MODEL,
-      cleanedMessages,
-      systemPrompt,
-      GEMINI_API_KEY
-    );
+    let response: Response | null = null;
+    let selectedModel = MODELS_TO_TRY[0];
+    let lastErrorBody = "";
+    let lastStatus = 500;
 
-    // Fallback if primary fails
-    if (!response.ok) {
-      console.warn(
-        `SAM AI: Primary model ${PRIMARY_MODEL} failed (${response.status}), trying fallback...`
-      );
-      response = await makeGeminiRequest(
-        FALLBACK_MODEL,
-        cleanedMessages,
-        systemPrompt,
-        GEMINI_API_KEY
-      );
+    for (const model of MODELS_TO_TRY) {
+      try {
+        const res = await makeGeminiRequest(
+          model,
+          cleanedMessages,
+          systemPrompt,
+          GEMINI_API_KEY
+        );
+        if (res.ok) {
+          response = res;
+          selectedModel = model;
+          break;
+        } else {
+          lastStatus = res.status;
+          lastErrorBody = await res.text();
+          console.warn(`SAM AI: Model ${model} returned ${res.status}:`, lastErrorBody);
+        }
+      } catch (err) {
+        console.warn(`SAM AI: Model ${model} fetch failed:`, err);
+      }
     }
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error("SAM AI: Gemini API error:", response.status, errorBody);
+    if (!response || !response.ok) {
+      console.error("SAM AI: All models failed. Last status:", lastStatus, lastErrorBody);
 
-      if (response.status === 429) {
+      if (lastStatus === 429) {
         return NextResponse.json(
           { error: "SAM is temporarily busy. Please try again in a moment." },
           { status: 429 }
         );
       }
 
+      let parsedGoogleError: any = null;
+      try {
+        parsedGoogleError = JSON.parse(lastErrorBody);
+      } catch {
+        // Ignored
+      }
+
       return NextResponse.json(
-        { error: "Failed to get response from AI. Please try again." },
+        {
+          error: "Failed to get response from AI. Please try again.",
+          details: parsedGoogleError?.error?.message || lastErrorBody || "AI service unreachable.",
+          status: lastStatus,
+        },
         { status: 502 }
       );
     }
@@ -316,7 +328,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({
       response: aiResponse,
-      model: PRIMARY_MODEL,
+      model: selectedModel,
     });
   } catch (error: unknown) {
     console.error("SAM AI route error:", error);
@@ -345,7 +357,7 @@ export async function GET(): Promise<NextResponse> {
   return NextResponse.json({
     status: hasApiKey ? "ok" : "misconfigured",
     service: "SAM AI — EduAbroad Study Abroad Mentor",
-    model: "gemini-2.5-flash",
+    models: ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"],
     apiKeyConfigured: hasApiKey,
     hint: hasApiKey
       ? undefined
