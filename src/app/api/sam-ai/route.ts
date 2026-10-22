@@ -247,12 +247,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Build system prompt with profile data
     const systemPrompt = buildDynamicPrompt(profileContext);
 
-    // Model fallback cascade: prioritize universal free-tier models (1.5 Flash has 1,500 RPD)
+    // Model fallback cascade: use gemini-3.5-flash first (as verified in edunext), then 2.5, 2.0, 1.5
     const MODELS_TO_TRY = [
-      "gemini-1.5-flash",
-      "gemini-1.5-flash-8b",
-      "gemini-2.0-flash",
+      "gemini-3.5-flash",
       "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash",
     ];
 
     let response: Response | null = null;
@@ -367,7 +367,7 @@ export async function GET(): Promise<NextResponse> {
   return NextResponse.json({
     status: hasApiKey ? "ok" : "misconfigured",
     service: "SAM AI — EduAbroad Study Abroad Mentor",
-    models: ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"],
+    models: ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"],
     apiKeyConfigured: hasApiKey,
     hint: hasApiKey
       ? undefined
