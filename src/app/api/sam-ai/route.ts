@@ -157,7 +157,7 @@ async function makeGeminiRequest(
           temperature: 0.7,
           topP: 0.95,
           topK: 40,
-          maxOutputTokens: 8192,
+          maxOutputTokens: 2048,
         },
       }),
     }
@@ -247,9 +247,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Build system prompt with profile data
     const systemPrompt = buildDynamicPrompt(profileContext);
 
-    // Model fallback cascade: use gemini-3.5-flash first (as verified in edunext), then 2.5, 2.0, 1.5
+    // Primary: gemini-3.5-flash (same as edunext), with backup if high demand occurs
     const MODELS_TO_TRY = [
       "gemini-3.5-flash",
+      "gemini-2.5-flash",
     ];
 
     let response: Response | null = null;
@@ -259,12 +260,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     for (const model of MODELS_TO_TRY) {
       try {
-        const res = await makeGeminiRequest(
+        let res = await makeGeminiRequest(
           model,
           cleanedMessages,
           systemPrompt,
           GEMINI_API_KEY
         );
+
+        // If model has a temporary high demand spike (503 or 429), auto-retry once after 1.5s
+        if (res.status === 503 || res.status === 429) {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          const retryRes = await makeGeminiRequest(
+            model,
+            cleanedMessages,
+            systemPrompt,
+            GEMINI_API_KEY
+          );
+          if (retryRes.ok) {
+            res = retryRes;
+          }
+        }
+
         if (res.ok) {
           response = res;
           selectedModel = model;
