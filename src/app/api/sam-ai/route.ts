@@ -247,8 +247,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Build system prompt with profile data
     const systemPrompt = buildDynamicPrompt(profileContext);
 
-    // Model fallback cascade: try modern 2.0 Flash first, then 1.5 Flash, then 2.5 Flash
-    const MODELS_TO_TRY = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"];
+    // Model fallback cascade: prioritize universal free-tier models (1.5 Flash has 1,500 RPD)
+    const MODELS_TO_TRY = [
+      "gemini-1.5-flash",
+      "gemini-1.5-flash-8b",
+      "gemini-2.0-flash",
+      "gemini-2.5-flash",
+    ];
 
     let response: Response | null = null;
     let selectedModel = MODELS_TO_TRY[0];
@@ -280,13 +285,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!response || !response.ok) {
       console.error("SAM AI: All models failed. Last status:", lastStatus, lastErrorBody);
 
-      if (lastStatus === 429) {
-        return NextResponse.json(
-          { error: "SAM is temporarily busy. Please try again in a moment." },
-          { status: 429 }
-        );
-      }
-
       let parsedGoogleError: any = null;
       try {
         parsedGoogleError = JSON.parse(lastErrorBody);
@@ -294,10 +292,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         // Ignored
       }
 
+      const errorMessage = parsedGoogleError?.error?.message || lastErrorBody || "AI service unreachable.";
+
+      if (lastStatus === 429) {
+        return NextResponse.json(
+          {
+            error: "SAM is temporarily busy (Quota or Rate limit reached).",
+            details: errorMessage,
+          },
+          { status: 429 }
+        );
+      }
+
       return NextResponse.json(
         {
           error: "Failed to get response from AI. Please try again.",
-          details: parsedGoogleError?.error?.message || lastErrorBody || "AI service unreachable.",
+          details: errorMessage,
           status: lastStatus,
         },
         { status: 502 }

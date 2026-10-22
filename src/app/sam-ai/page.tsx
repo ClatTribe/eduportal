@@ -669,11 +669,12 @@ export default function AskSwatiAIDashboard() {
         }),
       });
 
-      const data: AIResponse = await response.json();
-      if (data.response) {
+      const data: any = await response.json();
+      if (data?.response) {
         setMessages([...newMessages, { role: 'assistant', content: data.response }]);
       } else {
-        setMessages([...newMessages, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
+        const errorFeedback = data?.details || data?.error || 'Sorry, I encountered an error. Please try again.';
+        setMessages([...newMessages, { role: 'assistant', content: errorFeedback }]);
       }
     } catch (error) {
       console.error('API Error:', error);
