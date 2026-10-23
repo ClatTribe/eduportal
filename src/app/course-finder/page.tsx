@@ -213,7 +213,15 @@ const CourseFinder: React.FC = () => {
     } catch (err) {
       // Ignore errors from stale fetches
       if (currentFetchId !== fetchIdRef.current) return;
-      setError(err instanceof Error ? err.message : "Failed to fetch courses");
+      // Don't leave the previous results and count on screen; they no longer match the filters.
+      setCourses([]);
+      setTotalCount(0);
+      const code = (err as { code?: string })?.code;
+      setError(
+        code === "57014"
+          ? "This combination of filters is taking too long. Try a broader program name or remove one filter."
+          : "Couldn't load courses right now. Please try again."
+      );
       console.error("Error fetching courses:", err);
     } finally {
       // Only clear loading for the latest fetch
