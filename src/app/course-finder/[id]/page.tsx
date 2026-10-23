@@ -54,6 +54,10 @@ const parseMedia = (m: string | null): string[] => {
   } catch { return [m]; }
 };
 
+// Deadline display switch: set to true once deadline data is refreshed
+const SHOW_DEADLINE: boolean = false;
+
+// Helper: check if application deadline is still in the future (form is live)
 const isDeadlineLive = (deadline: string | null): boolean => {
   if (!deadline) return false;
   try {
@@ -264,7 +268,7 @@ export default function CourseMicrosite() {
                       <MapPin size={10} className="text-red-300" />
                       {course.Campus || "N/A"}{course.Country ? `, ${course.Country}` : ""}
                     </span>
-                    {deadlineLive && (
+                    {SHOW_DEADLINE && deadlineLive && (
                       <span className="flex items-center gap-2 bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-emerald-400 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 rounded-full">
                         <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
                           <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -435,7 +439,7 @@ export default function CourseMicrosite() {
                             <span className="text-xs sm:text-sm font-black text-gray-900">{course["Open Intakes"]}</span>
                         </div>
                     )}
-                    {course["Application Deadline"] && (
+                    {SHOW_DEADLINE && course["Application Deadline"] && (
                         <div className="flex items-center justify-between p-4 bg-red-50/50 rounded-xl border border-red-100/50">
                             <span className="text-xs sm:text-sm font-bold text-gray-600">Deadline</span>
                             <span className="text-xs sm:text-sm font-black text-[#A51C30]">{formatDeadline(course["Application Deadline"])}</span>

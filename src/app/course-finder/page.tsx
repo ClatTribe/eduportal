@@ -623,7 +623,8 @@ const handleRecommendedCoursesChange = (recCourses: Course[]) => {
                                         <div className="text-xs text-[#A51C30] font-medium">
                                           Open Intakes
                                         </div>
-                                        {isDeadlineLive(course["Application Deadline"]) && (
+                                        {/* Deadline hidden until data refresh — remove `false &&` to re-enable */}
+                                        {false && isDeadlineLive(course["Application Deadline"]) && (
                                           <div className="flex items-center gap-1">
                                             <span className="relative flex h-2.5 w-2.5">
                                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A51C30] opacity-75"></span>
@@ -638,7 +639,8 @@ const handleRecommendedCoursesChange = (recCourses: Course[]) => {
                                           {course["Open Intakes"]}
                                         </p>
                                       )}
-                                      {course["Application Deadline"] && (
+                                      {/* Deadline hidden until data refresh — remove `false &&` to re-enable */}
+                                      {false && course["Application Deadline"] && (
                                         <div className="mt-1.5 pt-1.5 border-t border-[#A51C30]/10">
                                           <div className="flex items-center justify-between">
                                             <span className="text-[10px] text-[#A51C30]/70">Deadline</span>
