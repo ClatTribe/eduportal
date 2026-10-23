@@ -38,21 +38,14 @@ export const CATEGORIES: { name: string; emoji: string }[] = [
   { name: "News", emoji: "📰" },
 ];
 
-// Sticker colours per category: soft fill + ink text, works on light and dark covers.
-const CATEGORY_COLORS: Record<string, { sticker: string; cover: string }> = {
-  "Country Guide": { sticker: "bg-[#FFD6E0] text-[#7A0019]", cover: "from-[#A51C30] via-[#D9365A] to-[#FF8FA3]" },
-  "Visa Tips": { sticker: "bg-[#CDE7FF] text-[#0B3A6B]", cover: "from-[#0B3A6B] via-[#1D6FD1] to-[#7CC4FF]" },
-  Scholarships: { sticker: "bg-[#D9F99D] text-[#1A3A05]", cover: "from-[#14532D] via-[#3F9142] to-[#BEF264]" },
-  "IELTS/TOEFL": { sticker: "bg-[#E9D5FF] text-[#3B0764]", cover: "from-[#3B0764] via-[#7C3AED] to-[#C4B5FD]" },
-  "Student Life": { sticker: "bg-[#FEF08A] text-[#5A3E00]", cover: "from-[#8A4B00] via-[#F59E0B] to-[#FDE68A]" },
-  Rankings: { sticker: "bg-[#FED7AA] text-[#7C2D12]", cover: "from-[#7C2D12] via-[#EA580C] to-[#FDBA74]" },
-  "Career After": { sticker: "bg-[#A5F3FC] text-[#083344]", cover: "from-[#083344] via-[#0E7490] to-[#67E8F9]" },
-  "Admit Stories": { sticker: "bg-[#FBCFE8] text-[#701A75]", cover: "from-[#701A75] via-[#DB2777] to-[#F9A8D4]" },
-  News: { sticker: "bg-[#E4E4E7] text-[#18181B]", cover: "from-[#18181B] via-[#3F3F46] to-[#A1A1AA]" },
+// One brand style for every category, matching app.goeduabroad.com (brand red #A51C30 + rose tints).
+const BRAND_STYLE = {
+  sticker: "bg-[#FEF2F3] text-[#A51C30] border border-[#FECDD3]",
+  cover: "from-[#7A1524] via-[#A51C30] to-[#E0314B]",
 };
 
-export function categoryStyle(category: string) {
-  return CATEGORY_COLORS[category] || CATEGORY_COLORS["Country Guide"];
+export function categoryStyle(_category: string) {
+  return BRAND_STYLE;
 }
 
 export function categoryEmoji(category: string) {

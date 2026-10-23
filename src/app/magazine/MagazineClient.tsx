@@ -1,63 +1,58 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Clock, Search, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, CheckCircle2, Clock, Search, X } from "lucide-react";
 import { EnquiryForm } from "./EnquiryForm";
-import {
-  CATEGORIES,
-  MagazinePost,
-  categoryEmoji,
-  categoryStyle,
-  relativeDate,
-} from "./magazine-utils";
+import { CATEGORIES, MagazinePost, categoryStyle, relativeDate } from "./magazine-utils";
 
 const PAGE_SIZE = 12;
 
-const TICKER = [
-  "UK visa rules 2026",
-  "Fully funded scholarships",
-  "IELTS band 7 hacks",
-  "Germany: study for free?",
-  "US OPT fee update",
-  "Canada PR pathways",
-  "Australia student visa",
-  "Real admit stories",
-];
+const TRENDING = ["UK visa", "Scholarships", "IELTS", "Germany", "OPT", "Canada", "Australia", "Admit"];
 
-function Cover({ post, className = "", big = false }: { post: MagazinePost; className?: string; big?: boolean }) {
-  const style = categoryStyle(post.category);
+// Dates depend on the viewer's clock and timezone, so they are allowed to differ from the server render.
+function When({ date }: { date: string }) {
+  return (
+    <time dateTime={date} suppressHydrationWarning>
+      {relativeDate(date)}
+    </time>
+  );
+}
+
+function Cover({ post, big = false }: { post: MagazinePost; big?: boolean }) {
   const [broken, setBroken] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  // An image can fail before React hydrates, so onError never fires; check once on mount too.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth === 0) setBroken(true);
+  }, []);
   if (post.cover_image_url && !broken) {
     return (
       <img
+        ref={imgRef}
         src={post.cover_image_url}
         alt={post.title}
         onError={() => setBroken(true)}
         loading={big ? "eager" : "lazy"}
-        className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04] ${className}`}
+        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
       />
     );
   }
   return (
-    <div
-      className={`relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-br ${style.cover} ${className}`}
-      aria-hidden
-    >
-      <span className={`${big ? "text-8xl" : "text-6xl"} drop-shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
-        {categoryEmoji(post.category)}
-      </span>
-      <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-white/15 blur-2xl" />
+    <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${categoryStyle(post.category).cover}`} aria-hidden>
+      <BookOpen className={`${big ? "h-16 w-16" : "h-10 w-10"} text-white/70`} />
     </div>
   );
 }
 
-function Sticker({ category }: { category: string }) {
+function CategoryPill({ category, onDark = false }: { category: string; onDark?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border-2 border-[#0E0E10] px-2.5 py-0.5 text-[11px] font-bold ${categoryStyle(category).sticker}`}
+      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+        onDark ? "bg-white/15 text-white backdrop-blur-md border border-white/25" : categoryStyle(category).sticker
+      }`}
     >
-      <span aria-hidden>{categoryEmoji(category)}</span>
       {category}
     </span>
   );
@@ -66,28 +61,28 @@ function Sticker({ category }: { category: string }) {
 function PostCard({ post }: { post: MagazinePost }) {
   return (
     <Link href={`/magazine/${post.slug}`} className="group block h-full">
-      <article className="flex h-full flex-col overflow-hidden rounded-[28px] border-2 border-[#0E0E10] bg-white transition-all duration-200 hover:-translate-y-1 hover:shadow-[6px_6px_0_#0E0E10]">
-        <div className="relative aspect-[16/10] overflow-hidden border-b-2 border-[#0E0E10]">
+      <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-gray-200/60">
+        <div className="relative aspect-[16/10] overflow-hidden">
           <Cover post={post} />
           <div className="absolute left-3 top-3">
-            <Sticker category={post.category} />
+            <CategoryPill category={post.category} />
           </div>
         </div>
         <div className="flex flex-1 flex-col p-5">
-          <h3 className="font-display text-[19px] font-bold leading-snug text-[#0E0E10] line-clamp-3">
+          <h3 className="text-[17px] font-bold leading-snug text-[#0F172A] line-clamp-3 transition-colors group-hover:text-[#A51C30]">
             {post.title}
           </h3>
-          <p className="mt-2 flex-1 text-sm leading-relaxed text-[#0E0E10]/55 line-clamp-2">{post.excerpt}</p>
-          <div className="mt-4 flex items-center justify-between text-xs font-medium text-[#0E0E10]/45">
+          <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-500 line-clamp-2">{post.excerpt}</p>
+          <div className="mt-4 flex items-center justify-between border-t border-gray-50 pt-3 text-xs text-slate-400">
             <span className="flex items-center gap-3">
-              <span>{relativeDate(post.published_at)}</span>
+              <When date={post.published_at} />
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {post.read_time} min
+                {post.read_time} min read
               </span>
             </span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0E0E10] text-white transition-transform group-hover:rotate-45">
-              <ArrowUpRight className="h-4 w-4" />
+            <span className="flex items-center gap-1 font-semibold text-[#A51C30]">
+              Read <ArrowUpRight className="h-3.5 w-3.5" />
             </span>
           </div>
         </div>
@@ -123,6 +118,7 @@ export default function MagazineClient({ posts }: { posts: MagazinePost[] }) {
       return (
         p.title.toLowerCase().includes(q) ||
         p.excerpt?.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
         (p.tags || []).some((t) => t.toLowerCase().includes(q))
       );
     });
@@ -130,7 +126,7 @@ export default function MagazineClient({ posts }: { posts: MagazinePost[] }) {
 
   const browsing = activeCategory === "All" && !query.trim();
   const featured = browsing ? posts.find((p) => p.is_featured) || posts[0] : undefined;
-  const sideStack = browsing ? posts.filter((p) => p.id !== featured?.id).slice(0, 2) : [];
+  const sideStack = browsing ? posts.filter((p) => p.id !== featured?.id).slice(0, 3) : [];
   const heroIds = new Set([featured?.id, ...sideStack.map((p) => p.id)]);
   const gridPosts = filtered.filter((p) => !heroIds.has(p.id));
   const shown = gridPosts.slice(0, visible);
@@ -138,88 +134,80 @@ export default function MagazineClient({ posts }: { posts: MagazinePost[] }) {
   const restBatch = shown.slice(6);
 
   return (
-    <div className="relative">
-      {/* ===== HERO ===== */}
+    <div>
+      {/* ===== HERO (same look as the app homepage) ===== */}
       <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-[#FFB4C2] opacity-60 blur-3xl" />
-        <div className="pointer-events-none absolute -left-20 top-40 h-72 w-72 rounded-full bg-[#D9F99D] opacity-70 blur-3xl" />
-
-        <div className="relative mx-auto max-w-6xl px-4 pb-8 pt-10 sm:px-6 sm:pt-16">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22C55E] opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#22C55E]" />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-60"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, #f1f5f9 1px, transparent 1px), linear-gradient(to bottom, #f1f5f9 1px, transparent 1px)",
+            backgroundSize: "64px 64px",
+            maskImage: "linear-gradient(to bottom, black, transparent 85%)",
+          }}
+        />
+        <div className="relative mx-auto max-w-6xl px-4 pb-10 pt-12 text-center sm:px-6 sm:pt-16">
+          <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-semibold text-slate-700 shadow-sm">
+            <span className="h-2 w-2 rounded-full bg-[#A51C30]" />
+            Updated daily · {posts.length} articles
+          </span>
+          <h1 className="mx-auto mt-6 max-w-4xl text-4xl font-bold leading-[1.05] text-[#0F172A] sm:text-6xl">
+            EduAbroad Magazine
+            <span className="mt-2 block bg-gradient-to-r from-[#A51C30] to-[#E0314B] bg-clip-text text-3xl text-transparent sm:text-5xl">
+              Study Abroad, Without the Noise
             </span>
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#0E0E10]/60">
-              Fresh drops daily · {posts.length} articles
-            </span>
-          </div>
-
-          <h1 className="font-display mt-5 max-w-4xl text-[44px] font-extrabold leading-[0.95] text-[#0E0E10] sm:text-7xl">
-            Study abroad,{" "}
-            <span className="relative inline-block">
-              <span className="relative z-10">minus the noise</span>
-              <span className="absolute -bottom-1 left-0 z-0 h-4 w-full -rotate-1 rounded-full bg-[#D9F99D] sm:h-6" />
-            </span>
-            <span className="text-[#A51C30]">.</span>
           </h1>
-          <p className="mt-5 max-w-xl text-base text-[#0E0E10]/60 sm:text-lg">
-            Visa updates, scholarship deadlines and no-BS country guides for Indian students. Written by Harvard-Cambridge and IIM alumni counsellors.
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-600">
+            Visa updates, scholarship deadlines, IELTS tips and honest country guides for Indian students, from Harvard-Cambridge and IIM alumni counsellors.
           </p>
 
           {/* Search */}
-          <div className="mt-8 max-w-2xl">
-            <label className="group relative block">
+          <div className="mx-auto mt-8 max-w-2xl">
+            <label className="relative block">
               <span className="sr-only">Search articles</span>
-              <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#0E0E10]/40" />
+              <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
               <input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search: 'UK visa', 'scholarships Germany', 'IELTS'..."
-                className="h-14 w-full rounded-full border-2 border-[#0E0E10] bg-white pl-13 pr-12 text-[15px] text-[#0E0E10] shadow-[4px_4px_0_#0E0E10] placeholder:text-[#0E0E10]/35 focus:outline-none focus:shadow-[6px_6px_0_#A51C30]"
+                placeholder="Search articles, countries, exams..."
+                className="h-14 w-full rounded-full border border-gray-200 bg-white pl-14 pr-12 text-[15px] text-[#0F172A] shadow-lg shadow-gray-200/50 placeholder:text-slate-400 focus:border-[#A51C30] focus:outline-none focus:ring-4 focus:ring-[#A51C30]/10"
               />
               {query && (
                 <button
                   type="button"
                   onClick={() => setQuery("")}
-                  className="absolute right-4 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-[#0E0E10]/10"
+                  className="absolute right-4 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-slate-100 text-slate-500"
                   aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
                 </button>
               )}
             </label>
-          </div>
-        </div>
-
-        {/* Ticker */}
-        <div className="relative -rotate-1 overflow-hidden border-y-2 border-[#0E0E10] bg-[#0E0E10] py-3">
-          <div className="marquee flex w-max gap-8 whitespace-nowrap">
-            {[...TICKER, ...TICKER].map((t, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => {
-                  setActiveCategory("All");
-                  setQuery(t.split(/[:?]/)[0].replace(/\d{4}/, "").trim());
-                }}
-                className="font-display flex items-center gap-8 text-lg font-bold text-white hover:text-[#D9F99D]"
-              >
-                {t}
-                <span className="text-[#D9F99D]" aria-hidden>
-                  ✦
-                </span>
-              </button>
-            ))}
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
+              <span className="text-slate-400">Trending:</span>
+              {TRENDING.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    setActiveCategory("All");
+                    setQuery(t);
+                  }}
+                  className="rounded-full bg-[#FEF2F3] px-3 py-1 font-medium text-[#A51C30] transition-colors hover:bg-[#FECDD3]"
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        {/* Category stickers */}
-        <div className="no-scrollbar -mx-4 mt-8 overflow-x-auto px-4">
-          <div className="flex w-max gap-2 pb-2">
+        {/* Category tabs */}
+        <div className="no-scrollbar -mx-4 overflow-x-auto border-b border-gray-100 px-4">
+          <div className="flex w-max gap-2 pb-4">
             {CATEGORIES.filter((c) => c.name === "All" || counts[c.name]).map((c) => {
               const active = activeCategory === c.name;
               return (
@@ -227,15 +215,14 @@ export default function MagazineClient({ posts }: { posts: MagazinePost[] }) {
                   key={c.name}
                   type="button"
                   onClick={() => setActiveCategory(c.name)}
-                  className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border-2 border-[#0E0E10] px-4 py-2 text-sm font-semibold transition-all ${
+                  className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all ${
                     active
-                      ? "bg-[#0E0E10] text-white shadow-[3px_3px_0_#A51C30]"
-                      : "bg-white text-[#0E0E10] hover:-translate-y-0.5 hover:shadow-[3px_3px_0_#0E0E10]"
+                      ? "bg-[#A51C30] text-white shadow-md shadow-[#A51C30]/20"
+                      : "border border-gray-200 bg-white text-slate-600 hover:border-[#FECDD3] hover:text-[#A51C30]"
                   }`}
                 >
-                  <span aria-hidden>{c.emoji}</span>
                   {c.name}
-                  <span className={`text-xs ${active ? "text-white/50" : "text-[#0E0E10]/35"}`}>{counts[c.name] || 0}</span>
+                  <span className={`ml-1.5 text-xs ${active ? "text-white/70" : "text-slate-400"}`}>{counts[c.name] || 0}</span>
                 </button>
               );
             })}
@@ -243,55 +230,52 @@ export default function MagazineClient({ posts }: { posts: MagazinePost[] }) {
         </div>
 
         {posts.length === 0 ? (
-          <div className="py-24 text-center">
-            <p className="font-display text-2xl font-bold">First articles dropping soon ✨</p>
-          </div>
+          <div className="py-24 text-center text-slate-500">New articles are on their way.</div>
         ) : (
           <>
-            {/* ===== BENTO: featured + 2 ===== */}
+            {/* ===== FEATURED + 3 ===== */}
             {featured && (
-              <section className="mt-8 grid gap-5 lg:grid-cols-[1.6fr_1fr]" aria-label="Featured">
+              <section className="mt-10 grid gap-6 lg:grid-cols-[1.5fr_1fr]" aria-label="Featured">
                 <Link href={`/magazine/${featured.slug}`} className="group block">
-                  <article className="relative h-full min-h-[420px] overflow-hidden rounded-[32px] border-2 border-[#0E0E10] bg-[#0E0E10] transition-shadow hover:shadow-[8px_8px_0_#A51C30]">
-                    <div className="absolute inset-0 opacity-90">
+                  <article className="relative h-full min-h-[420px] overflow-hidden rounded-3xl bg-[#0F172A] shadow-lg">
+                    <div className="absolute inset-0">
                       <Cover post={featured} big />
                     </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0E0E10] via-[#0E0E10]/50 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
                     <div className="absolute left-5 top-5 flex gap-2">
-                      <span className="rounded-full bg-[#D9F99D] px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#0E0E10]">
-                        🔥 Must read
-                      </span>
-                      <Sticker category={featured.category} />
+                      <span className="rounded-full bg-[#A51C30] px-3 py-1 text-xs font-semibold text-white">Featured</span>
+                      <CategoryPill category={featured.category} onDark />
                     </div>
                     <div className="relative flex h-full min-h-[420px] flex-col justify-end p-6 sm:p-9">
-                      <h2 className="font-display text-3xl font-extrabold leading-[1.05] text-white sm:text-[44px]">
-                        {featured.title}
-                      </h2>
-                      <p className="mt-3 max-w-xl text-white/65 line-clamp-2">{featured.excerpt}</p>
+                      <h2 className="text-2xl font-bold leading-tight text-white sm:text-4xl">{featured.title}</h2>
+                      <p className="mt-3 max-w-xl text-white/70 line-clamp-2">{featured.excerpt}</p>
                       <div className="mt-6 flex items-center justify-between">
-                        <span className="text-sm text-white/55">
-                          {featured.author || "EduAbroad Team"} · {relativeDate(featured.published_at)} · {featured.read_time} min
+                        <span className="text-sm text-white/60">
+                          {featured.author || "EduAbroad Team"} · <When date={featured.published_at} /> · {featured.read_time} min read
                         </span>
-                        <span className="hidden items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#0E0E10] sm:flex">
-                          Read it <ArrowUpRight className="h-4 w-4 transition-transform group-hover:rotate-45" />
+                        <span className="hidden items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#0F172A] sm:flex">
+                          Read article <ArrowRight className="h-4 w-4" />
                         </span>
                       </div>
                     </div>
                   </article>
                 </Link>
 
-                <div className="grid gap-5">
+                <div className="flex flex-col gap-4">
+                  <p className="text-sm font-semibold uppercase tracking-widest text-slate-400">Latest</p>
                   {sideStack.map((p) => (
                     <Link key={p.id} href={`/magazine/${p.slug}`} className="group block">
-                      <article className="flex h-full gap-4 overflow-hidden rounded-[28px] border-2 border-[#0E0E10] bg-white p-3 transition-all hover:-translate-y-1 hover:shadow-[6px_6px_0_#0E0E10]">
-                        <div className="relative h-auto w-32 shrink-0 overflow-hidden rounded-[20px] sm:w-36">
+                      <article className="flex gap-4 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm transition-all hover:shadow-lg hover:shadow-gray-200/60">
+                        <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-xl">
                           <Cover post={p} />
                         </div>
-                        <div className="flex flex-col justify-center py-2 pr-2">
-                          <Sticker category={p.category} />
-                          <h3 className="font-display mt-2 text-lg font-bold leading-snug line-clamp-3">{p.title}</h3>
-                          <span className="mt-2 text-xs text-[#0E0E10]/45">
-                            {relativeDate(p.published_at)} · {p.read_time} min
+                        <div className="flex min-w-0 flex-col justify-center">
+                          <span className="text-xs font-semibold text-[#A51C30]">{p.category}</span>
+                          <h3 className="mt-1 text-[15px] font-bold leading-snug text-[#0F172A] line-clamp-2 group-hover:text-[#A51C30]">
+                            {p.title}
+                          </h3>
+                          <span className="mt-1 text-xs text-slate-400">
+                            <When date={p.published_at} /> · {p.read_time} min
                           </span>
                         </div>
                       </article>
@@ -303,16 +287,16 @@ export default function MagazineClient({ posts }: { posts: MagazinePost[] }) {
 
             {/* ===== GRID ===== */}
             <div className="mb-6 mt-14 flex items-end justify-between">
-              <h2 className="font-display text-3xl font-extrabold sm:text-4xl">
-                {query ? `Results for "${query}"` : activeCategory === "All" ? "Latest drops" : activeCategory}
+              <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">
+                {query ? `Results for "${query}"` : activeCategory === "All" ? "All Articles" : activeCategory}
               </h2>
-              <span className="text-sm font-medium text-[#0E0E10]/45">{filtered.length} articles</span>
+              <span className="text-sm text-slate-400">{filtered.length} articles</span>
             </div>
 
             {filtered.length === 0 ? (
-              <div className="rounded-[28px] border-2 border-dashed border-[#0E0E10]/25 py-16 text-center">
-                <p className="font-display text-xl font-bold">Nothing on that yet 👀</p>
-                <p className="mt-1 text-sm text-[#0E0E10]/55">Ask a counsellor below and we&apos;ll answer you directly.</p>
+              <div className="rounded-2xl border border-dashed border-gray-200 py-16 text-center">
+                <p className="text-lg font-bold text-[#0F172A]">No articles on that yet</p>
+                <p className="mt-1 text-sm text-slate-500">Ask a counsellor below and we&apos;ll answer you directly.</p>
               </div>
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -322,21 +306,21 @@ export default function MagazineClient({ posts }: { posts: MagazinePost[] }) {
               </div>
             )}
 
-            {/* Lead block sits after the first 6 cards, where scroll intent is highest */}
-            <section className="my-14 grid items-center gap-8 rounded-[36px] bg-[#0E0E10] p-6 sm:p-10 lg:grid-cols-[1fr_1.1fr]">
+            {/* Lead block after the first 6 cards */}
+            <section className="my-14 grid items-center gap-8 overflow-hidden rounded-3xl bg-gradient-to-br from-[#7A1524] via-[#A51C30] to-[#C02340] p-6 sm:p-10 lg:grid-cols-[1fr_1.1fr]">
               <div className="text-white">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#D9F99D]">Stuck between options?</p>
-                <h2 className="font-display mt-3 text-4xl font-extrabold leading-[1.02] sm:text-5xl">
-                  Get a roadmap built for <span className="text-[#D9F99D]">your</span> profile.
-                </h2>
-                <ul className="mt-6 space-y-3 text-white/70">
-                  <li>✦ University shortlist in your budget</li>
-                  <li>✦ Scholarships you actually qualify for</li>
-                  <li>✦ Visa and IELTS plan with real timelines</li>
+                <p className="text-sm font-semibold uppercase tracking-widest text-white/70">Free 1-on-1 Counselling</p>
+                <h2 className="mt-3 text-3xl font-bold leading-tight sm:text-4xl">Get a study abroad roadmap built for your profile</h2>
+                <ul className="mt-6 space-y-3 text-white/85">
+                  {["University shortlist within your budget", "Scholarships you actually qualify for", "Visa and IELTS plan with real timelines"].map((t) => (
+                    <li key={t} className="flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 shrink-0 text-white" /> {t}
+                    </li>
+                  ))}
                 </ul>
-                <p className="mt-6 text-sm text-white/40">10,000+ students guided · Lucknow, Delhi, Kanpur, Indore</p>
+                <p className="mt-6 text-sm text-white/60">10K+ students placed · Lucknow, Delhi, Kanpur, Indore</p>
               </div>
-              <EnquiryForm variant="dark" placement="listing-mid" id="lead-form" />
+              <EnquiryForm variant="card" placement="listing-mid" id="lead-form" />
             </section>
 
             {restBatch.length > 0 && (
@@ -352,9 +336,9 @@ export default function MagazineClient({ posts }: { posts: MagazinePost[] }) {
                 <button
                   type="button"
                   onClick={() => setVisible((v) => v + PAGE_SIZE)}
-                  className="rounded-full border-2 border-[#0E0E10] bg-white px-7 py-3 font-bold transition-all hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#0E0E10]"
+                  className="rounded-full bg-[#0F172A] px-7 py-3 font-semibold text-white transition-colors hover:bg-slate-800"
                 >
-                  Load more ({gridPosts.length - visible} left)
+                  Load more articles ({gridPosts.length - visible} left)
                 </button>
               </div>
             )}

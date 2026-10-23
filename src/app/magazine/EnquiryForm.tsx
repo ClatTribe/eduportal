@@ -46,8 +46,7 @@ export function EnquiryForm({ variant = "card", placement = "sidebar", context, 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
-  const dark = variant === "dark";
-  const inline = variant === "inline" || dark;
+  const inline = variant === "inline" || variant === "dark";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,35 +101,28 @@ export function EnquiryForm({ variant = "card", placement = "sidebar", context, 
     }
   };
 
-  const shell = dark
-    ? "rounded-[28px] bg-[#0E0E10] text-white p-6 sm:p-8"
-    : inline
-      ? "rounded-[28px] border-2 border-[#0E0E10] bg-[#FFF8E7] p-6 sm:p-8 shadow-[6px_6px_0_#0E0E10]"
-      : "rounded-[28px] border-2 border-[#0E0E10] bg-white p-6 shadow-[6px_6px_0_#0E0E10]";
+  const shell = inline
+    ? "rounded-2xl border border-[#FECDD3] bg-gradient-to-br from-[#FEF2F3] to-white p-6 sm:p-8"
+    : "rounded-2xl border border-gray-100 bg-white p-6 shadow-xl shadow-gray-200/50";
 
-  const input = dark
-    ? "h-12 w-full rounded-2xl bg-white/10 border border-white/15 px-4 text-[15px] text-white placeholder:text-white/40 focus:outline-none focus:border-[#D9F99D] focus:bg-white/15"
-    : "h-12 w-full rounded-2xl bg-[#F4F2EE] border-2 border-transparent px-4 text-[15px] text-[#0E0E10] placeholder:text-[#0E0E10]/40 focus:outline-none focus:border-[#0E0E10] focus:bg-white";
+  const input =
+    "h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-[15px] text-[#0F172A] placeholder:text-slate-400 focus:border-[#A51C30] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#A51C30]/10";
 
   if (submitted) {
     return (
-      <div id={id} className={`${shell} text-center scroll-mt-24`}>
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#D9F99D] text-[#0E0E10]">
-          <Check className="h-7 w-7" strokeWidth={3} />
+      <div id={id} className={`${shell} scroll-mt-24 text-center`}>
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEF2F3] text-[#A51C30]">
+          <Check className="h-7 w-7" strokeWidth={2.5} />
         </div>
-        <h3 className={`font-display text-2xl font-bold ${dark ? "text-white" : "text-[#0E0E10]"}`}>
-          You&apos;re in! 🎉
-        </h3>
-        <p className={`mt-2 text-sm ${dark ? "text-white/60" : "text-[#0E0E10]/60"}`}>
-          A real counsellor will call you within 24 hours with your roadmap.
-        </p>
+        <h3 className="text-xl font-bold text-[#0F172A]">Thank you! You&apos;re on the list.</h3>
+        <p className="mt-2 text-sm text-slate-500">A counsellor will call you within 24 hours with your roadmap.</p>
         <a
           href="https://wa.me/919044442989?text=Hi%20EduAbroad%2C%20I%20just%20requested%20a%20study%20abroad%20roadmap"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-bold text-white"
+          className="mt-5 inline-flex items-center gap-2 rounded-full bg-green-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-600"
         >
-          Can&apos;t wait? Ping us on WhatsApp
+          Chat with us on WhatsApp
         </a>
       </div>
     );
@@ -138,70 +130,34 @@ export function EnquiryForm({ variant = "card", placement = "sidebar", context, 
 
   return (
     <form id={id} onSubmit={handleSubmit} className={`${shell} scroll-mt-24`} noValidate>
-      <span
-        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider ${
-          dark ? "bg-[#D9F99D] text-[#0E0E10]" : "bg-[#A51C30] text-white"
-        }`}
-      >
-        Free · 1:1 · No spam
+      <span className="inline-flex items-center rounded-full border border-[#FECDD3] bg-[#FEF2F3] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#A51C30]">
+        Free · 1-on-1 Counselling
       </span>
-      <h2
-        className={`font-display mt-4 font-bold tracking-tight ${
-          inline ? "text-2xl sm:text-[28px]" : "text-[22px]"
-        } leading-[1.1] ${dark ? "text-white" : "text-[#0E0E10]"}`}
-      >
-        {dark ? "Book your free 1:1 roadmap call" : inline ? "Reading is step one. Want a plan made for you?" : "Get your study abroad roadmap, free"}
+      <h2 className={`mt-4 font-bold leading-tight text-[#0F172A] ${inline ? "text-2xl" : "text-xl"}`}>
+        {inline ? "Want a personalised study abroad plan?" : "Get your free study abroad roadmap"}
       </h2>
-      <p className={`mt-2 text-sm leading-relaxed ${dark ? "text-white/60" : "text-[#0E0E10]/60"}`}>
-        A Harvard-Cambridge alumni-led counsellor calls you within 24 hours with universities, budget and scholarship options for your profile.
+      <p className="mt-2 text-sm leading-relaxed text-slate-500">
+        A Harvard-Cambridge alumni-led counsellor calls you within 24 hours with universities, budget and scholarships for your profile.
       </p>
 
       <div className={`mt-5 grid gap-3 ${inline ? "sm:grid-cols-2" : "grid-cols-1"}`}>
-        <input
-          className={input}
-          placeholder="Your name"
-          autoComplete="name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          aria-label="Your name"
-        />
-        <input
-          className={input}
-          placeholder="Mobile (10 digits)"
-          inputMode="tel"
-          autoComplete="tel"
-          value={form.mobile}
-          onChange={(e) => setForm({ ...form, mobile: e.target.value })}
-          aria-label="Mobile number"
-        />
-        <input
-          className={input}
-          placeholder="Email"
-          type="email"
-          autoComplete="email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          aria-label="Email"
-        />
-        <select
-          className={input}
-          value={form.country}
-          onChange={(e) => setForm({ ...form, country: e.target.value })}
-          aria-label="Dream country"
-        >
-          <option value="">Dream country</option>
+        <input className={input} placeholder="Your name" autoComplete="name" aria-label="Your name"
+          value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <input className={input} placeholder="Mobile (10 digits)" inputMode="tel" autoComplete="tel" aria-label="Mobile number"
+          value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
+        <input className={input} placeholder="Email" type="email" autoComplete="email" aria-label="Email"
+          value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        <select className={input} aria-label="Preferred country"
+          value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}>
+          <option value="">Preferred country</option>
           {COUNTRIES.map((c) => (
-            <option key={c} value={c} className="text-[#0E0E10]">
-              {c}
-            </option>
+            <option key={c} value={c}>{c}</option>
           ))}
         </select>
       </div>
 
-      <div className="mt-3">
-        <p className={`mb-2 text-[12px] font-semibold ${dark ? "text-white/50" : "text-[#0E0E10]/50"}`}>
-          When do you want to fly?
-        </p>
+      <div className="mt-4">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Planning to start in</p>
         <div className="flex flex-wrap gap-2">
           {INTAKES.map((y) => {
             const active = form.year === y;
@@ -210,14 +166,8 @@ export function EnquiryForm({ variant = "card", placement = "sidebar", context, 
                 type="button"
                 key={y}
                 onClick={() => setForm({ ...form, year: y })}
-                className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-                  active
-                    ? dark
-                      ? "bg-[#D9F99D] text-[#0E0E10]"
-                      : "bg-[#0E0E10] text-white"
-                    : dark
-                      ? "bg-white/10 text-white/70 hover:bg-white/20"
-                      : "bg-[#F4F2EE] text-[#0E0E10]/70 hover:bg-[#ECE8E1]"
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                  active ? "bg-[#A51C30] text-white" : "border border-gray-200 bg-white text-slate-600 hover:border-[#FECDD3] hover:text-[#A51C30]"
                 }`}
               >
                 {y}
@@ -227,24 +177,18 @@ export function EnquiryForm({ variant = "card", placement = "sidebar", context, 
         </div>
       </div>
 
-      {error && <p className="mt-3 text-sm font-medium text-[#E11D48]">{error}</p>}
+      {error && <p className="mt-3 text-sm font-medium text-[#A51C30]">{error}</p>}
 
       <button
         type="submit"
         disabled={loading}
-        className={`mt-5 flex h-13 w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[15px] font-bold transition-transform active:scale-[0.98] disabled:opacity-60 ${
-          dark ? "bg-[#D9F99D] text-[#0E0E10] hover:bg-[#ECFCCB]" : "bg-[#A51C30] text-white hover:bg-[#8B1728]"
-        }`}
+        className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#A51C30] py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[#8B1528] disabled:opacity-60"
       >
         {loading ? "Sending..." : "Get my free roadmap"}
         {!loading && <ArrowRight className="h-4 w-4" />}
       </button>
-      <p
-        className={`mt-3 flex items-center justify-center gap-1.5 text-[11px] ${
-          dark ? "text-white/40" : "text-[#0E0E10]/40"
-        }`}
-      >
-        <Lock className="h-3 w-3" /> We never sell your number. One call, zero spam.
+      <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+        <Lock className="h-3 w-3" /> Your details stay with EduAbroad. No spam calls.
       </p>
     </form>
   );

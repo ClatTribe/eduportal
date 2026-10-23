@@ -47,10 +47,10 @@ export function ArticleAuthors() {
         {AUTHORS.map((author) => (
           <div
             key={author.name}
-            className="bg-white border-2 border-[#0E0E10] rounded-[24px] p-5 flex gap-4"
+            className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex gap-4"
           >
             {/* Avatar */}
-            <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 border-2 border-[#0E0E10]">
+            <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-gray-100">
               {author.image ? (
                 <img
                   src={author.image}
