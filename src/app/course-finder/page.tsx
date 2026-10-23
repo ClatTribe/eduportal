@@ -159,6 +159,28 @@ const CourseFinder: React.FC = () => {
       const from = page * perPage;
       const to = from + perPage - 1;
 
+      // Text filters (search, program name, intake) go through the search_courses database
+      // function, which filters first and sorts by QS rank afterwards. Sorting 227k rows by rank
+      // while filtering on "contains" text made these searches time out.
+      if (filters.search || filters.programName || filters.intake) {
+        const { data: rpcData, error: rpcError } = await supabase.rpc("search_courses", {
+          p_country: filters.country || null,
+          p_level: filters.studyLevel || null,
+          p_university: filters.university || null,
+          p_program: filters.programName || null,
+          p_search: filters.search || null,
+          p_intakes: filters.intake ? intakeMonthMap[filters.intake] || [filters.intake] : null,
+          p_limit: perPage,
+          p_offset: from,
+        });
+        if (currentFetchId !== fetchIdRef.current) return;
+        if (rpcError) throw rpcError;
+        const result = (rpcData || {}) as { total?: number; rows?: Course[] };
+        setCourses(sortCoursesByQSRanking(result.rows || []));
+        setTotalCount(result.total || 0);
+        return;
+      }
+
       // Use count: "exact" instead of "exact" for much faster response
       // PostgreSQL planner estimate is fast and accurate enough for pagination
       let query = supabase
