@@ -1,425 +1,366 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
-import {
-  Search,
-  Clock,
-  Sparkles,
-  TrendingUp,
-  ArrowUpRight,
-  Flame,
-  Zap,
-  Eye,
-} from "lucide-react";
+
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import DefaultLayout from "../defaultLayout";
-import { supabase } from "../../../lib/supabase";
+import { ArrowUpRight, Clock, Search, X } from "lucide-react";
+import { EnquiryForm } from "./EnquiryForm";
+import {
+  CATEGORIES,
+  MagazinePost,
+  categoryEmoji,
+  categoryStyle,
+  relativeDate,
+} from "./magazine-utils";
 
-interface MagazinePost {
-  id: number;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  cover_image_url: string | null;
-  category: string;
-  tags: string[];
-  read_time: number;
-  author: string;
-  published_at: string;
-  is_featured: boolean;
-  status: string;
-}
+const PAGE_SIZE = 12;
 
-const CATEGORIES = [
-  "All",
-  "Country Guide",
-  "Visa Tips",
-  "Scholarships",
-  "IELTS/TOEFL",
-  "Student Life",
-  "Rankings",
-  "Career After",
-  "Admit Stories",
-  "News",
+const TICKER = [
+  "UK visa rules 2026",
+  "Fully funded scholarships",
+  "IELTS band 7 hacks",
+  "Germany: study for free?",
+  "US OPT fee update",
+  "Canada PR pathways",
+  "Australia student visa",
+  "Real admit stories",
 ];
 
-const CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-  "Country Guide": { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", dot: "bg-rose-500" },
-  "Visa Tips": { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", dot: "bg-blue-500" },
-  Scholarships: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500" },
-  "IELTS/TOEFL": { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200", dot: "bg-violet-500" },
-  "Student Life": { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", dot: "bg-amber-500" },
-  Rankings: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", dot: "bg-red-500" },
-  "Career After": { bg: "bg-cyan-50", text: "text-cyan-700", border: "border-cyan-200", dot: "bg-cyan-500" },
-  "Admit Stories": { bg: "bg-pink-50", text: "text-pink-700", border: "border-pink-200", dot: "bg-pink-500" },
-  News: { bg: "bg-indigo-50", text: "text-indigo-700", border: "border-indigo-200", dot: "bg-indigo-500" },
-};
-
-function getCatStyle(category: string) {
-  return CATEGORY_STYLES[category] || { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", dot: "bg-rose-500" };
+function Cover({ post, className = "", big = false }: { post: MagazinePost; className?: string; big?: boolean }) {
+  const style = categoryStyle(post.category);
+  const [broken, setBroken] = useState(false);
+  if (post.cover_image_url && !broken) {
+    return (
+      <img
+        src={post.cover_image_url}
+        alt={post.title}
+        onError={() => setBroken(true)}
+        loading={big ? "eager" : "lazy"}
+        className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04] ${className}`}
+      />
+    );
+  }
+  return (
+    <div
+      className={`relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-br ${style.cover} ${className}`}
+      aria-hidden
+    >
+      <span className={`${big ? "text-8xl" : "text-6xl"} drop-shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
+        {categoryEmoji(post.category)}
+      </span>
+      <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-white/15 blur-2xl" />
+    </div>
+  );
 }
 
-function formatDate(dateString: string): string {
-  const now = new Date();
-  const date = new Date(dateString);
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+function Sticker({ category }: { category: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border-2 border-[#0E0E10] px-2.5 py-0.5 text-[11px] font-bold ${categoryStyle(category).sticker}`}
+    >
+      <span aria-hidden>{categoryEmoji(category)}</span>
+      {category}
+    </span>
+  );
 }
 
-function getPatternSVG(index: number): string {
-  const patterns = [
-    `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-    `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.06' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
-    `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.07' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E")`,
-  ];
-  return patterns[index % patterns.length];
+function PostCard({ post }: { post: MagazinePost }) {
+  return (
+    <Link href={`/magazine/${post.slug}`} className="group block h-full">
+      <article className="flex h-full flex-col overflow-hidden rounded-[28px] border-2 border-[#0E0E10] bg-white transition-all duration-200 hover:-translate-y-1 hover:shadow-[6px_6px_0_#0E0E10]">
+        <div className="relative aspect-[16/10] overflow-hidden border-b-2 border-[#0E0E10]">
+          <Cover post={post} />
+          <div className="absolute left-3 top-3">
+            <Sticker category={post.category} />
+          </div>
+        </div>
+        <div className="flex flex-1 flex-col p-5">
+          <h3 className="font-display text-[19px] font-bold leading-snug text-[#0E0E10] line-clamp-3">
+            {post.title}
+          </h3>
+          <p className="mt-2 flex-1 text-sm leading-relaxed text-[#0E0E10]/55 line-clamp-2">{post.excerpt}</p>
+          <div className="mt-4 flex items-center justify-between text-xs font-medium text-[#0E0E10]/45">
+            <span className="flex items-center gap-3">
+              <span>{relativeDate(post.published_at)}</span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {post.read_time} min
+              </span>
+            </span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0E0E10] text-white transition-transform group-hover:rotate-45">
+              <ArrowUpRight className="h-4 w-4" />
+            </span>
+          </div>
+        </div>
+      </article>
+    </Link>
+  );
 }
 
-const COVER_GRADIENTS = [
-  "linear-gradient(145deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)",
-  "linear-gradient(145deg, #0c0c1d 0%, #1b1464 40%, #3a0ca3 100%)",
-  "linear-gradient(145deg, #132a13 0%, #1a472a 40%, #2d6a4f 100%)",
-  "linear-gradient(145deg, #2d0036 0%, #5c1a72 40%, #9b2335 100%)",
-  "linear-gradient(145deg, #1a1423 0%, #2d1b69 40%, #5a189a 100%)",
-  "linear-gradient(145deg, #0a1628 0%, #172a45 40%, #1b4965 100%)",
-];
-
-export default function MagazineClient() {
-  const [posts, setPosts] = useState<MagazinePost[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function MagazineClient({ posts }: { posts: MagazinePost[] }) {
   const [activeCategory, setActiveCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [query, setQuery] = useState("");
+  const [visible, setVisible] = useState(PAGE_SIZE);
 
+  // Tag links on articles point to /magazine?search=<tag>
   useEffect(() => {
-    fetchPosts();
+    const s = new URLSearchParams(window.location.search).get("search");
+    if (s) setQuery(s);
   }, []);
 
-  const fetchPosts = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("magazine_posts")
-        .select("*")
-        .eq("status", "published")
-        .order("published_at", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      setPosts((data as MagazinePost[]) || []);
-    } catch (err) {
-      console.error("Error fetching magazine posts:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => setVisible(PAGE_SIZE), [activeCategory, query]);
 
-  const filteredPosts = useMemo(() => {
-    let filtered = posts;
-    if (activeCategory !== "All") {
-      filtered = filtered.filter((p) => p.category === activeCategory);
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.excerpt?.toLowerCase().includes(q) ||
-          p.tags?.some((t) => t.toLowerCase().includes(q))
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { All: posts.length };
+    posts.forEach((p) => (c[p.category] = (c[p.category] || 0) + 1));
+    return c;
+  }, [posts]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return posts.filter((p) => {
+      if (activeCategory !== "All" && p.category !== activeCategory) return false;
+      if (!q) return true;
+      return (
+        p.title.toLowerCase().includes(q) ||
+        p.excerpt?.toLowerCase().includes(q) ||
+        (p.tags || []).some((t) => t.toLowerCase().includes(q))
       );
-    }
-    return filtered;
-  }, [posts, activeCategory, searchQuery]);
+    });
+  }, [posts, activeCategory, query]);
 
-  const featuredPost = posts.find((p) => p.is_featured) || posts[0];
-  const regularPosts = filteredPosts.filter((p) => p.id !== featuredPost?.id);
+  const browsing = activeCategory === "All" && !query.trim();
+  const featured = browsing ? posts.find((p) => p.is_featured) || posts[0] : undefined;
+  const sideStack = browsing ? posts.filter((p) => p.id !== featured?.id).slice(0, 2) : [];
+  const heroIds = new Set([featured?.id, ...sideStack.map((p) => p.id)]);
+  const gridPosts = filtered.filter((p) => !heroIds.has(p.id));
+  const shown = gridPosts.slice(0, visible);
+  const firstBatch = shown.slice(0, 6);
+  const restBatch = shown.slice(6);
 
   return (
-    <DefaultLayout>
-      <div className="min-h-screen bg-gray-50/50">
-        {/* === HERO SECTION === */}
-        <div className="relative overflow-hidden">
-          {/* Subtle animated background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white via-rose-50/40 to-white" />
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-[#A51C30]/5 to-transparent rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-blue-500/5 to-transparent rounded-full blur-3xl" />
+    <div className="relative">
+      {/* ===== HERO ===== */}
+      <section className="relative overflow-hidden">
+        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-[#FFB4C2] opacity-60 blur-3xl" />
+        <div className="pointer-events-none absolute -left-20 top-40 h-72 w-72 rounded-full bg-[#D9F99D] opacity-70 blur-3xl" />
 
-          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-6">
-            {/* Top bar */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#A51C30] flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
-                    Magazine
-                  </h1>
-                  <p className="text-xs text-gray-400 font-medium">by EduAbroad</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="text-[11px] font-semibold text-emerald-600 uppercase tracking-widest">
-                  Updated daily
-                </span>
-              </div>
-            </div>
+        <div className="relative mx-auto max-w-6xl px-4 pb-8 pt-10 sm:px-6 sm:pt-16">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22C55E] opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#22C55E]" />
+            </span>
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#0E0E10]/60">
+              Fresh drops daily · {posts.length} articles
+            </span>
+          </div>
 
-            {/* Search */}
-            <div className="max-w-2xl">
-              <div className="relative group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-300 group-focus-within:text-[#A51C30] transition-colors" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search articles, topics, countries..."
-                  className="w-full pl-11 pr-4 py-3 text-sm bg-white border border-gray-200 rounded-2xl focus:outline-none focus:border-[#A51C30] focus:ring-4 focus:ring-[#A51C30]/5 text-gray-800 placeholder:text-gray-300 transition-all"
-                />
-              </div>
-            </div>
+          <h1 className="font-display mt-5 max-w-4xl text-[44px] font-extrabold leading-[0.95] text-[#0E0E10] sm:text-7xl">
+            Study abroad,{" "}
+            <span className="relative inline-block">
+              <span className="relative z-10">minus the noise</span>
+              <span className="absolute -bottom-1 left-0 z-0 h-4 w-full -rotate-1 rounded-full bg-[#D9F99D] sm:h-6" />
+            </span>
+            <span className="text-[#A51C30]">.</span>
+          </h1>
+          <p className="mt-5 max-w-xl text-base text-[#0E0E10]/60 sm:text-lg">
+            Visa updates, scholarship deadlines and no-BS country guides for Indian students. Written by Harvard-Cambridge and IIM alumni counsellors.
+          </p>
 
-            {/* Category Pills — horizontal scroll on mobile */}
-            <div className="mt-5 -mx-4 px-4 overflow-x-auto scrollbar-hide">
-              <div className="flex gap-2 pb-1 w-max">
-                {CATEGORIES.map((cat) => {
-                  const isActive = activeCategory === cat;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => setActiveCategory(cat)}
-                      className={`px-4 py-2 rounded-xl text-[13px] font-medium whitespace-nowrap transition-all duration-200 ${
-                        isActive
-                          ? "bg-gray-900 text-white"
-                          : "bg-white text-gray-500 border border-gray-150 hover:bg-gray-50 hover:text-gray-700"
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+          {/* Search */}
+          <div className="mt-8 max-w-2xl">
+            <label className="group relative block">
+              <span className="sr-only">Search articles</span>
+              <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#0E0E10]/40" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search: 'UK visa', 'scholarships Germany', 'IELTS'..."
+                className="h-14 w-full rounded-full border-2 border-[#0E0E10] bg-white pl-13 pr-12 text-[15px] text-[#0E0E10] shadow-[4px_4px_0_#0E0E10] placeholder:text-[#0E0E10]/35 focus:outline-none focus:shadow-[6px_6px_0_#A51C30]"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="absolute right-4 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-[#0E0E10]/10"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </label>
           </div>
         </div>
 
-        {/* === CONTENT === */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#A51C30]/10 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#A51C30] border-t-transparent"></div>
-              </div>
-              <span className="text-sm text-gray-400">Loading articles...</span>
-            </div>
-          ) : posts.length === 0 ? (
-            <div className="text-center py-24">
-              <div className="w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-7 h-7 text-[#A51C30]" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-800 mb-1">Coming soon</h3>
-              <p className="text-sm text-gray-400">Our first articles are being crafted.</p>
-            </div>
-          ) : (
-            <>
-              {/* === FEATURED POST — Bento Hero === */}
-              {featuredPost && activeCategory === "All" && !searchQuery && (
-                <Link href={`/magazine/${featuredPost.slug}`} className="block mb-8">
-                  <div
-                    className="group relative rounded-3xl overflow-hidden cursor-pointer"
-                    style={{ minHeight: "380px" }}
-                  >
-                    {/* Dark immersive background */}
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background: featuredPost.cover_image_url
-                          ? `url(${featuredPost.cover_image_url}) center/cover`
-                          : COVER_GRADIENTS[0],
-                      }}
-                    />
-                    {/* Subtle pattern overlay */}
-                    <div
-                      className="absolute inset-0 opacity-40"
-                      style={{ backgroundImage: getPatternSVG(0) }}
-                    />
-                    {/* Bottom gradient for text readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        {/* Ticker */}
+        <div className="relative -rotate-1 overflow-hidden border-y-2 border-[#0E0E10] bg-[#0E0E10] py-3">
+          <div className="marquee flex w-max gap-8 whitespace-nowrap">
+            {[...TICKER, ...TICKER].map((t, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  setActiveCategory("All");
+                  setQuery(t.split(/[:?]/)[0].replace(/\d{4}/, "").trim());
+                }}
+                className="font-display flex items-center gap-8 text-lg font-bold text-white hover:text-[#D9F99D]"
+              >
+                {t}
+                <span className="text-[#D9F99D]" aria-hidden>
+                  ✦
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
-                    {/* Content */}
-                    <div className="relative h-full flex flex-col justify-end p-6 sm:p-10" style={{ minHeight: "380px" }}>
-                      {/* Top badges */}
-                      <div className="absolute top-5 left-5 sm:top-8 sm:left-10 flex items-center gap-2">
-                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold">
-                          <Flame className="w-3 h-3" />
-                          Featured
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        {/* Category stickers */}
+        <div className="no-scrollbar -mx-4 mt-8 overflow-x-auto px-4">
+          <div className="flex w-max gap-2 pb-2">
+            {CATEGORIES.filter((c) => c.name === "All" || counts[c.name]).map((c) => {
+              const active = activeCategory === c.name;
+              return (
+                <button
+                  key={c.name}
+                  type="button"
+                  onClick={() => setActiveCategory(c.name)}
+                  className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border-2 border-[#0E0E10] px-4 py-2 text-sm font-semibold transition-all ${
+                    active
+                      ? "bg-[#0E0E10] text-white shadow-[3px_3px_0_#A51C30]"
+                      : "bg-white text-[#0E0E10] hover:-translate-y-0.5 hover:shadow-[3px_3px_0_#0E0E10]"
+                  }`}
+                >
+                  <span aria-hidden>{c.emoji}</span>
+                  {c.name}
+                  <span className={`text-xs ${active ? "text-white/50" : "text-[#0E0E10]/35"}`}>{counts[c.name] || 0}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {posts.length === 0 ? (
+          <div className="py-24 text-center">
+            <p className="font-display text-2xl font-bold">First articles dropping soon ✨</p>
+          </div>
+        ) : (
+          <>
+            {/* ===== BENTO: featured + 2 ===== */}
+            {featured && (
+              <section className="mt-8 grid gap-5 lg:grid-cols-[1.6fr_1fr]" aria-label="Featured">
+                <Link href={`/magazine/${featured.slug}`} className="group block">
+                  <article className="relative h-full min-h-[420px] overflow-hidden rounded-[32px] border-2 border-[#0E0E10] bg-[#0E0E10] transition-shadow hover:shadow-[8px_8px_0_#A51C30]">
+                    <div className="absolute inset-0 opacity-90">
+                      <Cover post={featured} big />
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0E0E10] via-[#0E0E10]/50 to-transparent" />
+                    <div className="absolute left-5 top-5 flex gap-2">
+                      <span className="rounded-full bg-[#D9F99D] px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-[#0E0E10]">
+                        🔥 Must read
+                      </span>
+                      <Sticker category={featured.category} />
+                    </div>
+                    <div className="relative flex h-full min-h-[420px] flex-col justify-end p-6 sm:p-9">
+                      <h2 className="font-display text-3xl font-extrabold leading-[1.05] text-white sm:text-[44px]">
+                        {featured.title}
+                      </h2>
+                      <p className="mt-3 max-w-xl text-white/65 line-clamp-2">{featured.excerpt}</p>
+                      <div className="mt-6 flex items-center justify-between">
+                        <span className="text-sm text-white/55">
+                          {featured.author || "EduAbroad Team"} · {relativeDate(featured.published_at)} · {featured.read_time} min
                         </span>
-                        <span className="px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold">
-                          {featuredPost.category}
+                        <span className="hidden items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#0E0E10] sm:flex">
+                          Read it <ArrowUpRight className="h-4 w-4 transition-transform group-hover:rotate-45" />
                         </span>
-                      </div>
-
-                      {/* Read time chip — top right */}
-                      <div className="absolute top-5 right-5 sm:top-8 sm:right-10">
-                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white/90 text-[11px] font-medium">
-                          <Clock className="w-3 h-3" />
-                          {featuredPost.read_time} min read
-                        </span>
-                      </div>
-
-                      {/* Title & excerpt */}
-                      <div className="max-w-3xl">
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 leading-tight group-hover:translate-x-1 transition-transform duration-300">
-                          {featuredPost.title}
-                        </h2>
-                        <p className="text-white/60 text-sm sm:text-base line-clamp-2 mb-5 max-w-xl">
-                          {featuredPost.excerpt}
-                        </p>
-
-                        {/* Author row + CTA */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-xs font-bold">
-                              EA
-                            </div>
-                            <div className="flex items-center gap-2 text-white/50 text-xs">
-                              <span className="text-white/70 font-medium">{featuredPost.author}</span>
-                              <span>·</span>
-                              <span>{formatDate(featuredPost.published_at)}</span>
-                            </div>
-                          </div>
-                          <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm font-medium group-hover:bg-white/20 transition-all">
-                            Read article
-                            <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                          </div>
-                        </div>
                       </div>
                     </div>
-                  </div>
+                  </article>
                 </Link>
-              )}
 
-              {/* === SECTION HEADER === */}
-              <div className="flex items-center justify-between mb-5 mt-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
-                    <TrendingUp className="w-3.5 h-3.5 text-white" />
-                  </div>
-                  <h3 className="text-[15px] font-semibold text-gray-800">
-                    {activeCategory === "All" ? "Latest" : activeCategory}
-                  </h3>
-                  <span className="text-xs text-gray-300 font-medium">
-                    {filteredPosts.length} articles
-                  </span>
+                <div className="grid gap-5">
+                  {sideStack.map((p) => (
+                    <Link key={p.id} href={`/magazine/${p.slug}`} className="group block">
+                      <article className="flex h-full gap-4 overflow-hidden rounded-[28px] border-2 border-[#0E0E10] bg-white p-3 transition-all hover:-translate-y-1 hover:shadow-[6px_6px_0_#0E0E10]">
+                        <div className="relative h-auto w-32 shrink-0 overflow-hidden rounded-[20px] sm:w-36">
+                          <Cover post={p} />
+                        </div>
+                        <div className="flex flex-col justify-center py-2 pr-2">
+                          <Sticker category={p.category} />
+                          <h3 className="font-display mt-2 text-lg font-bold leading-snug line-clamp-3">{p.title}</h3>
+                          <span className="mt-2 text-xs text-[#0E0E10]/45">
+                            {relativeDate(p.published_at)} · {p.read_time} min
+                          </span>
+                        </div>
+                      </article>
+                    </Link>
+                  ))}
                 </div>
+              </section>
+            )}
+
+            {/* ===== GRID ===== */}
+            <div className="mb-6 mt-14 flex items-end justify-between">
+              <h2 className="font-display text-3xl font-extrabold sm:text-4xl">
+                {query ? `Results for "${query}"` : activeCategory === "All" ? "Latest drops" : activeCategory}
+              </h2>
+              <span className="text-sm font-medium text-[#0E0E10]/45">{filtered.length} articles</span>
+            </div>
+
+            {filtered.length === 0 ? (
+              <div className="rounded-[28px] border-2 border-dashed border-[#0E0E10]/25 py-16 text-center">
+                <p className="font-display text-xl font-bold">Nothing on that yet 👀</p>
+                <p className="mt-1 text-sm text-[#0E0E10]/55">Ask a counsellor below and we&apos;ll answer you directly.</p>
               </div>
+            ) : (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {firstBatch.map((p) => (
+                  <PostCard key={p.id} post={p} />
+                ))}
+              </div>
+            )}
 
-              {/* === BLOG GRID — Modern Cards === */}
-              {regularPosts.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {regularPosts.map((post, index) => {
-                    const catStyle = getCatStyle(post.category);
-                    const isHovered = hoveredCard === post.id;
-                    return (
-                      <Link key={post.id} href={`/magazine/${post.slug}`}>
-                        <article
-                          className="group bg-white rounded-2xl border border-gray-100 overflow-hidden cursor-pointer h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1"
-                          onMouseEnter={() => setHoveredCard(post.id)}
-                          onMouseLeave={() => setHoveredCard(null)}
-                        >
-                          {/* Card Cover */}
-                          <div className="relative h-48 overflow-hidden">
-                            <div
-                              className="absolute inset-0 transition-transform duration-500 group-hover:scale-105"
-                              style={{
-                                background: post.cover_image_url
-                                  ? `url(${post.cover_image_url}) center/cover`
-                                  : COVER_GRADIENTS[(index + 1) % COVER_GRADIENTS.length],
-                              }}
-                            />
-                            <div
-                              className="absolute inset-0 opacity-30"
-                              style={{ backgroundImage: getPatternSVG(index + 1) }}
-                            />
+            {/* Lead block sits after the first 6 cards, where scroll intent is highest */}
+            <section className="my-14 grid items-center gap-8 rounded-[36px] bg-[#0E0E10] p-6 sm:p-10 lg:grid-cols-[1fr_1.1fr]">
+              <div className="text-white">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#D9F99D]">Stuck between options?</p>
+                <h2 className="font-display mt-3 text-4xl font-extrabold leading-[1.02] sm:text-5xl">
+                  Get a roadmap built for <span className="text-[#D9F99D]">your</span> profile.
+                </h2>
+                <ul className="mt-6 space-y-3 text-white/70">
+                  <li>✦ University shortlist in your budget</li>
+                  <li>✦ Scholarships you actually qualify for</li>
+                  <li>✦ Visa and IELTS plan with real timelines</li>
+                </ul>
+                <p className="mt-6 text-sm text-white/40">10,000+ students guided · Lucknow, Delhi, Kanpur, Indore</p>
+              </div>
+              <EnquiryForm variant="dark" placement="listing-mid" id="lead-form" />
+            </section>
 
-                            {/* Floating chips */}
-                            <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
-                              <span className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold ${catStyle.bg} ${catStyle.text} border ${catStyle.border}`}>
-                                {post.category}
-                              </span>
-                              <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-black/30 backdrop-blur-sm text-white text-[11px] font-medium">
-                                <Clock className="w-3 h-3" />
-                                {post.read_time}m
-                              </span>
-                            </div>
+            {restBatch.length > 0 && (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {restBatch.map((p) => (
+                  <PostCard key={p.id} post={p} />
+                ))}
+              </div>
+            )}
 
-                            {/* Bottom gradient */}
-                            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/30 to-transparent" />
-                          </div>
-
-                          {/* Card Body */}
-                          <div className="p-5 flex-1 flex flex-col">
-                            <h3 className="text-[15px] font-semibold text-gray-900 mb-2 line-clamp-2 leading-snug group-hover:text-[#A51C30] transition-colors">
-                              {post.title}
-                            </h3>
-                            <p className="text-[13px] text-gray-400 line-clamp-2 mb-4 flex-1 leading-relaxed">
-                              {post.excerpt}
-                            </p>
-
-                            {/* Tags */}
-                            {post.tags && post.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mb-4">
-                                {post.tags.slice(0, 2).map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className="px-2 py-0.5 bg-gray-50 text-gray-400 text-[11px] font-medium rounded-md"
-                                  >
-                                    #{tag}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Footer */}
-                            <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-                              <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#A51C30] to-[#d4243e] flex items-center justify-center">
-                                  <span className="text-white text-[8px] font-bold">EA</span>
-                                </div>
-                                <span className="text-[11px] text-gray-300 font-medium">
-                                  {formatDate(post.published_at)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 text-[12px] text-[#A51C30] font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                                Read
-                                <ArrowUpRight className="w-3.5 h-3.5" />
-                              </div>
-                            </div>
-                          </div>
-                        </article>
-                      </Link>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-16">
-                  <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                    <Eye className="w-5 h-5 text-gray-300" />
-                  </div>
-                  <p className="text-sm text-gray-400">No articles match your search.</p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            {gridPosts.length > visible && (
+              <div className="mt-10 text-center">
+                <button
+                  type="button"
+                  onClick={() => setVisible((v) => v + PAGE_SIZE)}
+                  className="rounded-full border-2 border-[#0E0E10] bg-white px-7 py-3 font-bold transition-all hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#0E0E10]"
+                >
+                  Load more ({gridPosts.length - visible} left)
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
-    </DefaultLayout>
+    </div>
   );
 }

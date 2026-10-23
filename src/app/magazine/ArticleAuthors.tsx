@@ -14,7 +14,7 @@ const AUTHORS = [
     role: "CEO, EduAbroad",
     initials: "AV",
     image: "/authors/aradhya.jpeg", // place photo in /public/authors/aradhya.jpg
-    bio: "Aradhya leads EduAbroad's operations, product, and growth — building the systems that help thousands of students navigate university shortlisting, visa applications, and scholarship searches each year. As CEO, he focuses on making personalised study-abroad guidance scalable, data-driven, and student-first.",
+    bio: "Aradhya leads EduAbroad's operations, product, and growth, building the systems that help thousands of students navigate university shortlisting, visa applications, and scholarship searches each year. As CEO, she focuses on making personalised study-abroad guidance scalable, data-driven, and student-first.",
     linkedin: "https://www.linkedin.com/in/aradhya-vats/",
   },
 ];
@@ -47,10 +47,10 @@ export function ArticleAuthors() {
         {AUTHORS.map((author) => (
           <div
             key={author.name}
-            className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm shadow-gray-100/50 flex gap-4"
+            className="bg-white border-2 border-[#0E0E10] rounded-[24px] p-5 flex gap-4"
           >
             {/* Avatar */}
-            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-gray-100">
+            <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 border-2 border-[#0E0E10]">
               {author.image ? (
                 <img
                   src={author.image}

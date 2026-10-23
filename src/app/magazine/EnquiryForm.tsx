@@ -1,206 +1,253 @@
 "use client";
 
 import React, { useState } from "react";
+import { ArrowRight, Check, Lock } from "lucide-react";
+import { supabase } from "../../../lib/supabase";
 
-import { supabase } from "../../../lib/supabase"; // adjust path to match yours
+const COUNTRIES = [
+  "UK",
+  "USA",
+  "Canada",
+  "Australia",
+  "Ireland",
+  "Germany",
+  "Europe (other)",
+  "New Zealand",
+  "Singapore / Dubai",
+  "Not sure yet",
+];
 
-export function EnquiryForm() {
-  const [submitted, setSubmitted] = useState(false);
+const INTAKES = ["2026", "2027", "2028", "Later"];
+
+type Variant = "card" | "inline" | "dark";
+
+interface Props {
+  variant?: Variant;
+  /** Where on the page the form sits, saved with the lead so you can see which placement converts. */
+  placement?: string;
+  /** Article slug or topic, used in the heading and saved with the lead. */
+  context?: string;
+  id?: string;
+}
+
+declare global {
+  interface Window {
+    dataLayer?: Record<string, unknown>[];
+  }
+}
+
+function cleanMobile(v: string) {
+  return v.replace(/[^\d]/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
+}
+
+export function EnquiryForm({ variant = "card", placement = "sidebar", context, id }: Props) {
+  const [form, setForm] = useState({ name: "", mobile: "", email: "", country: "", year: "" });
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({
-    name: "",
-    mobile: "",
-    email: "",
-    year: "",
-    message: "",
-  });
 
-  const handleSubmit = async () => {
-    if (!form.name || !form.mobile || !form.email || !form.year) {
-      setError("Please fill in all required fields.");
-      return;
-    }
+  const dark = variant === "dark";
+  const inline = variant === "inline" || dark;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const mobile = cleanMobile(form.mobile);
+    if (!form.name.trim()) return setError("Add your name so we know who to call.");
+    if (!/^[6-9]\d{9}$/.test(mobile)) return setError("Enter a valid 10-digit Indian mobile number.");
+    if (!/^\S+@\S+\.\S+$/.test(form.email)) return setError("That email doesn't look right.");
+    if (!form.country) return setError("Pick a country (or 'Not sure yet').");
+
     setError("");
     setLoading(true);
+    const source_url = typeof window !== "undefined" ? window.location.href : null;
+    const message = [
+      `Country: ${form.country}`,
+      `Placement: magazine/${placement}`,
+      context ? `Article: ${context}` : null,
+    ]
+      .filter(Boolean)
+      .join(" | ");
+    const payload = {
+      name: form.name.trim(),
+      mobile,
+      email: form.email.trim(),
+      target_year: form.year || "Not sure",
+      message,
+      source_url,
+    };
+
     try {
-      const { error: sbError } = await supabase.from("enquiries").insert({
-        name: form.name,
-        mobile: form.mobile,
-        email: form.email,
-        target_year: form.year,
-        message: form.message || null,
-        source_url: typeof window !== "undefined" ? window.location.href : null,
-      });
+      const { error: sbError } = await supabase.from("enquiries").insert(payload);
       if (sbError) throw sbError;
 
-      // Send email via our API route
-      await fetch("/api/enquiry", {
+      // Email notification; a failure here should not block the student.
+      fetch("/api/enquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          mobile: form.mobile,
-          email: form.email,
-          target_year: form.year,
-          message: form.message || null,
-          source_url: typeof window !== "undefined" ? window.location.href : null,
-        }),
-      });
+        body: JSON.stringify(payload),
+      }).catch(() => {});
 
+      window.dataLayer?.push({
+        event: "magazine_lead",
+        lead_placement: placement,
+        lead_country: form.country,
+        article: context || null,
+      });
       setSubmitted(true);
     } catch (err) {
       console.error("Enquiry submission error:", err);
-      setError("Something went wrong. Please try again.");
+      setError("Something went wrong. Try again, or WhatsApp us at 90444 42989.");
     } finally {
       setLoading(false);
     }
   };
 
+  const shell = dark
+    ? "rounded-[28px] bg-[#0E0E10] text-white p-6 sm:p-8"
+    : inline
+      ? "rounded-[28px] border-2 border-[#0E0E10] bg-[#FFF8E7] p-6 sm:p-8 shadow-[6px_6px_0_#0E0E10]"
+      : "rounded-[28px] border-2 border-[#0E0E10] bg-white p-6 shadow-[6px_6px_0_#0E0E10]";
+
+  const input = dark
+    ? "h-12 w-full rounded-2xl bg-white/10 border border-white/15 px-4 text-[15px] text-white placeholder:text-white/40 focus:outline-none focus:border-[#D9F99D] focus:bg-white/15"
+    : "h-12 w-full rounded-2xl bg-[#F4F2EE] border-2 border-transparent px-4 text-[15px] text-[#0E0E10] placeholder:text-[#0E0E10]/40 focus:outline-none focus:border-[#0E0E10] focus:bg-white";
+
   if (submitted) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-200/50 p-8 text-center">
-        <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <svg
-            width="26"
-            height="26"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#A51C30"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+      <div id={id} className={`${shell} text-center scroll-mt-24`}>
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#D9F99D] text-[#0E0E10]">
+          <Check className="h-7 w-7" strokeWidth={3} />
         </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-1">
-          You're on the list!
+        <h3 className={`font-display text-2xl font-bold ${dark ? "text-white" : "text-[#0E0E10]"}`}>
+          You&apos;re in! 🎉
         </h3>
-        <p className="text-sm text-gray-500">
-          A counsellor will reach out within 24 hours.
+        <p className={`mt-2 text-sm ${dark ? "text-white/60" : "text-[#0E0E10]/60"}`}>
+          A real counsellor will call you within 24 hours with your roadmap.
         </p>
+        <a
+          href="https://wa.me/919044442989?text=Hi%20EduAbroad%2C%20I%20just%20requested%20a%20study%20abroad%20roadmap"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-bold text-white"
+        >
+          Can&apos;t wait? Ping us on WhatsApp
+        </a>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-200/50 p-6 sm:p-8">
-      <span className="px-3 py-1 rounded-lg text-[11px] font-bold bg-rose-50 text-[#A51C30] border border-rose-200 uppercase tracking-wider">
-        Free · 1-on-1 Counselling
-      </span>
-      <h2 className="text-2xl font-extrabold text-gray-900 mt-4 mb-1 tracking-tight">
-        Want a personalised study abroad roadmap?
-      </h2>
-      <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-        A real counsellor (not a bot) will call within 24 hours with a plan
-        tailored to your goals.
-      </p>
-      <div className="grid grid-cols-1 gap-4 mb-4">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-            Your name
-          </label>
-          <input
-            className="h-11 border border-gray-200 rounded-xl px-3.5 text-sm bg-gray-50 focus:outline-none focus:border-[#A51C30] focus:bg-white"
-            placeholder="Enter your name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-            Mobile
-          </label>
-          <input
-            className="h-11 border border-gray-200 rounded-xl px-3.5 text-sm bg-gray-50 focus:outline-none focus:border-[#A51C30] focus:bg-white"
-            placeholder="10-digit mobile"
-            value={form.mobile}
-            onChange={(e) => setForm({ ...form, mobile: e.target.value })}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-            Email
-          </label>
-          <input
-            className="h-11 border border-gray-200 rounded-xl px-3.5 text-sm bg-gray-50 focus:outline-none focus:border-[#A51C30] focus:bg-white"
-            placeholder="you@example.com"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-            Target year
-          </label>
-          <select
-            className="h-11 border border-gray-200 rounded-xl px-3.5 text-sm bg-gray-50 focus:outline-none focus:border-[#A51C30]"
-            value={form.year}
-            onChange={(e) => setForm({ ...form, year: e.target.value })}
-          >
-            <option value="">Pick your target year</option>
-            <option>2025</option>
-            <option>2026</option>
-            <option>2027</option>
-            <option>2028</option>
-          </select>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-            What do you need help with?{" "}
-            <span className="text-gray-300 normal-case font-normal tracking-normal">
-              (optional)
-            </span>
-          </label>
-          <textarea
-            className="border border-gray-200 rounded-xl px-3.5 py-3 text-sm bg-gray-50 focus:outline-none focus:border-[#A51C30] focus:bg-white resize-none min-h-[80px]"
-            placeholder="e.g. Shortlisting universities, SOP review, visa guidance…"
-            value={form.message}
-            onChange={(e) => setForm({ ...form, message: e.target.value })}
-          />
-        </div>
-      </div>
-      <button
-        onClick={handleSubmit}
-        className="w-full h-12 bg-[#A51C30] hover:bg-[#8b1728] text-white rounded-xl text-[15px] font-bold transition-colors flex items-center justify-center gap-2"
+    <form id={id} onSubmit={handleSubmit} className={`${shell} scroll-mt-24`} noValidate>
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider ${
+          dark ? "bg-[#D9F99D] text-[#0E0E10]" : "bg-[#A51C30] text-white"
+        }`}
       >
-        Get my free roadmap →
-      </button>
-      <p className="text-center text-[11px] text-gray-400 mt-3">
-        🔒 Your info stays with us. Zero spam. Unsubscribe anytime.
+        Free · 1:1 · No spam
+      </span>
+      <h2
+        className={`font-display mt-4 font-bold tracking-tight ${
+          inline ? "text-2xl sm:text-[28px]" : "text-[22px]"
+        } leading-[1.1] ${dark ? "text-white" : "text-[#0E0E10]"}`}
+      >
+        {dark ? "Book your free 1:1 roadmap call" : inline ? "Reading is step one. Want a plan made for you?" : "Get your study abroad roadmap, free"}
+      </h2>
+      <p className={`mt-2 text-sm leading-relaxed ${dark ? "text-white/60" : "text-[#0E0E10]/60"}`}>
+        A Harvard-Cambridge alumni-led counsellor calls you within 24 hours with universities, budget and scholarship options for your profile.
       </p>
-      {/* WhatsApp Community */}
-      <div className="mt-5 pt-5 border-t border-gray-100 flex items-start gap-3">
-        <div className="w-9 h-9 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center shrink-0 mt-0.5">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#16a34a">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.122.554 4.118 1.528 5.855L.057 23.882a.5.5 0 0 0 .61.61l6.037-1.474A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.17-1.438l-.36-.214-3.754.916.948-3.646-.236-.376A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
-          </svg>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-800 mb-0.5">
-            Talk to others like you
-          </p>
-          <p className="text-[12px] text-gray-400 leading-snug mb-2.5">
-            Join our WhatsApp community to discuss with peers preparing for
-            study abroad.
-          </p>
 
-          <a
-            href="https://wa.me/9044442989"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-[12px] font-bold rounded-lg transition-colors"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="white">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.122.554 4.118 1.528 5.855L.057 23.882a.5.5 0 0 0 .61.61l6.037-1.474A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.17-1.438l-.36-.214-3.754.916.948-3.646-.236-.376A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
-            </svg>
-            Join WhatsApp community →
-          </a>
+      <div className={`mt-5 grid gap-3 ${inline ? "sm:grid-cols-2" : "grid-cols-1"}`}>
+        <input
+          className={input}
+          placeholder="Your name"
+          autoComplete="name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          aria-label="Your name"
+        />
+        <input
+          className={input}
+          placeholder="Mobile (10 digits)"
+          inputMode="tel"
+          autoComplete="tel"
+          value={form.mobile}
+          onChange={(e) => setForm({ ...form, mobile: e.target.value })}
+          aria-label="Mobile number"
+        />
+        <input
+          className={input}
+          placeholder="Email"
+          type="email"
+          autoComplete="email"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          aria-label="Email"
+        />
+        <select
+          className={input}
+          value={form.country}
+          onChange={(e) => setForm({ ...form, country: e.target.value })}
+          aria-label="Dream country"
+        >
+          <option value="">Dream country</option>
+          {COUNTRIES.map((c) => (
+            <option key={c} value={c} className="text-[#0E0E10]">
+              {c}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mt-3">
+        <p className={`mb-2 text-[12px] font-semibold ${dark ? "text-white/50" : "text-[#0E0E10]/50"}`}>
+          When do you want to fly?
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {INTAKES.map((y) => {
+            const active = form.year === y;
+            return (
+              <button
+                type="button"
+                key={y}
+                onClick={() => setForm({ ...form, year: y })}
+                className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                  active
+                    ? dark
+                      ? "bg-[#D9F99D] text-[#0E0E10]"
+                      : "bg-[#0E0E10] text-white"
+                    : dark
+                      ? "bg-white/10 text-white/70 hover:bg-white/20"
+                      : "bg-[#F4F2EE] text-[#0E0E10]/70 hover:bg-[#ECE8E1]"
+                }`}
+              >
+                {y}
+              </button>
+            );
+          })}
         </div>
       </div>
-    </div>
+
+      {error && <p className="mt-3 text-sm font-medium text-[#E11D48]">{error}</p>}
+
+      <button
+        type="submit"
+        disabled={loading}
+        className={`mt-5 flex h-13 w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[15px] font-bold transition-transform active:scale-[0.98] disabled:opacity-60 ${
+          dark ? "bg-[#D9F99D] text-[#0E0E10] hover:bg-[#ECFCCB]" : "bg-[#A51C30] text-white hover:bg-[#8B1728]"
+        }`}
+      >
+        {loading ? "Sending..." : "Get my free roadmap"}
+        {!loading && <ArrowRight className="h-4 w-4" />}
+      </button>
+      <p
+        className={`mt-3 flex items-center justify-center gap-1.5 text-[11px] ${
+          dark ? "text-white/40" : "text-[#0E0E10]/40"
+        }`}
+      >
+        <Lock className="h-3 w-3" /> We never sell your number. One call, zero spam.
+      </p>
+    </form>
   );
 }
+
+export default EnquiryForm;
