@@ -19,7 +19,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "EduAbroad - Study Abroad Platform",
   description: "Find your perfect course, scholarships, and connect with admits",
-  icons: "/images.svg",
 };
 
 export default function RootLayout({
